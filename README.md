@@ -90,7 +90,7 @@ cd HyperZ
 # Install dependencies
 npm install
 
-# Generate application key
+# Generate application key & JWT secret
 npx tsx bin/hyperz.ts key:generate
 
 # Copy environment config
@@ -211,7 +211,7 @@ npx tsx bin/hyperz.ts db:seed                     # Run all seeders
 npx tsx bin/hyperz.ts db:seed -c UserSeeder       # Run specific seeder
 
 # Utilities
-npx tsx bin/hyperz.ts key:generate                # Generate app key
+npx tsx bin/hyperz.ts key:generate                # Generate app key + JWT secret
 npx tsx bin/hyperz.ts serve                       # Start dev server
 npx tsx bin/hyperz.ts route:list                  # List route files
 npx tsx bin/hyperz.ts tinker                      # Interactive REPL
@@ -309,17 +309,40 @@ ws.channel('/chat', (socket) => {
 
 ## Admin Panel
 
-HyperZ ships with a **built-in Next.js admin panel** for visual management of your application — no terminal required.
+HyperZ ships with a **built-in Next.js admin panel** secured by database-backed authentication with JWT sessions.
 
 ### Setup
 
 ```bash
+# 1. Generate security keys (APP_KEY + JWT_SECRET)
+npx tsx bin/hyperz.ts key:generate
+
+# 2. Configure database in .env (mysql, postgresql, or sqlite)
+
+# 3. Start the HyperZ API server
+npm run dev
+
+# 4. Run migrations to create admin table
+npx tsx bin/hyperz.ts migrate
+
+# 5. Start the admin panel
 cd admin
 npm install
-npm run dev       # Starts on http://localhost:3100
+npm run dev       # Starts on http://localhost:3000
 ```
 
-> **Note:** The HyperZ API must be running on port 7700 for the admin panel to communicate with it.
+> **First-Time Setup:** The admin panel includes a guided setup wizard that walks you through database configuration, migration, and admin account creation — all from the browser.
+
+### Authentication & Security
+
+| Feature | Details |
+|---|---|
+| 🔐 **Password Hashing** | bcrypt (10 salt rounds) |
+| 🎫 **Session Tokens** | JWT HS256 with 24h expiry |
+| 🛡️ **Account Lockout** | 15 min lockout after 5 failed attempts |
+| 🚦 **Rate Limiting** | 5 login attempts per 15 min per IP |
+| 🔒 **Registration Lock** | Locked after first admin account |
+| ✅ **Token Validation** | Every request verified against DB |
 
 ### Features
 
@@ -333,25 +356,31 @@ npm run dev       # Starts on http://localhost:3100
 | 💾 **Cache & Queue** | Cache flush, queue status, storage & WebSocket overview |
 | 📋 **Logs** | Live log viewer with auto-refresh, level-based colors, file selector |
 | 🤖 **AI Gateway** | Provider status (OpenAI, Anthropic, Google AI), config overview |
+| 📈 **Monitoring** | Real-time CPU/memory/latency gauges and sparkline charts |
+| 🔌 **MCP Server** | MCP tool status, resource browser, prompt templates |
 
 ### Admin API Endpoints
 
 The admin panel communicates via internal REST endpoints at `/api/_admin/*`:
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/_admin/overview` | GET | System health & stats |
-| `/api/_admin/env` | GET/PUT | Read/update `.env` |
-| `/api/_admin/config` | GET | List config files |
-| `/api/_admin/routes` | GET | List all routes |
-| `/api/_admin/scaffold/:type` | POST | Create resources |
-| `/api/_admin/database/tables` | GET | List database tables |
-| `/api/_admin/database/tables/:name` | GET | Browse table data |
-| `/api/_admin/database/migrate` | POST | Run migrations |
-| `/api/_admin/database/rollback` | POST | Rollback migrations |
-| `/api/_admin/database/seed` | POST | Run seeders |
-| `/api/_admin/logs` | GET | Read log files |
-| `/api/_admin/cache/flush` | POST | Flush cache |
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/_admin/auth/status` | GET | 🔓 Public | System readiness check |
+| `/api/_admin/auth/register` | POST | 🔓 Public | Create first admin account |
+| `/api/_admin/auth/login` | POST | 🔓 Public | Admin login |
+| `/api/_admin/auth/me` | GET | 🔓 Public | Verify session token |
+| `/api/_admin/overview` | GET | 🔐 JWT | System health & stats |
+| `/api/_admin/env` | GET/PUT | 🔐 JWT | Read/update `.env` |
+| `/api/_admin/config` | GET | 🔐 JWT | List config files |
+| `/api/_admin/routes` | GET | 🔐 JWT | List all routes |
+| `/api/_admin/scaffold/:type` | POST | 🔐 JWT | Create resources |
+| `/api/_admin/database/tables` | GET | 🔐 JWT | List database tables |
+| `/api/_admin/database/tables/:name` | GET | 🔐 JWT | Browse table data |
+| `/api/_admin/database/migrate` | POST | 🔐 JWT | Run migrations |
+| `/api/_admin/database/rollback` | POST | 🔐 JWT | Rollback migrations |
+| `/api/_admin/database/seed` | POST | 🔐 JWT | Run seeders |
+| `/api/_admin/logs` | GET | 🔐 JWT | Read log files |
+| `/api/_admin/cache/flush` | POST | 🔐 JWT | Flush cache |
 
 ---
 

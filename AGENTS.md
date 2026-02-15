@@ -12,7 +12,7 @@
 - **Runtime:** Node.js ≥ 20, TypeScript (strict mode), ES Modules
 - **Entry point:** `server.ts` → `app.ts` → boot lifecycle
 - **API base:** `http://localhost:7700/api`
-- **Admin panel:** `admin/` (Next.js on port 3100)
+- **Admin panel:** `admin/` (Next.js on port 3000, JWT-secured)
 - **CLI entry:** `npx tsx bin/hyperz.ts <command>`
 
 ---
@@ -132,7 +132,7 @@ npx tsx bin/hyperz.ts make:auth                      # Scaffold full auth system
 npx tsx bin/hyperz.ts migrate                        # Run migrations
 npx tsx bin/hyperz.ts migrate:rollback               # Rollback migrations
 npx tsx bin/hyperz.ts db:seed                        # Run seeders
-npx tsx bin/hyperz.ts key:generate                   # Generate APP_KEY
+npx tsx bin/hyperz.ts key:generate                   # Generate APP_KEY + JWT_SECRET
 npx tsx bin/hyperz.ts route:list                     # List routes
 npx tsx bin/hyperz.ts tinker                         # Interactive REPL
 ```
@@ -151,7 +151,7 @@ npx tsx bin/hyperz.ts tinker                         # Interactive REPL
 6. **Bind controller methods** in routes: `controller.method.bind(controller)` (required for `this` context)
 7. **Run `npx tsx bin/hyperz.ts migrate`** after creating migrations
 8. **The dev server** runs on port 7700 — start with `npm run dev`
-9. **Admin panel** runs separately: `cd admin && npm run dev` (port 3100)
+9. **Admin panel** runs separately: `cd admin && npm run dev` (port 3000, requires DB + `key:generate`)
 10. **`.env` file** holds all environment config — see `.env.example` for available variables
 
 ---
@@ -191,4 +191,4 @@ Key variables in `.env`:
 **Create resource:** `npx tsx bin/hyperz.ts make:controller ProductController && npx tsx bin/hyperz.ts make:model Product -m`
 **API base URL:** `http://localhost:7700/api`
 **Playground:** `http://localhost:7700/api/playground`
-**Admin panel:** `http://localhost:3100` (requires `cd admin && npm run dev`)
+**Admin panel:** `http://localhost:3000` (requires `cd admin && npm run dev`)
