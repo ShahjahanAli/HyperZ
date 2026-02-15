@@ -409,3 +409,29 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 | Cache & Queue | Service status cards, cache flush |
 | Logs | Auto-refresh log viewer with color-coded levels |
 | AI Gateway | Provider status, config overview |
+
+---
+
+## 22. AI Agent Compatibility *(NEW)*
+
+### 22.1 First-Class AI Agent Support
+- Designed for AI agentic development tools (Cursor, Copilot, Antigravity, Claude Code, Windsurf)
+- Convention-over-configuration patterns optimized for AI reasoning
+- CLI scaffolding commands that agents can execute directly
+
+### 22.2 Agent Configuration Files
+| File | Tool | Purpose |
+|---|---|---|
+| `AGENTS.md` | All AI tools | Project conventions, rules, and quick reference |
+| `ARCHITECTURE.md` | All AI tools | System diagrams, boot order, subsystem map |
+| `.cursorrules` | Cursor | Project-specific coding rules |
+| `.github/copilot-instructions.md` | GitHub Copilot | Workspace-aware suggestions |
+| `.agent/workflows/*.md` | Antigravity | Step-by-step task guides |
+
+### 22.3 Workflow System
+Pre-built workflows in `.agent/workflows/`:
+- `add-crud-resource.md` — Complete CRUD feature creation
+- `add-middleware.md` — Custom middleware creation
+- `database-operations.md` — Migrations, seeders, factories
+- `add-ai-action.md` — AI Gateway action creation
+- `run-dev.md` — Development environment setup

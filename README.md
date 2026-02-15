@@ -64,6 +64,7 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 📝 **Logging** | Pino-powered structured logging with pretty dev output |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
+| 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity, and other AI coding tools |
 
 ---
 
@@ -346,6 +347,43 @@ The admin panel communicates via internal REST endpoints at `/api/_admin/*`:
 | `/api/_admin/database/seed` | POST | Run seeders |
 | `/api/_admin/logs` | GET | Read log files |
 | `/api/_admin/cache/flush` | POST | Flush cache |
+
+---
+
+## AI Agent Compatibility
+
+HyperZ is designed to be **AI agentic development-friendly** — making it one of the first Express.js frameworks to ship with first-class AI agent support.
+
+### Supported Tools
+
+| Tool | Config File | What It Does |
+|---|---|---|
+| **Antigravity** (Gemini) | `AGENTS.md` + `.agent/workflows/` | Full project context + step-by-step workflows |
+| **Cursor** | `.cursorrules` | Project-specific coding rules and patterns |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Workspace-aware code suggestions |
+| **Claude Code** | `AGENTS.md` | Project conventions and architecture |
+| **Windsurf** | `AGENTS.md` | Project rules and context |
+| **VS Code AI Extensions** | `AGENTS.md` + `ARCHITECTURE.md` | System overview for any AI tool |
+
+### What Makes HyperZ AI-Friendly?
+
+- **Convention-over-configuration** — Predictable file locations and naming patterns that AI agents can reason about
+- **CLI scaffolding** — 16+ `make:` commands that AI agents can use to generate correct boilerplate
+- **TypeScript strict mode** — Strong type inference for better AI suggestions
+- **Comprehensive docs** — `AGENTS.md` (conventions), `ARCHITECTURE.md` (system diagrams), `FEATURES.md`, `USER_MANUAL.md`
+- **Step-by-step workflows** — `.agent/workflows/` with guides for CRUD, middleware, database, AI actions, and dev setup
+- **Auto-loaded routes** — AI agents don't need to know where to register routes
+- **Admin API** — Programmatic access to routes, database, env, and logs via `/api/_admin/*`
+
+### Quick Example
+
+An AI agent asked to *"add a blog posts feature"* can:
+
+1. Read `AGENTS.md` to understand conventions
+2. Follow `.agent/workflows/add-crud-resource.md`
+3. Run `make:controller PostController`, `make:model Post -m`, `make:route posts`
+4. Edit the migration, route file, and controller
+5. Run `migrate` — done! Full CRUD API in minutes.
 
 ---
 
@@ -762,6 +800,8 @@ npm run dev
 
 ## Documentation
 
+- 🤖 [AI Agent Guide](AGENTS.md)
+- 🏗️ [Architecture Guide](ARCHITECTURE.md)
 - 📋 [Product Features Specification](docs/FEATURES.md)
 - 📖 [User Manual](docs/USER_MANUAL.md)
 - 📄 [Changelog](CHANGELOG.md)

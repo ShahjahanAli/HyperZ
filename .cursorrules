@@ -1,0 +1,49 @@
+# HyperZ Framework — Cursor AI Rules
+# This file is automatically read by Cursor AI when working in this project.
+
+# Project: Laravel-inspired Express.js + TypeScript API framework
+# Runtime: Node.js ≥ 20, TypeScript strict mode, ES Modules
+# Entry: server.ts → app.ts → service provider boot lifecycle
+
+# CODING RULES:
+# 1. Use TypeScript strict mode — avoid `any` types
+# 2. Use `.js` extensions in ALL import paths (ESM output)
+# 3. Use `type` keyword for type-only imports
+# 4. Application code goes in app/ — never edit src/ (framework core)
+# 5. Use the CLI (`npx tsx bin/hyperz.ts make:<type> <Name>`) to scaffold files
+# 6. Route files in app/routes/ are auto-loaded — no manual registration
+# 7. Read env vars via env('KEY', 'default') helper, not process.env
+# 8. Bind controller methods in routes: controller.method.bind(controller)
+
+# NAMING CONVENTIONS:
+# Controllers: PascalCase + Controller suffix (ProductController)
+# Models: PascalCase singular (Product)
+# Migrations: snake_case timestamped (20260101_create_products_table.ts)
+# Seeders: PascalCase + Seeder suffix (ProductSeeder)
+# Jobs: PascalCase (SendWelcomeEmail)
+# Route files: lowercase (api.ts)
+
+# FRAMEWORK PATTERNS:
+# Controllers extend Controller from src/http/Controller.js
+# Models extend Model from src/database/Model.js
+# Jobs extend BaseJob from src/queue/QueueManager.js
+# Use HyperZRouter from src/http/Router.js for routing
+# Use validate() from src/validation/Validator.js with Zod schemas
+# Use router.resource('/path', controller) for CRUD routes
+
+# RESPONSE HELPERS (in controllers):
+# this.success(res, data, message) → 200
+# this.created(res, data, message) → 201
+# this.error(res, message, status) → error
+# this.noContent(res) → 204
+# this.paginate(res, data, total, page, perPage)
+
+# DEV SERVER:
+# npm run dev → http://localhost:7700/api
+# Playground: http://localhost:7700/api/playground
+# Admin: cd admin && npm run dev → http://localhost:3100
+
+# DOCUMENTATION:
+# See AGENTS.md for full AI agent guide
+# See ARCHITECTURE.md for system diagrams
+# See .agent/workflows/ for step-by-step task guides
