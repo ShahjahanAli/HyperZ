@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -31,7 +32,7 @@ export default function ScaffoldPage() {
         setResult(null);
 
         try {
-            const res = await fetch(`${API}/scaffold/${type}`, {
+            const res = await adminFetch(`${API}/scaffold/${type}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: name.trim(), withMigration }),

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -17,8 +18,8 @@ export default function ConfigPage() {
     const [tab, setTab] = useState<'env' | 'config'>('env');
 
     useEffect(() => {
-        fetch(`${API}/env`).then(r => r.json()).then(d => setEnvVars(d.variables || [])).catch(() => { });
-        fetch(`${API}/config`).then(r => r.json()).then(d => {
+        adminFetch(`${API}/env`).then(r => r.json()).then(d => setEnvVars(d.variables || [])).catch(() => { });
+        adminFetch(`${API}/config`).then(r => r.json()).then(d => {
             setConfigs(d.files || []);
             if (d.files?.length > 0) {
                 setSelectedConfig(d.files[0].name);
@@ -30,7 +31,7 @@ export default function ConfigPage() {
     const saveEnv = async () => {
         setSaving(true);
         try {
-            await fetch(`${API}/env`, {
+            await adminFetch(`${API}/env`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ variables: envVars }),

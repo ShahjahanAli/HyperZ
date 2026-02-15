@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/api';
 
-const API = 'http://localhost:7700/api/_admin';
+const API = '/api/_admin';
 
 interface Tool { name: string; category: string; description: string }
 interface Resource { uri: string; name: string; description: string }
@@ -37,7 +38,7 @@ export default function MCPPage() {
     const [executing, setExecuting] = useState('');
 
     useEffect(() => {
-        fetch(`${API}/mcp`)
+        adminFetch(`${API}/mcp`)
             .then(r => r.json())
             .then(setInfo)
             .catch(() => setError('Cannot connect to HyperZ API'));
@@ -52,15 +53,15 @@ export default function MCPPage() {
             // For scaffold tools, we'd need a name — use admin API scaffold endpoint
             let res;
             if (toolName === 'run_migration') {
-                res = await fetch(`${API}/database/migrate`, { method: 'POST' });
+                res = await adminFetch(`${API}/database/migrate`, { method: 'POST' });
             } else if (toolName === 'run_migration_rollback') {
-                res = await fetch(`${API}/database/rollback`, { method: 'POST' });
+                res = await adminFetch(`${API}/database/rollback`, { method: 'POST' });
             } else if (toolName === 'run_seed') {
-                res = await fetch(`${API}/database/seed`, { method: 'POST' });
+                res = await adminFetch(`${API}/database/seed`, { method: 'POST' });
             } else if (toolName === 'list_routes') {
-                res = await fetch(`${API}/routes`);
+                res = await adminFetch(`${API}/routes`);
             } else if (toolName === 'read_env') {
-                res = await fetch(`${API}/env`);
+                res = await adminFetch(`${API}/env`);
             } else {
                 // For scaffold tools, show info
                 setActivityLog(prev => {

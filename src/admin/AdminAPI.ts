@@ -8,6 +8,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import pluralize from 'pluralize';
 import { Logger } from '../logging/Logger.js';
+import { getAdminStatus, registerAdmin, loginAdmin, verifyAdminToken } from './AdminAuth.js';
 
 const ROOT = process.cwd();
 
@@ -61,6 +62,107 @@ export async function createAdminRouter(app?: any): Promise<Router> {
 
     // Body parser for admin routes
     router.use(express.json());
+
+    // ════════════════════════════════════════════════════════════
+    // AUTH ENDPOINTS (PUBLIC — no JWT required)
+    // ════════════════════════════════════════════════════════════
+
+    // ── Auth Status — DB connected? Table exists? Admin exists? ──
+    router.get('/auth/status', async (_req: Request, res: Response) => {
+        try {
+            const status = await getAdminStatus();
+            res.json(status);
+        } catch (err: any) {
+            res.status(500).json({ error: 'Failed to check admin status', detail: err.message });
+        }
+    });
+
+    // ── Register — Only when no admin exists ──
+    router.post('/auth/register', async (req: Request, res: Response) => {
+        try {
+            const { email, password, name } = req.body || {};
+            const result = await registerAdmin({ email, password, name });
+
+            if (!result.success) {
+                return res.status(400).json({ error: result.error });
+            }
+
+            // Auto-login after registration
+            const ip = req.ip || req.socket.remoteAddress || '0.0.0.0';
+            const loginResult = await loginAdmin(email, password, ip);
+
+            res.status(201).json({
+                message: 'Admin account created successfully',
+                admin: result.admin,
+                token: loginResult.token,
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: 'Registration failed', detail: err.message });
+        }
+    });
+
+    // ── Login ──
+    router.post('/auth/login', async (req: Request, res: Response) => {
+        try {
+            const { email, password } = req.body || {};
+            if (!email || !password) {
+                return res.status(400).json({ error: 'Email and password are required.' });
+            }
+
+            const ip = req.ip || req.socket.remoteAddress || '0.0.0.0';
+            const result = await loginAdmin(email, password, ip);
+
+            if (!result.success) {
+                return res.status(401).json({ error: result.error });
+            }
+
+            res.json({ token: result.token, admin: result.admin });
+        } catch (err: any) {
+            res.status(500).json({ error: 'Login failed', detail: err.message });
+        }
+    });
+
+    // ── Verify Session ──
+    router.get('/auth/me', async (req: Request, res: Response) => {
+        try {
+            const authHeader = req.headers.authorization;
+            if (!authHeader?.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'No token provided.' });
+            }
+
+            const token = authHeader.slice(7);
+            const result = await verifyAdminToken(token);
+
+            if (!result.valid) {
+                return res.status(401).json({ error: result.error });
+            }
+
+            res.json({ admin: result.admin });
+        } catch (err: any) {
+            res.status(401).json({ error: 'Invalid token.' });
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════
+    // JWT GUARD — All routes below require authentication
+    // ════════════════════════════════════════════════════════════
+
+    router.use(async (req: Request, res: Response, next: Function) => {
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Authentication required. Please log in to the admin panel.' });
+        }
+
+        const token = authHeader.slice(7);
+        const result = await verifyAdminToken(token);
+
+        if (!result.valid) {
+            return res.status(401).json({ error: result.error || 'Invalid or expired token.' });
+        }
+
+        (req as any).admin = result.admin;
+        next();
+    });
 
     // ────────────────────────────────────────────────────────
     // 1. OVERVIEW — System health, stats, uptime
@@ -427,6 +529,43 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                 res.json(getMCPServerInfo());
             }).catch((err: any) => {
                 res.status(500).json({ error: `MCP module error: ${err.message}` });
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // ────────────────────────────────────────────────────────
+    // 11. Monitoring — Real-time metrics
+    // ────────────────────────────────────────────────────────
+    router.get('/monitoring', (_req: Request, res: Response) => {
+        try {
+            Promise.all([
+                import('../monitoring/MetricsCollector.js'),
+                import('../monitoring/SystemMonitor.js'),
+            ]).then(([{ getMetricsSnapshot, getTimeSeries }, { getSystemMetrics }]) => {
+                res.json({
+                    metrics: getMetricsSnapshot(),
+                    system: getSystemMetrics(),
+                    timeSeries: getTimeSeries(),
+                });
+            }).catch((err: any) => {
+                res.status(500).json({ error: `Monitoring error: ${err.message}` });
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // ────────────────────────────────────────────────────────
+    // 12. Rate Limit Stats
+    // ────────────────────────────────────────────────────────
+    router.get('/rate-limits', (_req: Request, res: Response) => {
+        try {
+            import('../rateLimit/RateLimitManager.js').then(({ getRateLimitStats }) => {
+                res.json(getRateLimitStats());
+            }).catch((err: any) => {
+                res.status(500).json({ error: `Rate limit error: ${err.message}` });
             });
         } catch (err: any) {
             res.status(500).json({ error: err.message });

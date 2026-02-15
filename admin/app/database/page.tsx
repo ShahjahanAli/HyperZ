@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -15,14 +16,14 @@ export default function DatabasePage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetch(`${API}/database/tables`).then(r => r.json()).then(d => { setTables(d.tables || []); setDriver(d.driver || ''); }).catch(() => { });
-        fetch(`${API}/database/migrations`).then(r => r.json()).then(d => setMigrations(d.migrations || [])).catch(() => { });
+        adminFetch(`${API}/database/tables`).then(r => r.json()).then(d => { setTables(d.tables || []); setDriver(d.driver || ''); }).catch(() => { });
+        adminFetch(`${API}/database/migrations`).then(r => r.json()).then(d => setMigrations(d.migrations || [])).catch(() => { });
     }, []);
 
     const loadTable = async (name: string) => {
         setSelectedTable(name);
         setTableData(null);
-        const res = await fetch(`${API}/database/tables/${name}`);
+        const res = await adminFetch(`${API}/database/tables/${name}`);
         const data = await res.json();
         setTableData(data);
     };
@@ -31,11 +32,11 @@ export default function DatabasePage() {
         setLoading(true);
         setActionResult(null);
         try {
-            const res = await fetch(`${API}/database/${action}`, { method: 'POST' });
+            const res = await adminFetch(`${API}/database/${action}`, { method: 'POST' });
             const data = await res.json();
             setActionResult({ action, ...data });
             // Refresh tables
-            fetch(`${API}/database/tables`).then(r => r.json()).then(d => setTables(d.tables || []));
+            adminFetch(`${API}/database/tables`).then(r => r.json()).then(d => setTables(d.tables || []));
         } catch (err: any) {
             setActionResult({ error: err.message });
         } finally {

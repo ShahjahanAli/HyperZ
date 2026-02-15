@@ -66,6 +66,10 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
 | 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity, and other AI coding tools |
 | 🔌 **MCP Server** | Model Context Protocol server with 13 tools, 6 resources, 4 prompts for AI automation |
+| 📖 **Swagger/OpenAPI** | Auto-generated API docs at `/api/docs` with dark-themed Swagger UI |
+| 🛡️ **Rate Limiting** | Per-user / per-API-key throttling with tiers (free/standard/pro/enterprise) |
+| 📈 **Real-time Monitoring** | Live CPU/memory/latency gauges, sparkline charts, top endpoints dashboard |
+| 🔮 **GraphQL** | Auto-generated schema from models with GraphiQL IDE at `/graphql` |
 
 ---
 
@@ -831,10 +835,10 @@ npm run dev
 
 ### 🔮 Future
 
-- [ ] Auto-generated API docs (Swagger/OpenAPI)
-- [ ] Rate limiting per user/API key
-- [ ] Real-time dashboard & monitoring
-- [ ] GraphQL integration layer
+- [x] Auto-generated API docs (Swagger/OpenAPI)
+- [x] Rate limiting per user/API key
+- [x] Real-time dashboard & monitoring
+- [x] GraphQL integration layer
 - [x] Docker & deployment templates
 - [x] Admin panel UI (Next.js)
 

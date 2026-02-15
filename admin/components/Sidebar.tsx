@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
 
 const navItems = [
     { icon: '📊', label: 'Dashboard', href: '/' },
@@ -13,10 +14,14 @@ const navItems = [
     { icon: '📋', label: 'Logs', href: '/logs' },
     { icon: '🤖', label: 'AI Gateway', href: '/ai' },
     { icon: '🔌', label: 'MCP Server', href: '/mcp' },
+    { icon: '📖', label: 'API Docs', href: '/docs' },
+    { icon: '📈', label: 'Monitoring', href: '/monitoring' },
+    { icon: '🔮', label: 'GraphQL', href: '/graphql' },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const { admin, logout } = useAuth();
 
     return (
         <aside className="sidebar">
@@ -51,6 +56,44 @@ export default function Sidebar() {
                     Playground
                 </a>
             </div>
+
+            {/* Admin info + logout */}
+            {admin && (
+                <div style={{
+                    padding: '14px 20px', borderTop: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                    <div style={{
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+                    }}>
+                        {admin.name?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                            fontSize: 12, fontWeight: 600, color: 'var(--text)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                            {admin.name}
+                        </div>
+                        <div style={{
+                            fontSize: 10, color: 'var(--text-muted)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                            {admin.email}
+                        </div>
+                    </div>
+                    <button onClick={logout} title="Sign out" style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--text-muted)', fontSize: 16, padding: 4,
+                        transition: 'color 0.2s',
+                    }}>
+                        🚪
+                    </button>
+                </div>
+            )}
         </aside>
     );
 }

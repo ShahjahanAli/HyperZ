@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -11,7 +12,7 @@ export default function RoutesPage() {
     const [methodFilter, setMethodFilter] = useState('ALL');
 
     useEffect(() => {
-        fetch(`${API}/routes`).then(r => r.json()).then(d => setRoutes(d.routes || [])).catch(() => { });
+        adminFetch(`${API}/routes`).then(r => r.json()).then(d => setRoutes(d.routes || [])).catch(() => { });
     }, []);
 
     const methods = ['ALL', ...Array.from(new Set(routes.map((r: any) => r.method)))];

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -16,7 +17,7 @@ export default function LogsPage() {
         const params = new URLSearchParams({ lines: '200' });
         if (file) params.set('file', file);
 
-        const res = await fetch(`${API}/logs?${params}`);
+        const res = await adminFetch(`${API}/logs?${params}`);
         const data = await res.json();
         setLogs(data.logs || []);
         setFiles(data.files || []);

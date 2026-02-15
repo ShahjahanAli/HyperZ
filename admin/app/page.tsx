@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -27,9 +28,9 @@ export default function DashboardPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetch(`${API}/overview`).then(r => r.json()).then(setOverview).catch(() => setError('Cannot reach HyperZ API'));
-        fetch(`${API}/routes`).then(r => r.json()).then(d => setRoutes(d.routes || [])).catch(() => { });
-        fetch(`${API}/database/tables`).then(r => r.json()).then(d => setTables(d.tables || [])).catch(() => { });
+        adminFetch(`${API}/overview`).then(r => r.json()).then(setOverview).catch(() => setError('Cannot reach HyperZ API'));
+        adminFetch(`${API}/routes`).then(r => r.json()).then(d => setRoutes(d.routes || [])).catch(() => { });
+        adminFetch(`${API}/database/tables`).then(r => r.json()).then(d => setTables(d.tables || [])).catch(() => { });
     }, []);
 
     return (

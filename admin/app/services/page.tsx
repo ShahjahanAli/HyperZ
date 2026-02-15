@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import { adminFetch } from '@/lib/api';
 
 const API = '/api/_admin';
 
@@ -10,7 +11,7 @@ export default function ServicesPage() {
 
     const flushCache = async () => {
         try {
-            const res = await fetch(`${API}/cache/flush`, { method: 'POST' });
+            const res = await adminFetch(`${API}/cache/flush`, { method: 'POST' });
             const data = await res.json();
             setFlushResult(data.success ? '✅ Cache flushed' : '❌ ' + data.error);
             setTimeout(() => setFlushResult(''), 3000);
