@@ -20,12 +20,17 @@ const navItems = [
     { icon: '🔮', label: 'GraphQL', href: '/graphql' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { admin, logout } = useAuth();
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
             <div className="sidebar-brand">
                 ⚡ <span className="accent">HyperZ</span> <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '4px' }}>ADMIN</span>
             </div>
@@ -37,6 +42,7 @@ export default function Sidebar() {
                         key={item.href}
                         href={item.href}
                         className={`nav-item ${pathname === item.href ? 'active' : ''}`}
+                        onClick={onClose}
                     >
                         <span className="icon">{item.icon}</span>
                         {item.label}

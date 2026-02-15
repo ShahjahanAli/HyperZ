@@ -1,46 +1,49 @@
 'use client';
 
+import AdminLayout from '@/components/AdminLayout';
+
 export default function DocsPage() {
     return (
-        <div className="page-content" style={{ maxWidth: 1200, margin: '0 auto' }}>
-            {/* Header */}
-            <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f1f5f9', margin: 0, marginBottom: 4 }}>
-                    📖 API Documentation
-                </h1>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
-                    Auto-generated Swagger/OpenAPI docs from your HyperZ routes
-                </p>
+        <AdminLayout>
+            <div className="topbar">
+                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>📖 SERVICE_DOCUMENTATION_OPENAPI</h1>
+                <span className="topbar-meta">HYPERZ v2 • API EXPLORER</span>
             </div>
 
-            {/* Quick Links */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
-                {[
-                    { title: 'Swagger UI', desc: 'Interactive API explorer', href: '/api/docs', icon: '🌐', color: '#22c55e' },
-                    { title: 'OpenAPI JSON', desc: 'Raw specification', href: '/api/docs/json', icon: '📄', color: '#3b82f6' },
-                    { title: 'Playground', desc: 'Custom API tester', href: '/api/playground', icon: '🎮', color: '#a855f7' },
-                ].map(item => (
-                    <a key={item.title} href={item.href} target="_blank" rel="noreferrer" style={{
-                        background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: 20,
-                        textDecoration: 'none', transition: 'border-color 0.2s',
-                    }}>
-                        <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{item.icon}</div>
-                        <div style={{ fontWeight: 700, color: item.color, marginBottom: 4 }}>{item.title}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{item.desc}</div>
-                    </a>
-                ))}
-            </div>
-
-            {/* Embedded Swagger UI */}
-            <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontWeight: 600 }}>Swagger UI Preview</h3>
-                    <a href="/api/docs" target="_blank" rel="noreferrer" style={{
-                        fontSize: '0.75rem', color: '#6366f1', textDecoration: 'none',
-                    }}>↗ Open in new tab</a>
+            <div className="page-content">
+                {/* Header Info */}
+                <div className="stat-card" style={{ marginBottom: 32, borderLeft: '4px solid var(--accent)' }}>
+                    <div className="stat-label">Description</div>
+                    <div style={{ fontSize: '14px', marginTop: 8, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                        AUTO-GENERATED SWAGGER/OPENAPI SPECIFICATION DISCOVERED AT:
+                        <span style={{ color: 'var(--accent-secondary)', marginLeft: 8 }}>/api/_admin/docs</span>
+                    </div>
                 </div>
-                <iframe src="/api/docs" style={{ width: '100%', height: 700, border: 'none' }} title="Swagger UI" />
+
+                {/* Quick Actions Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 32 }}>
+                    {[
+                        { title: 'SWAGGER UI', desc: 'Interactive API explorer and documentation.', href: '/api/_admin/docs', icon: '🌐', color: 'var(--green)' },
+                        { title: 'OPENAPI JSON', desc: 'Raw specification for external tool integration.', href: '/api/_admin/docs/json', icon: '📄', color: 'var(--blue)' },
+                    ].map(item => (
+                        <a key={item.title} href={item.href} target="_blank" rel="noreferrer" className="card" style={{
+                            textDecoration: 'none',
+                        }}>
+                            <div className="card-header" style={{ color: item.color }}>{item.icon} {item.title}</div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--mono)', marginTop: 8 }}>{item.desc}</div>
+                            <div style={{ marginTop: 16, fontSize: '11px', color: 'var(--accent)', fontWeight: 700, fontFamily: 'var(--tactical)' }}>
+                                OPEN_EXTERNAL_UPLINK ↗
+                            </div>
+                        </a>
+                    ))}
+                </div>
+
+                {/* Embedded Viewer */}
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div className="card-header" style={{ padding: '16px 24px', margin: 0 }}>// EMBEDDED_SWAGGER_INTERFACE_PREVIEW</div>
+                    <iframe src="/api/_admin/docs" style={{ width: '100%', height: 800, border: 'none', background: '#fff', borderRadius: '0 0 var(--radius) var(--radius)' }} title="Swagger UI" />
+                </div>
             </div>
-        </div>
+        </AdminLayout>
     );
 }
