@@ -54,26 +54,39 @@ export interface AdminStatus {
     tableExists: boolean;
     hasAdmin: boolean;
     adminCount: number;
+    driver?: string;
+    connectionInfo?: string;
 }
 
 export async function getAdminStatus(): Promise<AdminStatus> {
     const knex = await getKnex();
+
+    // Determine driver and info for debugging
+    let driver = 'unknown';
+    let connectionInfo = 'none';
+
+    if (knex) {
+        driver = (knex.client as any).config.client;
+        const conn = (knex.client as any).config.connection;
+        connectionInfo = typeof conn === 'string' ? conn : (conn.filename || conn.host || 'unknown');
+    }
+
     if (!knex) {
-        return { dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0 };
+        return { dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
 
     try {
         const tableExists = await knex.schema.hasTable(TABLE);
         if (!tableExists) {
-            return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0 };
+            return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
         }
 
         const result = await knex(TABLE).count('id as count').first();
         const adminCount = Number(result?.count || 0);
 
-        return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount };
+        return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
     } catch {
-        return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0 };
+        return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
 }
 

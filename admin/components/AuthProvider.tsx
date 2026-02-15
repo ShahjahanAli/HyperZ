@@ -16,6 +16,8 @@ interface AdminStatus {
     tableExists: boolean;
     hasAdmin: boolean;
     adminCount: number;
+    driver?: string;
+    connectionInfo?: string;
 }
 
 interface AuthContextType {

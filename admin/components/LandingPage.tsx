@@ -248,8 +248,25 @@ DB_PASSWORD=secret`}
                             <div style={{
                                 background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
                                 borderRadius: 8, padding: 12, fontSize: 12, color: 'var(--blue)',
+                                marginBottom: 12
                             }}>
                                 ℹ️ This creates the <code style={{ color: 'var(--accent)' }}>hyperz_admins</code> table and all other pending migrations.
+                            </div>
+
+                            <div style={{
+                                background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                borderRadius: 8, padding: 12, fontSize: 11, color: 'var(--text-muted)'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                    <span>Driver:</span>
+                                    <span style={{ color: 'var(--cyan)', fontWeight: 600 }}>{status?.driver || 'unknown'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Connection:</span>
+                                    <span style={{ color: 'var(--cyan)', fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={status?.connectionInfo}>
+                                        {status?.connectionInfo || 'none'}
+                                    </span>
+                                </div>
                             </div>
 
                             <button onClick={handleCheckConnection} disabled={checking} style={{
@@ -375,6 +392,13 @@ DB_PASSWORD=secret`}
                             </form>
 
                             {/* Toggle login/register only if admin exists */}
+                            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)' }}>
+                                    <span>Database: {status?.driver || 'unknown'}</span>
+                                    <span>Pool: SQL Connected</span>
+                                </div>
+                            </div>
+
                             {step === 'login' && (
                                 <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--text-muted)' }}>
                                     Protected by bcrypt + JWT · 24h session
