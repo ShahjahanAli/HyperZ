@@ -6,7 +6,7 @@
 // lightweight GraphQL executor with auto-generated schema.
 // ──────────────────────────────────────────────────────────────
 
-import type { Express, Request, Response } from 'express';
+import type { Express, Request, Response, Router } from 'express';
 import { discoverModels, generateTypeDefinitions, getGraphQLSchemaInfo } from './SchemaGenerator.js';
 import { Logger } from '../logging/Logger.js';
 import * as path from 'node:path';
@@ -14,13 +14,13 @@ import * as path from 'node:path';
 const PROJECT_ROOT = process.cwd();
 
 /**
- * Register the GraphQL endpoint on the Express app.
+ * Register the GraphQL endpoint on the Express app or Router.
  * Uses a lightweight built-in executor if graphql-yoga is not installed.
  */
-export function registerGraphQL(app: Express, config: any): void {
+export function registerGraphQL(app: Express | Router, config: any): void {
     if (config.enabled === false) return;
 
-    const gqlPath = config.path || '/graphql';
+    const gqlPath = config.path || '/api/_admin/graphql';
     const modelsDir = path.join(PROJECT_ROOT, 'app', 'models');
     const schemaInfo = getGraphQLSchemaInfo(modelsDir);
 
@@ -36,7 +36,7 @@ export function registerGraphQL(app: Express, config: any): void {
 /**
  * Attempt to register graphql-yoga (requires npm install graphql-yoga graphql).
  */
-async function tryRegisterYoga(app: Express, gqlPath: string, modelsDir: string, config: any): Promise<void> {
+async function tryRegisterYoga(app: Express | Router, gqlPath: string, modelsDir: string, config: any): Promise<void> {
     const { createYoga, createSchema } = await import('graphql-yoga');
     const models = discoverModels(modelsDir);
     const typeDefs = generateTypeDefinitions(models);
@@ -108,17 +108,17 @@ async function tryRegisterYoga(app: Express, gqlPath: string, modelsDir: string,
  * Built-in lightweight GraphQL handler (no graphql-yoga dependency).
  * Serves a GraphiQL IDE and handles basic introspection.
  */
-function registerBuiltinGraphQL(app: Express, gqlPath: string, schemaInfo: any, config: any): void {
+function registerBuiltinGraphQL(app: Express | Router, gqlPath: string, schemaInfo: any, config: any): void {
     // Serve GraphiQL IDE on GET
     if (config.graphiql !== false) {
-        app.get(gqlPath, (_req: Request, res: Response) => {
+        (app as any).get(gqlPath, (_req: any, res: any) => {
             res.setHeader('Content-Type', 'text/html');
             res.send(buildGraphiQLHTML(gqlPath));
         });
     }
 
     // Handle GraphQL POST requests with schema info
-    app.post(gqlPath, (req: Request, res: Response) => {
+    (app as any).post(gqlPath, (req: any, res: any) => {
         const { query } = req.body || {};
 
         if (!query) {
@@ -150,7 +150,7 @@ function registerBuiltinGraphQL(app: Express, gqlPath: string, schemaInfo: any, 
     });
 
     // Schema info endpoint for admin panel
-    app.get(`${gqlPath}/schema`, (_req: Request, res: Response) => {
+    (app as any).get(`${gqlPath}/schema`, (_req: any, res: any) => {
         res.json(schemaInfo);
     });
 }

@@ -105,40 +105,42 @@ export default function LandingPage() {
             padding: '40px 20px', overflowY: 'auto',
         }}>
             {/* ── Hero ───────────────────────────────────── */}
-            <div style={{ textAlign: 'center', marginBottom: 48, maxWidth: 700 }}>
+            <div style={{ textAlign: 'center', marginBottom: 64, maxWidth: 800, position: 'relative', zIndex: 20 }}>
                 <div style={{
-                    fontSize: 56, fontWeight: 800, lineHeight: 1.1, marginBottom: 8,
-                    background: 'linear-gradient(135deg, #8b5cf6, #06b6d4, #22c55e)',
+                    fontSize: 72, fontWeight: 900, lineHeight: 1, marginBottom: 16,
+                    fontFamily: 'var(--tactical)',
+                    background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary), #22c55e)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    textShadow: '0 0 40px rgba(139, 92, 246, 0.4)',
+                    letterSpacing: '-2px'
                 }}>
-                    ⚡ HyperZ
+                    HYPERZ
                 </div>
                 <div style={{
-                    fontSize: 16, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: 3,
-                    textTransform: 'uppercase', fontWeight: 600,
+                    fontSize: 12, color: 'var(--accent-secondary)', marginBottom: 12, letterSpacing: 6,
+                    textTransform: 'uppercase', fontWeight: 800, fontFamily: 'var(--tactical)'
                 }}>
-                    Admin Panel
+                    TACTICAL ORCHESTRATION INTERFACE
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.7, maxWidth: 520, margin: '0 auto' }}>
-                    A modern, Laravel-inspired, enterprise-grade API framework built on Express.js & TypeScript.
-                    Full MVC architecture with 27+ built-in features.
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: '0 auto', fontFamily: 'var(--font)' }}>
+                    High-fidelity MVC architecture with autonomous AI capabilities.
+                    <br />
+                    <span style={{ color: 'var(--text)', opacity: 0.8 }}>Enterprise-grade framework for mission-critical API services.</span>
                 </p>
             </div>
 
             {/* ── Main Grid: Auth Panel + Setup Guide ─── */}
             <div style={{
-                display: 'grid', gridTemplateColumns: '420px 1fr', gap: 32,
-                width: '100%', maxWidth: 1100, marginBottom: 48, alignItems: 'start',
+                display: 'grid', gridTemplateColumns: '440px 1fr', gap: 40,
+                width: '100%', maxWidth: 1200, marginBottom: 64, alignItems: 'start',
+                position: 'relative', zIndex: 10
             }}>
                 {/* Auth Panel */}
-                <div style={{
-                    background: 'var(--bg-card)', border: '1px solid var(--border)',
-                    borderRadius: 16, padding: 32, position: 'sticky', top: 40,
-                }}>
+                <div className="card" style={{ padding: 40, position: 'sticky', top: 40 }}>
                     {step === 'loading' && (
                         <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                             <div style={{ fontSize: 32, marginBottom: 12 }} className="loading">⚡</div>
-                            <div>Checking system status…</div>
+                            <div style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>SCANNING SYSTEM INTEGRITY…</div>
                         </div>
                     )}
 
@@ -146,31 +148,31 @@ export default function LandingPage() {
                         <div>
                             <div style={{ textAlign: 'center', marginBottom: 20 }}>
                                 <div style={{ fontSize: 40, marginBottom: 8 }}>🗄️</div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                                    Getting Started
+                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                    SYSTEM INITIALIZATION
                                 </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                                    Complete these steps to set up your admin panel
+                                <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
+                                    ESTABLISHING CORE PROTOCOLS…
                                 </p>
                             </div>
 
                             {/* Step 1: Generate Keys */}
                             <div style={{
                                 background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 10, padding: 16, marginBottom: 12,
+                                borderRadius: 4, padding: 20, marginBottom: 16,
                             }}>
-                                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    Step 1 — Generate Security Keys
+                                <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                                    PROTOCOL 01 — CRYPTOGRAPHIC KEYS
                                 </div>
                                 <div style={{
-                                    fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--cyan)',
-                                    background: 'var(--bg)', borderRadius: 6, padding: '10px 14px',
+                                    fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--accent-secondary)',
+                                    background: 'rgba(0,0,0,0.3)', borderRadius: 2, padding: '12px 16px',
                                     border: '1px solid var(--border)',
                                 }}>
                                     npx tsx bin/hyperz.ts key:generate
                                 </div>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-                                    Generates <strong style={{ color: 'var(--accent)' }}>APP_KEY</strong> and <strong style={{ color: 'var(--accent)' }}>JWT_SECRET</strong> in your .env file
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontFamily: 'var(--mono)' }}>
+                                    GENERATE [APP_KEY] AND [JWT_SECRET] STRINGS
                                 </div>
                             </div>
 
@@ -219,13 +221,13 @@ DB_PASSWORD=secret`}
 
                     {step === 'migrate' && (
                         <div>
-                            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                                <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', marginBottom: 4 }}>
-                                    Database Connected!
+                            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                                <div style={{ fontSize: 40, marginBottom: 8 }}>⚔️</div>
+                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                    UPLINK ESTABLISHED
                                 </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                                    Now run migrations to create the admin table
+                                <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
+                                    READY TO SYNC DATABASE SCHEMAS
                                 </p>
                             </div>
 
@@ -282,17 +284,17 @@ DB_PASSWORD=secret`}
 
                     {(step === 'register' || step === 'login') && (
                         <div>
-                            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                                <div style={{ fontSize: 40, marginBottom: 8 }}>
-                                    {effectiveMode === 'register' ? '🛡️' : '🔐'}
+                            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                                <div style={{ fontSize: 40, marginBottom: 8, filter: 'drop-shadow(0 0 10px var(--accent-glow))' }}>
+                                    {effectiveMode === 'register' ? '🛡️' : '🔒'}
                                 </div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                                    {effectiveMode === 'register' ? 'Create Admin Account' : 'Admin Login'}
+                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                    {effectiveMode === 'register' ? 'INITIALIZE ADMIN' : 'AUTHORIZED ACCESS'}
                                 </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--mono)' }}>
                                     {effectiveMode === 'register'
-                                        ? 'Set up your first admin account to secure the panel'
-                                        : 'Sign in to access the admin dashboard'}
+                                        ? 'ESTABLISHING PRIMARY OVERLORD ACCOUNT'
+                                        : 'VERIFYING SECURITY CREDENTIALS'}
                                 </p>
                             </div>
 
@@ -300,9 +302,10 @@ DB_PASSWORD=secret`}
                                 {effectiveMode === 'register' && (
                                     <div style={{ marginBottom: 16 }}>
                                         <label style={{
-                                            display: 'block', fontSize: 11, textTransform: 'uppercase',
-                                            letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6,
-                                        }}>Full Name</label>
+                                            display: 'block', fontSize: 10, textTransform: 'uppercase',
+                                            letterSpacing: 2, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8,
+                                            fontFamily: 'var(--tactical)'
+                                        }}>OPERATOR_NAME</label>
                                         <input
                                             type="text" required value={form.name}
                                             onChange={e => setForm({ ...form, name: e.target.value })}
@@ -466,8 +469,8 @@ DB_PASSWORD=secret`}
                         background: 'var(--bg-card)', border: '1px solid var(--border)',
                         borderRadius: 16, padding: 24,
                     }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            🧩 27+ Built-in Features
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-secondary)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                            // SYSTEM_CAPABILITIES [27_MODULES_ONLINE]
                         </h3>
                         <div style={{
                             display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8,
@@ -492,10 +495,10 @@ DB_PASSWORD=secret`}
                     {/* Tech Stack */}
                     <div style={{
                         background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 16, padding: 24,
+                        borderRadius: 4, padding: 32, backdropFilter: 'blur(10px)'
                     }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            🛠️ Technology Stack
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                            // CORE_TECHNOLOGY_STACK
                         </h3>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {TECH_STACK.map(t => (
@@ -513,10 +516,10 @@ DB_PASSWORD=secret`}
                     {/* Security Info */}
                     <div style={{
                         background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 16, padding: 24,
+                        borderRadius: 4, padding: 32, backdropFilter: 'blur(10px)'
                     }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            🔒 Security Measures
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: '#ff4444', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                            // SECURITY_PROTOCOLS [ACTIVE]
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             {[

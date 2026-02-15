@@ -36,7 +36,7 @@ export default function DashboardPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1>📊 Dashboard</h1>
+                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>📊 SYSTEM_DASHBOARD_LIVE</h1>
                 <span className="topbar-meta">
                     {overview ? `${overview.framework} v${overview.version} • ${overview.env}` : 'Connecting...'}
                 </span>
@@ -76,7 +76,7 @@ export default function DashboardPage() {
                 {/* System Info */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="card">
-                        <div className="card-header">System Information</div>
+                        <div className="card-header">// SYSTEM_ENVIRONMENT_INFO</div>
                         <table>
                             <tbody>
                                 <tr><td style={{ color: 'var(--text-muted)' }}>Node.js</td><td>{overview?.nodeVersion || '—'}</td></tr>
@@ -90,7 +90,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="card">
-                        <div className="card-header">Quick Actions</div>
+                        <div className="card-header">// OPERATIONAL_QUICK_ACTIONS</div>
                         <div className="btn-group" style={{ flexDirection: 'column' }}>
                             <a href="/scaffold" className="btn btn-secondary">🏗️ Create Controller / Model</a>
                             <a href="/database" className="btn btn-secondary">🗄️ Manage Database</a>

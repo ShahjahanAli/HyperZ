@@ -27,7 +27,7 @@ export default function Sidebar() {
     return (
         <aside className="sidebar">
             <div className="sidebar-brand">
-                ⚡ <span className="accent">HyperZ</span> Admin
+                ⚡ <span className="accent">HyperZ</span> <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '4px' }}>ADMIN</span>
             </div>
 
             <nav className="nav-section">

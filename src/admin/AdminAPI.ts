@@ -9,6 +9,11 @@ import * as os from 'node:os';
 import pluralize from 'pluralize';
 import { Logger } from '../logging/Logger.js';
 import { getAdminStatus, registerAdmin, loginAdmin, verifyAdminToken } from './AdminAuth.js';
+import { registerSwaggerUI } from '../docs/SwaggerUI.js';
+import { registerGraphQL } from '../graphql/GraphQLServer.js';
+import { metricsMiddleware, getPrometheusMetrics } from '../monitoring/MetricsCollector.js';
+import docsConfig from '../../config/docs.js';
+import graphqlConfig from '../../config/graphql.js';
 
 const ROOT = process.cwd();
 
@@ -163,6 +168,22 @@ export async function createAdminRouter(app?: any): Promise<Router> {
         (req as any).admin = result.admin;
         next();
     });
+
+    // ════════════════════════════════════════════════════════════
+    // PROTECTED SERVICES — Metrics, Docs, GraphQL
+    // ════════════════════════════════════════════════════════════
+
+    // ── Monitoring & Metrics ──
+    router.get('/metrics', (_req: Request, res: Response) => {
+        res.set('Content-Type', 'text/plain');
+        res.send(getPrometheusMetrics());
+    });
+
+    // ── API Documentation (Swagger) ──
+    registerSwaggerUI(router, { ...docsConfig, path: '/docs' });
+
+    // ── GraphQL Explorer ──
+    registerGraphQL(router, { ...graphqlConfig, path: '/graphql' });
 
     // ────────────────────────────────────────────────────────
     // 1. OVERVIEW — System health, stats, uptime

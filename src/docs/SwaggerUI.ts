@@ -5,26 +5,26 @@
 // contained HTML page (no swagger-ui-express dependency needed).
 // ──────────────────────────────────────────────────────────────
 
-import type { Express, Request, Response } from 'express';
+import type { Express, Request, Response, Router } from 'express';
 import { generateOpenAPISpec } from './SwaggerGenerator.js';
 import { Logger } from '../logging/Logger.js';
 
 /**
- * Register Swagger UI and OpenAPI JSON endpoint on the Express app.
+ * Register Swagger UI and OpenAPI JSON endpoint on the Express app or Router.
  */
-export function registerSwaggerUI(app: Express, docsConfig: any): void {
+export function registerSwaggerUI(app: Express | Router, docsConfig: any): void {
     if (docsConfig.enabled === false) return;
 
     const basePath = docsConfig.path || '/api/docs';
 
     // ── OpenAPI JSON spec endpoint ─────────────────────────────
-    app.get(`${basePath}/openapi.json`, (_req: Request, res: Response) => {
-        const spec = generateOpenAPISpec(app, docsConfig);
+    (app as any).get(`${basePath}/openapi.json`, (_req: Request, res: Response) => {
+        const spec = generateOpenAPISpec(app as any, docsConfig);
         res.json(spec);
     });
 
     // ── Swagger UI HTML ────────────────────────────────────────
-    app.get(basePath, (_req: Request, res: Response) => {
+    (app as any).get(basePath, (_req: Request, res: Response) => {
         const specUrl = `${basePath}/openapi.json`;
         res.setHeader('Content-Type', 'text/html');
         res.send(buildSwaggerHTML(docsConfig.title || 'HyperZ API', specUrl));
