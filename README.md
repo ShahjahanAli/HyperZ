@@ -20,6 +20,8 @@
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#cli-commands">CLI</a> •
+  <a href="#api-playground">Playground</a> •
+  <a href="#ai-gateway">AI Gateway</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#documentation">Docs</a> •
   <a href="#contributing">Contributing</a>
@@ -29,7 +31,7 @@
 
 ## Why HyperZ?
 
-HyperZ brings the developer experience you love from Laravel to the Node.js ecosystem — an opinionated, batteries-included framework with a powerful CLI, built-in auth, RBAC, and a modular service-provider architecture. If you've ever wished Express had the structure and tooling of a full-stack framework, HyperZ is for you.
+HyperZ brings the developer experience you love from Laravel to the Node.js ecosystem — an opinionated, batteries-included framework with a powerful CLI, built-in auth, RBAC, AI gateway, live API playground, and a modular service-provider architecture. If you've ever wished Express had the structure and tooling of a full-stack framework, HyperZ is for you.
 
 ---
 
@@ -44,15 +46,23 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, fillable/hidden fields) |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
-| 🔧 **CLI** | 12+ Artisan-style commands for scaffolding, migrations, seeding, and more |
+| 🔧 **CLI** | 16+ Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
 | 📡 **Events** | Pub/Sub event dispatcher with async listeners |
 | 📬 **Mail** | Nodemailer integration with SMTP transport |
-| 💾 **Cache** | Memory driver (Redis-ready) with `remember()` helper |
-| 📦 **Queue** | Sync driver (BullMQ-ready) with job dispatching |
-| 📁 **Storage** | Local filesystem driver (S3-ready) |
+| 💾 **Cache** | Memory + **Redis** drivers with `remember()` helper |
+| 📦 **Queue** | Sync + **BullMQ** (Redis) drivers with delayed job dispatching |
+| 📁 **Storage** | Local filesystem + **AWS S3** drivers |
+| 🌐 **WebSocket** | Real-time communication via Socket.io with channel & room management |
+| 🤖 **AI Gateway** | Multi-provider AI integration (OpenAI, Anthropic, Google AI) with unified API |
+| 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
+| 🏭 **Factories** | Database Factory for test data generation (Faker-ready) |
+| 🔌 **Plugins** | Auto-discovery plugin manager for modular extensions |
+| 🌍 **i18n** | Multi-language localization with JSON-based translations |
+| 🧪 **Testing** | HTTP test client for integration testing (Vitest-ready) |
 | ⏰ **Scheduler** | Cron-like task scheduler with fluent API |
 | 📝 **Logging** | Pino-powered structured logging with pretty dev output |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
+| 🔁 **Tinker** | Interactive REPL with preloaded app context |
 
 ---
 
@@ -85,6 +95,8 @@ npm run dev
 
 Your API is now running at **http://localhost:7700/api** ⚡
 
+Visit the built-in API Playground at **http://localhost:7700/api/playground** 🎮
+
 ---
 
 ## Quick Start
@@ -106,18 +118,16 @@ export class PostController extends Controller {
     this.success(res, [], 'Posts retrieved');
   }
 
-  async show(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    this.success(res, { id }, 'Post found');
-  }
-
   async store(req: Request, res: Response): Promise<void> {
     this.created(res, req.body, 'Post created');
   }
 
+  async show(req: Request, res: Response): Promise<void> {
+    this.success(res, { id: req.params.id }, 'Post found');
+  }
+
   async update(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    this.success(res, { id, ...req.body }, 'Post updated');
+    this.success(res, { id: req.params.id, ...req.body }, 'Post updated');
   }
 
   async destroy(req: Request, res: Response): Promise<void> {
@@ -162,9 +172,10 @@ npx tsx bin/hyperz.ts migrate
 ### 5. Visit Your API
 
 ```
-GET  http://localhost:7700/api           → Welcome message
-GET  http://localhost:7700/api/health    → Health check
-GET  http://localhost:7700/api/posts     → Your posts
+GET  http://localhost:7700/api            → Welcome message
+GET  http://localhost:7700/api/health     → Health check
+GET  http://localhost:7700/api/posts      → Your posts
+GET  http://localhost:7700/api/playground → API Playground 🎮
 ```
 
 ---
@@ -182,6 +193,9 @@ npx tsx bin/hyperz.ts make:seeder <Name>          # Create a seeder
 npx tsx bin/hyperz.ts make:middleware <Name>       # Create a middleware
 npx tsx bin/hyperz.ts make:route <name>           # Create a route file
 npx tsx bin/hyperz.ts make:auth                   # Scaffold full authentication
+npx tsx bin/hyperz.ts make:job <Name>             # Create a queue job
+npx tsx bin/hyperz.ts make:factory <Name>         # Create a database factory
+npx tsx bin/hyperz.ts make:ai-action <Name>       # Create an AI action class
 
 # Database
 npx tsx bin/hyperz.ts migrate                     # Run pending migrations
@@ -193,6 +207,95 @@ npx tsx bin/hyperz.ts db:seed -c UserSeeder       # Run specific seeder
 npx tsx bin/hyperz.ts key:generate                # Generate app key
 npx tsx bin/hyperz.ts serve                       # Start dev server
 npx tsx bin/hyperz.ts route:list                  # List route files
+npx tsx bin/hyperz.ts tinker                      # Interactive REPL
+```
+
+---
+
+## API Playground
+
+HyperZ includes a **built-in, Postman-like API testing UI** — no third-party tools needed.
+
+Visit **http://localhost:7700/api/playground** after starting the dev server.
+
+### Features
+
+- 🔍 **Route Discovery** — Auto-discovers all registered API routes
+- 📝 **Request Builder** — Method, URL, headers, body, query params, auth
+- 🔐 **Auth Support** — Bearer Token, Basic Auth, API Key
+- 📊 **Response Viewer** — Status code, headers, body with JSON syntax highlighting
+- ⏱️ **Performance Metrics** — Response time and payload size
+- 🐛 **Error Log Panel** — Captures and displays all 4xx/5xx errors
+- 📜 **Request History** — Browse and replay previous requests
+- 🌙 **Theme Toggle** — Dark / Light mode
+- ⌨️ **Keyboard Shortcuts** — `Ctrl+Enter` to send requests
+
+---
+
+## AI Gateway
+
+HyperZ provides a unified AI interface supporting **OpenAI**, **Anthropic (Claude)**, and **Google AI (Gemini)**:
+
+```typescript
+import { AIGateway } from './src/ai/AIGateway.js';
+
+const ai = new AIGateway();
+ai.autoConfig(); // Reads from .env
+
+// Chat completion
+const response = await ai.chat([
+  { role: 'system', content: 'You are a helpful assistant.' },
+  { role: 'user', content: 'Explain TypeScript generics in one sentence.' },
+]);
+console.log(response.content);
+
+// Simple text completion
+const text = await ai.complete('Write a haiku about Node.js');
+
+// Text embeddings
+const embeddings = await ai.embed('HyperZ is fast');
+```
+
+### Configuration
+
+Set your provider in `.env`:
+
+```env
+AI_PROVIDER=openai          # or 'anthropic' or 'google'
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=...
+```
+
+### Generate AI Action Scaffolding
+
+```bash
+npx tsx bin/hyperz.ts make:ai-action SummarizeAction
+```
+
+This creates `app/ai/SummarizeAction.ts` — a ready-to-use AI action class.
+
+---
+
+## WebSocket
+
+Real-time communication powered by **Socket.io**:
+
+```typescript
+import { WebSocket } from './src/websocket/WebSocket.js';
+
+const ws = new WebSocket(httpServer);
+
+ws.onConnection((socket) => {
+  console.log(`Client connected: ${socket.id}`);
+  socket.emit('welcome', { message: 'Hello from HyperZ!' });
+});
+
+ws.channel('/chat', (socket) => {
+  socket.on('message', (data) => {
+    ws.broadcast('/chat', 'message', data);
+  });
+});
 ```
 
 ---
@@ -202,7 +305,9 @@ npx tsx bin/hyperz.ts route:list                  # List route files
 ```
 HyperZ/
 ├── app/                          # Your application code
+│   ├── ai/                       # AI action classes
 │   ├── controllers/              # HTTP controllers
+│   ├── jobs/                     # Queue job classes
 │   ├── models/                   # Data models
 │   ├── middleware/                # Custom middleware
 │   └── routes/                   # Route definitions
@@ -212,6 +317,7 @@ HyperZ/
 │   └── hyperz.ts                 # CLI entry point
 │
 ├── config/                       # Configuration files
+│   ├── ai.ts                     # AI Gateway config
 │   ├── app.ts                    # Application config
 │   ├── auth.ts                   # Authentication config
 │   ├── cache.ts                  # Cache config
@@ -221,30 +327,39 @@ HyperZ/
 │   └── storage.ts                # Storage config
 │
 ├── database/
+│   ├── factories/                # Database factories
 │   ├── migrations/               # Database migrations
 │   └── seeders/                  # Database seeders
 │
+├── lang/                         # i18n translation files
+│   ├── en/messages.json          # English translations
+│   └── bn/messages.json          # Bengali translations
+│
 ├── src/                          # Framework core (don't edit)
+│   ├── ai/                       # AI Gateway (OpenAI, Anthropic, Google)
 │   ├── auth/                     # Auth manager & RBAC
-│   │   ├── AuthManager.ts        # JWT + bcrypt
 │   │   └── rbac/                 # Gate, Policy, Role middleware
-│   ├── cache/                    # Cache manager
+│   ├── cache/                    # Cache manager (Memory + Redis)
 │   ├── cli/                      # CLI engine & stubs
 │   ├── config/                   # Config loader
-│   ├── core/                     # Application, Container, Kernel
-│   ├── database/                 # Database, Model, Migration, Seeder
+│   ├── core/                     # Application, Container, PluginManager
+│   ├── database/                 # Database, Model, Migration, Factory
 │   ├── events/                   # Event dispatcher
 │   ├── http/                     # Router, Controller, Request, Response
 │   │   ├── exceptions/           # HTTP exceptions & handler
 │   │   └── middleware/           # Built-in middleware
+│   ├── i18n/                     # Localization manager
 │   ├── logging/                  # Logger (Pino)
 │   ├── mail/                     # Mailer (Nodemailer)
+│   ├── playground/               # API Playground UI
 │   ├── providers/                # Service providers
-│   ├── queue/                    # Queue manager
+│   ├── queue/                    # Queue manager (Sync + BullMQ)
 │   ├── scheduling/               # Task scheduler
-│   ├── storage/                  # Storage manager
+│   ├── storage/                  # Storage manager (Local + S3)
 │   ├── support/                  # Helpers, Str, Collection
-│   └── validation/               # Zod validator
+│   ├── testing/                  # HTTP test client
+│   ├── validation/               # Zod validator
+│   └── websocket/                # WebSocket manager (Socket.io)
 │
 ├── storage/                      # App storage
 │   ├── cache/
@@ -291,6 +406,10 @@ Copy `.env.example` to `.env` and configure:
 | `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/hyperz` |
 | `JWT_SECRET` | JWT signing secret | — |
 | `JWT_EXPIRATION` | Token expiry | `7d` |
+| `CACHE_DRIVER` | Cache backend (`memory`, `redis`) | `memory` |
+| `QUEUE_DRIVER` | Queue backend (`sync`, `redis`) | `sync` |
+| `AI_PROVIDER` | AI provider (`openai`, `anthropic`, `google`) | `openai` |
+| `APP_LOCALE` | Default locale | `en` |
 
 See [.env.example](.env.example) for all available options.
 
@@ -393,6 +512,27 @@ Invalid requests automatically return a `422` response with detailed error messa
 
 ---
 
+## i18n / Localization
+
+HyperZ supports multi-language translations with JSON files:
+
+```typescript
+import { I18n } from './src/i18n/I18n.js';
+
+// Translations are auto-loaded from lang/ directory on boot
+I18n.t('welcome');                        // "Welcome to HyperZ!"
+I18n.t('greeting', { name: 'John' });     // "Hello, John!"
+I18n.t('errors.not_found');               // "Resource not found."
+
+// Switch locale
+I18n.setLocale('bn');
+I18n.t('welcome');                        // "হাইপারজেড-এ স্বাগতম!"
+```
+
+Add new languages by creating `lang/<locale>/messages.json`.
+
+---
+
 ## Events
 
 ```typescript
@@ -440,6 +580,9 @@ scheduler.start();
 | [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) | JWT authentication |
 | [bcryptjs](https://github.com/dcodeIO/bcrypt.js) | Password hashing |
 | [Commander.js](https://github.com/tj/commander.js) | CLI framework |
+| [Socket.io](https://socket.io/) | WebSocket / real-time |
+| [ioredis](https://github.com/redis/ioredis) | Redis client |
+| [BullMQ](https://bullmq.io/) | Job queue (Redis-backed) |
 | [Nodemailer](https://nodemailer.com/) | Email sending |
 | [node-cron](https://github.com/node-cron/node-cron) | Task scheduling |
 | [Helmet](https://helmetjs.github.io/) | Security headers |
@@ -475,29 +618,48 @@ npm run dev
 
 ### Areas for Contribution
 
-- 🔌 Redis cache driver
-- 🔌 BullMQ queue driver
-- 🔌 S3 storage driver
-- 🔌 WebSocket support
-- 📖 Documentation & tutorials
-- 🧪 Test suite (Vitest)
-- 🌍 i18n / Localization
-- 🔌 Plugin system
+- � Documentation & tutorials
+- 🧪 Comprehensive test suite (Vitest)
+- 🎨 API Playground UI enhancements
+- � Additional AI provider drivers
+- 🌍 More language translation files
+- 📊 Swagger/OpenAPI auto-generation
+- 🏗️ Additional database drivers
 
 ---
 
 ## Roadmap
 
-- [ ] Redis cache & queue drivers
-- [ ] S3 / cloud storage driver
-- [ ] WebSocket / Socket.io provider
-- [ ] REPL / Tinker command
+### ✅ Implemented
+
+- [x] Redis cache driver
+- [x] BullMQ queue driver
+- [x] S3 / cloud storage driver
+- [x] WebSocket / Socket.io provider
+- [x] REPL / Tinker command
+- [x] AI Gateway (OpenAI, Anthropic, Google AI)
+- [x] Database Factory (Faker-ready)
+- [x] Plugin auto-discovery
+- [x] Vitest test helpers & HTTP test client
+- [x] i18n / Localization support
+- [x] API Playground — built-in Postman-like API testing UI
+
+### 🔮 Future
+
 - [ ] Auto-generated API docs (Swagger/OpenAPI)
-- [ ] Database Factory (Faker-powered)
-- [ ] Plugin auto-discovery
-- [ ] Vitest test helpers & HTTP test client
-- [ ] i18n / Localization support
 - [ ] Rate limiting per user/API key
+- [ ] Real-time dashboard & monitoring
+- [ ] GraphQL integration layer
+- [ ] Docker & deployment templates
+- [ ] Admin panel UI
+
+---
+
+## Documentation
+
+- 📋 [Product Features Specification](docs/FEATURES.md)
+- 📖 [User Manual](docs/USER_MANUAL.md)
+- 📄 [Changelog](CHANGELOG.md)
 
 ---
 
