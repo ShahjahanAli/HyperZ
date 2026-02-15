@@ -32,7 +32,9 @@
 
 ## Why HyperZ v2?
 
-HyperZ v2 transforms the Express.js ecosystem into a powerhouse for **AI SaaS** development. It bridges the gap between "building a wrapper" and "building an enterprise platform." With native multi-tenancy, subscription metering, RAG pipelines, and autonomous agent modules, HyperZ provides everything you need to ship a scalable AI product in days, not months.
+HyperZ v2 transforms Express.js from a simple middleware library into a **World-First AI-Native Enterprise Backend Platform**. Unlike traditional frameworks where AI is treated as an external plugin, HyperZ integrates AI directly into the **Core Architectural Layer** — request lifecycle, semantic routing, and SaaS logic. 
+
+It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." With native multi-tenancy, subscription metering, RAG pipelines, and autonomous agent modules, you can ship a scalable AI product with production-grade reliability in days.
 
 ---
 
@@ -775,7 +777,28 @@ scheduler.start();
 
 ---
 
-## Tech Stack
+## 🗺️ v2 Roadmap & Vision
+
+HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
+
+### v2.1 (Current Focus)
+- ✅ Autonomous Agent factory
+- ✅ Multi-provider AI Fallback
+- ✅ Native RAG (pgvector/Weaviate)
+- ✅ Tenant-aware DB Pooling
+
+### v2.2 (Q2 2026)
+- [ ] **HyperZ-UI Starter Kit:** A pre-built SaaS frontend for the HyperZ backend.
+- [ ] **Advanced Agent Memory:** Support for long-term "Graph" memory.
+- [ ] **One-Click Deploy:** Integrated adapters for Vercel, Railway, and AWS Lambda.
+
+### v2.3 (Q3 2026)
+- [ ] **Fine-tuning Pipeline:** Built-in tools for fine-tuning models on tenant data.
+- [ ] **AI-Driven Rate Limiting:** Dynamic throttling based on token costs and system load.
+
+---
+
+## 🧪 Tech Stack
 
 | Package | Purpose |
 |---|---|

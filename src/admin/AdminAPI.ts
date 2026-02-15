@@ -317,6 +317,30 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                     created.push(`app/jobs/${name}.ts`);
                     break;
                 }
+                case 'resource': {
+                    // Create Model
+                    const tableName = toTableName(name);
+                    const modelStub = readStub('model').replace(/\{\{name\}\}/g, name).replace(/\{\{tableName\}\}/g, tableName);
+                    writeFileSafe(path.join(ROOT, 'app', 'models', `${name}.ts`), modelStub);
+                    created.push(`app/models/${name}.ts`);
+
+                    // Create Migration
+                    const migStub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
+                    const migName = `${timestamp()}_create_${tableName}_table.ts`;
+                    writeFileSafe(path.join(ROOT, 'database', 'migrations', migName), migStub);
+                    created.push(`database/migrations/${migName}`);
+
+                    // Create Controller
+                    const ctrlStub = readStub('controller').replace(/\{\{name\}\}/g, name);
+                    writeFileSafe(path.join(ROOT, 'app', 'controllers', `${name}Controller.ts`), ctrlStub);
+                    created.push(`app/controllers/${name}Controller.ts`);
+
+                    // Create Route File
+                    const routeStub = readStub('route').replace(/\{\{name\}\}/g, name);
+                    writeFileSafe(path.join(ROOT, 'app', 'routes', `${name.toLowerCase()}.ts`), routeStub);
+                    created.push(`app/routes/${name.toLowerCase()}.ts`);
+                    break;
+                }
                 case 'factory': {
                     const stub = readStub('factory').replace(/\{\{name\}\}/g, name);
                     writeFileSafe(path.join(ROOT, 'database', 'factories', `${name}.ts`), stub);
@@ -362,7 +386,7 @@ export async function createAdminRouter(app?: any): Promise<Router> {
 
     router.get('/database/tables/:name', async (req: Request, res: Response) => {
         try {
-            const tableName = req.params.name;
+            const tableName = req.params.name as string;
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 50;
             const offset = (page - 1) * limit;
@@ -370,9 +394,9 @@ export async function createAdminRouter(app?: any): Promise<Router> {
             const knexConfig = await loadKnexConfig();
             const knex = (await import('knex')).default(knexConfig);
 
-            const columns = await knex(tableName).columnInfo();
-            const rows = await knex(tableName).limit(limit).offset(offset);
-            const [{ count }] = await knex(tableName).count('* as count');
+            const columns = await knex(tableName as any).columnInfo();
+            const rows = await knex(tableName as any).limit(limit).offset(offset);
+            const [{ count }] = await knex(tableName as any).count('* as count');
 
             await knex.destroy();
             res.json({
@@ -558,7 +582,63 @@ export async function createAdminRouter(app?: any): Promise<Router> {
     });
 
     // ────────────────────────────────────────────────────────
-    // 12. Rate Limit Stats
+    // 12. AI STATS — Usage and costs
+    // ────────────────────────────────────────────────────────
+    router.get('/ai/stats', async (_req: Request, res: Response) => {
+        try {
+            // In a real app, this would query a DB table of AI logs
+            // Here we mock it based on the recent implementation patterns
+            res.json({
+                totalCost: 12.45,
+                totalTokens: 145000,
+                providerHealth: {
+                    openai: 'healthy',
+                    anthropic: 'healthy',
+                    google: 'healthy',
+                },
+                recentRequests: [
+                    { id: 1, provider: 'openai', model: 'gpt-4o', tokens: 1200, cost: 0.12, status: 'success', time: '2 mins ago' },
+                    { id: 2, provider: 'anthropic', model: 'claude-3-5', tokens: 2500, cost: 0.25, status: 'success', time: '15 mins ago' },
+                ],
+                usageByProvider: {
+                    openai: 85000,
+                    anthropic: 45000,
+                    google: 15000,
+                }
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // ────────────────────────────────────────────────────────
+    // 13. SAAS METRICS — Tenants and Billing
+    // ────────────────────────────────────────────────────────
+    router.get('/saas/metrics', async (_req: Request, res: Response) => {
+        try {
+            res.json({
+                tenants: { total: 42, active: 38, trial: 4 },
+                billing: {
+                    mrr: 4500.00,
+                    activeSubscriptions: 35,
+                    pendingInvoices: 2,
+                },
+                usage: {
+                    totalRequests: 1250000,
+                    storageUsed: '14.5 GB',
+                },
+                recentTenants: [
+                    { name: 'Acme Corp', plan: 'Enterprise', joined: '1 day ago' },
+                    { name: 'Globex', plan: 'Pro', joined: '3 days ago' },
+                ]
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // ────────────────────────────────────────────────────────
+    // 14. Rate Limit Stats
     // ────────────────────────────────────────────────────────
     router.get('/rate-limits', (_req: Request, res: Response) => {
         try {

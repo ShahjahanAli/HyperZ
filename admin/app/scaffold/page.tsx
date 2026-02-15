@@ -7,6 +7,7 @@ import { adminFetch } from '@/lib/api';
 const API = '/api/_admin';
 
 const scaffoldTypes = [
+    { value: 'resource', label: 'Full Resource', icon: '🚀', dir: 'Multiple', example: 'Post', hasMigration: false, description: 'Creates Model, Migration, Controller, and Route File.' },
     { value: 'controller', label: 'Controller', icon: '🎮', dir: 'app/controllers/', example: 'UserController' },
     { value: 'model', label: 'Model', icon: '📦', dir: 'app/models/', example: 'User', hasMigration: true },
     { value: 'migration', label: 'Migration', icon: '📝', dir: 'database/migrations/', example: 'create_posts_table' },

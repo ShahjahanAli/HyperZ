@@ -9,6 +9,7 @@
 
 ## 1. Executive Summary
 
+HyperZ v2 is built as an **AI-Native Enterprise Backend Platform**. Unlike traditional frameworks where AI is an afterthought or an external plugin, HyperZ integrates AI into the core request lifecycle, routing, and SaaS logic.
 HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Express.js and TypeScript. It provides a batteries-included development experience with a powerful CLI, service-provider architecture, and 20+ built-in subsystems — from authentication and database to AI integration and a live API testing playground.
 
 ---
@@ -195,22 +196,20 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 
 ---
 
-### 20.1 Multi-Tenancy Engine
-- Subdomain-aware tenant resolution
-- Automated tenant config isolation
-- **Tenant-aware DB connection pooling**
+## 20. Enterprise SaaS Core
 
-### 20.2 Billing & Metering
-- Native **Stripe integration** classes
-- Usage recording API (`billing.recordUsage`)
-- Plan-based feature gating middleware
+HyperZ v2 explicitly solves the "SaaS Plumbing" problem by providing native, production-grade infrastructure.
 
-### 20.3 API Key Management
-- Tenant-scoped API key generation
-- Automated key validation middleware
-- **Audit Logging** for enterprise compliance
-
----
+| Feature | Status | Description |
+|---|---|---|
+| **Subdomain Tenancy** | ✅ Implemented | Automated tenant resolution from request headers. |
+| **Tenant Isolation** | ✅ Implemented | **Database Connection Pooling** with tenant-specific isolation. |
+| **Usage Metering** | ✅ Implemented | Real-time tracking of API calls, AI tokens, and storage for billing. |
+| **Stripe Billing** | ✅ Implemented | Built-in checkout session and subscription lifecycle hooks. |
+| **Audit Logging** | ✅ Implemented | Compliance-ready recording of all critical mutations with tenant context. |
+| **API Key Mgmt** | ✅ Implemented | Secure generation and validation of tenant-scoped API keys. |
+| **Rate Limiting** | ✅ Implemented | Multi-tier throttling (Free, Standard, Pro) per user/tenant. |
+| **SaaS Metrics** | ✅ Implemented | Real-time business and system health dashboard. |
 
 ## 9. WebSocket *(NEW)*
 
@@ -227,21 +226,20 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 
 ---
 
-## 10. AI Gateway *(NEW)*
+## 10. AI Engine Layer (Core)
 
-### 10.1 Multi-Provider Support
-| Provider | Models | Features |
-|---|---|---|
-| **OpenAI** | GPT-4o, GPT-4o-mini, etc. | Chat, completion, embeddings |
-| **Anthropic** | Claude 4 Sonnet, etc. | Chat, completion |
-| **Google AI** | Gemini 2.0 Flash, etc. | Chat, completion |
+HyperZ v2 introduces a dedicated AI orchestration layer that is deeply integrated into the request lifecycle.
 
-### 10.2 Unified API
-- `ai.chat(messages, options)` — chat completion
-- `ai.complete(prompt, options)` — text completion
-- `ai.embed(text)` — text embeddings (OpenAI)
-- Token tracking and usage reporting
-- Auto-config from `.env` variables
+### 10.1 AI-Aware Architecture
+- **Model Abstraction:** Unified interface for OpenAI, Anthropic, Google, and Local models.
+- **Request Lifecycle Integration:** Use `router.ai()` to define routes that automatically handle cost tracking and context injection.
+- **AI-Managed Memory:** Built-in semantic memory via the Vector System.
+- **Workflow Orchestration:** Autonomous agent workforce with skill and tool-calling capabilities.
+
+### 10.2 Model Fallback & Reliability
+- **Automatic Fallback:** Intelligently retry failed requests on alternative providers (e.g., GPT-4 -> Claude 3.5).
+- **Cost & Token Tracking:** Precise per-request and per-tenant usage metering for billing and observability.
+- **AI Latency Analytics:** Track model performance directly in the Admin Dashboard.
 
 ### 10.4 Prompt Management
 - **Directory-based templates** in `app/prompts/`

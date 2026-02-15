@@ -13,6 +13,7 @@ const navItems = [
     { icon: '💾', label: 'Cache & Queue', href: '/services' },
     { icon: '📋', label: 'Logs', href: '/logs' },
     { icon: '🤖', label: 'AI Gateway', href: '/ai' },
+    { icon: '🏢', label: 'SaaS Core', href: '/saas' },
     { icon: '🔌', label: 'MCP Server', href: '/mcp' },
     { icon: '📖', label: 'API Docs', href: '/docs' },
     { icon: '📈', label: 'Monitoring', href: '/monitoring' },
