@@ -26,5 +26,10 @@ database/database.sqlite
 .DS_Store
 Thumbs.db
 
+# Next.js Admin Panel
+admin/.next/
+admin/node_modules/
+admin/out/
+
 # Misc
 *.log
