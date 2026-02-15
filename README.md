@@ -65,6 +65,7 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
 | 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity, and other AI coding tools |
+| 🔌 **MCP Server** | Model Context Protocol server with 13 tools, 6 resources, 4 prompts for AI automation |
 
 ---
 
@@ -387,6 +388,46 @@ An AI agent asked to *"add a blog posts feature"* can:
 
 ---
 
+## 🔌 MCP Server (Model Context Protocol)
+
+HyperZ ships with a built-in MCP server that lets AI agents programmatically manage your project — scaffolding, database operations, route inspection, and more.
+
+### Capabilities
+
+| Type | Count | Examples |
+|---|---|---|
+| **Tools** | 13 | `scaffold_controller`, `run_migration`, `list_routes`, `read_env` |
+| **Resources** | 6 | `hyperz://project/structure`, `hyperz://database/tables` |
+| **Prompts** | 4 | `create_crud_resource`, `debug_api_endpoint`, `optimize_database` |
+| **Transports** | 2 | stdio (local), Streamable HTTP (web) |
+
+### Setup (Claude Desktop / Cursor)
+
+Add to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "hyperz": {
+      "command": "npx",
+      "args": ["tsx", "bin/hyperz-mcp.ts"],
+      "cwd": "/path/to/your/hyperz/project"
+    }
+  }
+}
+```
+
+Or run directly: `npm run mcp`
+
+### Admin Panel
+
+The MCP Server page in the Admin Panel (`/mcp`) provides a visual dashboard with:
+- **Component Map** — architecture diagram with registered tools, resources, and prompts
+- **Tool Tester** — execute MCP tools directly from the UI
+- **AI Automation** — one-click database operations and quick actions
+
+---
+
 ## Architecture
 
 ```
@@ -406,7 +447,8 @@ HyperZ/
 │       └── api.ts                # API routes (auto-loaded)
 │
 ├── bin/
-│   └── hyperz.ts                 # CLI entry point
+│   ├── hyperz.ts                 # CLI entry point
+│   └── hyperz-mcp.ts             # MCP server entry point
 │
 ├── config/                       # Configuration files
 │   ├── ai.ts                     # AI Gateway config

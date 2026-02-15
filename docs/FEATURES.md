@@ -435,3 +435,42 @@ Pre-built workflows in `.agent/workflows/`:
 - `database-operations.md` — Migrations, seeders, factories
 - `add-ai-action.md` — AI Gateway action creation
 - `run-dev.md` — Development environment setup
+
+---
+
+## 23. MCP Server (Model Context Protocol) *(NEW)*
+
+### 23.1 Built-in MCP Server
+- Full Model Context Protocol implementation using `@modelcontextprotocol/sdk`
+- Supports **stdio** (local AI tools) and **Streamable HTTP** (web agents) transports
+- Exposes HyperZ's CLI, database, routes, and config to any MCP-compatible AI client
+
+### 23.2 MCP Tools (13)
+| Category | Tools |
+|---|---|
+| Scaffolding (8) | `scaffold_controller`, `scaffold_model`, `scaffold_migration`, `scaffold_seeder`, `scaffold_middleware`, `scaffold_route`, `scaffold_job`, `scaffold_ai_action` |
+| Database (3) | `run_migration`, `run_migration_rollback`, `run_seed` |
+| Inspection (2) | `list_routes`, `read_env` |
+
+### 23.3 MCP Resources (6)
+| URI | Description |
+|---|---|
+| `hyperz://project/structure` | Project directory tree |
+| `hyperz://project/routes` | Registered API routes |
+| `hyperz://project/env` | Environment variables (secrets masked) |
+| `hyperz://project/config` | Config file contents |
+| `hyperz://database/tables` | Database table list |
+| `hyperz://database/migrations` | Migration file status |
+
+### 23.4 MCP Prompts (4)
+- `create_crud_resource` — Full CRUD resource creation guide
+- `debug_api_endpoint` — API debugging assistant
+- `add_auth_to_route` — JWT + RBAC setup guide
+- `optimize_database` — Database optimization suggestions
+
+### 23.5 Admin Panel Integration
+- Visual component map showing tools, resources, and prompts
+- Tool tester for direct execution from the UI
+- AI automation panel with one-click database operations
+- Connection configuration for Claude Desktop, Cursor, and other MCP clients
+

@@ -417,6 +417,22 @@ export async function createAdminRouter(app?: any): Promise<Router> {
         res.json({ path: filePath, content });
     });
 
+    // ────────────────────────────────────────────────────────
+    // 10. MCP — Model Context Protocol server info
+    // ────────────────────────────────────────────────────────
+    router.get('/mcp', (_req: Request, res: Response) => {
+        try {
+            // Dynamic import to avoid circular deps at boot
+            import('../mcp/MCPServer.js').then(({ getMCPServerInfo }) => {
+                res.json(getMCPServerInfo());
+            }).catch((err: any) => {
+                res.status(500).json({ error: `MCP module error: ${err.message}` });
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     Logger.info('  🔧 Admin API available at /api/_admin');
     return router;
 }

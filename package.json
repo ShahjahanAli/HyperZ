@@ -22,9 +22,12 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "hyperz": "tsx bin/hyperz.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mcp": "tsx bin/hyperz-mcp.ts",
+    "mcp:http": "tsx bin/hyperz-mcp.ts --http"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.40.0",
     "chalk": "^5.4.1",

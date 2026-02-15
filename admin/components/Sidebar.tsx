@@ -12,6 +12,7 @@ const navItems = [
     { icon: '💾', label: 'Cache & Queue', href: '/services' },
     { icon: '📋', label: 'Logs', href: '/logs' },
     { icon: '🤖', label: 'AI Gateway', href: '/ai' },
+    { icon: '🔌', label: 'MCP Server', href: '/mcp' },
 ];
 
 export default function Sidebar() {

@@ -6,6 +6,7 @@ import { createApp } from './app.js';
 import { registerPlayground } from './src/playground/Playground.js';
 import { createAdminRouter } from './src/admin/AdminAPI.js';
 import { I18n } from './src/i18n/I18n.js';
+import { getMCPServerInfo } from './src/mcp/MCPServer.js';
 import * as path from 'node:path';
 
 async function main(): Promise<void> {
