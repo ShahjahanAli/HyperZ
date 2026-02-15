@@ -22,6 +22,57 @@ export class Application {
     /** Root path of the application */
     public readonly basePath: string;
 
+    /** Shutdown callback hooks */
+    private terminatingCallbacks: (() => Promise<void> | void)[] = [];
+
+    /** Shutdown timeout (ms) */
+    private shutdownTimeout = 10000;
+
+    /**
+     * Register a callback to run during graceful shutdown.
+     * @example
+     * app.terminating(async () => {
+     *     await Database.disconnect();
+     * });
+     */
+    terminating(callback: () => Promise<void> | void): this {
+        this.terminatingCallbacks.push(callback);
+        return this;
+    }
+
+    /**
+     * Set the maximum time (ms) to wait for shutdown callbacks.
+     */
+    setShutdownTimeout(ms: number): this {
+        this.shutdownTimeout = ms;
+        return this;
+    }
+
+    /**
+     * Run all terminating callbacks and exit.
+     */
+    async shutdown(code = 0): Promise<void> {
+        Logger.info('🛑 Graceful shutdown initiated...');
+
+        const timeout = setTimeout(() => {
+            Logger.warn('Shutdown timed out, forcing exit...');
+            process.exit(1);
+        }, this.shutdownTimeout);
+
+        try {
+            for (const callback of this.terminatingCallbacks) {
+                await callback();
+            }
+        } catch (err: any) {
+            Logger.error('Error during shutdown', { error: err.message });
+        } finally {
+            clearTimeout(timeout);
+            Logger.info('✦ Shutdown complete');
+            process.exit(code);
+        }
+    }
+
+
     /** Registered providers */
     private providers: ServiceProvider[] = [];
 
@@ -98,10 +149,7 @@ export class Application {
         });
 
         // Graceful shutdown
-        const shutdown = async () => {
-            Logger.info('🛑 Graceful shutdown initiated...');
-            process.exit(0);
-        };
+        const shutdown = () => this.shutdown();
 
         process.on('SIGTERM', shutdown);
         process.on('SIGINT', shutdown);

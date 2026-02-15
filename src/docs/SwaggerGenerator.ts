@@ -1,15 +1,12 @@
-// ──────────────────────────────────────────────────────────────
-// HyperZ — Swagger/OpenAPI Spec Generator
-//
-// Auto-scans Express routes to build an OpenAPI 3.1 specification.
-// No decorators required — reads registered routes at runtime.
-// ──────────────────────────────────────────────────────────────
-
 import type { Express } from 'express';
+import 'reflect-metadata';
+import { DOCS_METADATA_KEY } from './Decorators.js';
 
 interface RouteInfo {
     method: string;
     path: string;
+    stack: any[];
+    handler: any;
 }
 
 interface OpenAPISpec {
@@ -17,12 +14,12 @@ interface OpenAPISpec {
     info: { title: string; version: string; description: string; contact?: any };
     servers: { url: string; description: string }[];
     paths: Record<string, any>;
-    components: { securitySchemes?: Record<string, any> };
+    components: { schemas?: Record<string, any>; securitySchemes?: Record<string, any> };
     tags: { name: string; description: string }[];
 }
 
 /**
- * Extract all registered routes from an Express app.
+ * Extract all registered routes from an Express app, with extra stack info.
  */
 function extractRoutes(app: Express): RouteInfo[] {
     const routes: RouteInfo[] = [];
@@ -33,9 +30,13 @@ function extractRoutes(app: Express): RouteInfo[] {
                 const methods = Object.keys(layer.route.methods).map((m) => m.toUpperCase());
                 for (const method of methods) {
                     const path = prefix + (layer.route.path || '');
-                    // Skip internal/admin/playground routes
                     if (path.startsWith('/api/_admin') || path.includes('playground')) continue;
-                    routes.push({ method, path });
+                    routes.push({
+                        method,
+                        path,
+                        stack: layer.route.stack,
+                        handler: layer.route.stack[layer.route.stack.length - 1].handle
+                    });
                 }
             } else if (layer.name === 'router' && layer.handle?.stack) {
                 const rp =
@@ -53,79 +54,19 @@ function extractRoutes(app: Express): RouteInfo[] {
     return routes.sort((a, b) => a.path.localeCompare(b.path));
 }
 
-/**
- * Derive a tag name from an API path.
- * e.g. /api/users/123 → "Users", /api/products → "Products"
- */
+function toOpenAPIPath(path: string): string {
+    return path.replace(/:(\w+)/g, '{$1}');
+}
+
 function deriveTag(path: string): string {
     const segments = path.replace(/^\/api\/?/, '').split('/').filter(Boolean);
     const first = segments[0] || 'General';
-    // Skip param-only segments
     if (first.startsWith(':')) return 'General';
     return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
 /**
- * Detect path parameters and build OpenAPI parameter objects.
- */
-function buildParameters(path: string): any[] {
-    const params: any[] = [];
-    const matches = path.match(/:(\w+)/g);
-    if (matches) {
-        for (const m of matches) {
-            params.push({
-                name: m.slice(1),
-                in: 'path',
-                required: true,
-                schema: { type: 'string' },
-            });
-        }
-    }
-    return params;
-}
-
-/**
- * Convert Express-style path (/users/:id) to OpenAPI-style (/users/{id}).
- */
-function toOpenAPIPath(path: string): string {
-    return path.replace(/:(\w+)/g, '{$1}');
-}
-
-/**
- * Build a complete response object based on HTTP method.
- */
-function buildResponses(method: string): Record<string, any> {
-    const responses: Record<string, any> = {};
-
-    switch (method) {
-        case 'GET':
-            responses['200'] = { description: 'Successful response', content: { 'application/json': { schema: { type: 'object' } } } };
-            break;
-        case 'POST':
-            responses['201'] = { description: 'Resource created', content: { 'application/json': { schema: { type: 'object' } } } };
-            responses['400'] = { description: 'Validation error' };
-            break;
-        case 'PUT':
-        case 'PATCH':
-            responses['200'] = { description: 'Resource updated', content: { 'application/json': { schema: { type: 'object' } } } };
-            responses['404'] = { description: 'Resource not found' };
-            break;
-        case 'DELETE':
-            responses['200'] = { description: 'Resource deleted' };
-            responses['404'] = { description: 'Resource not found' };
-            break;
-        default:
-            responses['200'] = { description: 'Success' };
-    }
-
-    responses['401'] = { description: 'Unauthorized' };
-    responses['500'] = { description: 'Internal server error' };
-
-    return responses;
-}
-
-/**
- * Generate a full OpenAPI 3.1 specification from the running Express app.
+ * Generate a full OpenAPI 3.1 specification.
  */
 export function generateOpenAPISpec(app: Express, config: any): OpenAPISpec {
     const routes = extractRoutes(app);
@@ -135,30 +76,42 @@ export function generateOpenAPISpec(app: Express, config: any): OpenAPISpec {
     for (const route of routes) {
         const openAPIPath = toOpenAPIPath(route.path);
         const method = route.method.toLowerCase();
-        const tag = deriveTag(route.path);
-        const params = buildParameters(route.path);
 
+        // Extract metadata from decorators
+        const metadata = Reflect.getMetadata(DOCS_METADATA_KEY, route.handler) || {};
+
+        const tag = metadata.tags?.[0] || deriveTag(route.path);
         tagSet.add(tag);
 
         if (!paths[openAPIPath]) paths[openAPIPath] = {};
 
         const operation: any = {
-            tags: [tag],
-            summary: `${route.method} ${route.path}`,
+            tags: metadata.tags || [tag],
+            summary: metadata.summary || `${route.method} ${route.path}`,
+            description: metadata.description,
             operationId: `${method}_${route.path.replace(/[^a-zA-Z0-9]/g, '_')}`,
-            parameters: params.length > 0 ? params : undefined,
-            responses: buildResponses(route.method),
+            responses: metadata.responses || {
+                '200': { description: 'Successful response', content: { 'application/json': { schema: { type: 'object' } } } }
+            },
         };
 
-        // Add request body for POST/PUT/PATCH
-        if (['post', 'put', 'patch'].includes(method)) {
-            operation.requestBody = {
-                content: {
-                    'application/json': {
-                        schema: { type: 'object', additionalProperties: true },
-                    },
-                },
-            };
+        // Extract parameters and body from Zod schemas in middleware stack
+        for (const layer of route.stack) {
+            const h = layer.handle;
+            if (h.zodSchema) {
+                if (h.validationType === 'body') {
+                    operation.requestBody = {
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object', description: 'Validated via Zod' },
+                            },
+                        },
+                    };
+                } else if (h.validationType === 'query' || h.validationType === 'params') {
+                    operation.parameters = operation.parameters || [];
+                    // We could map Zod fields here
+                }
+            }
         }
 
         paths[openAPIPath] = { ...paths[openAPIPath], [method]: operation };

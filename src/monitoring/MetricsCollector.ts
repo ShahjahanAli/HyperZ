@@ -135,3 +135,25 @@ export function getTimeSeries(): Array<{ timestamp: number; reqCount: number; av
 
     return series;
 }
+
+/**
+ * Export metrics in Prometheus format for scraping.
+ */
+export function getPrometheusMetrics(): string {
+    const snapshot = getMetricsSnapshot();
+    const now = Date.now();
+
+    let output = '# HELP hyperz_http_requests_total Total number of HTTP requests\n';
+    output += '# TYPE hyperz_http_requests_total counter\n';
+    output += `hyperz_http_requests_total ${snapshot.totalRequests}\n\n`;
+
+    output += '# HELP hyperz_http_request_duration_ms_avg Average HTTP request duration in milliseconds\n';
+    output += '# TYPE hyperz_http_request_duration_ms_avg gauge\n';
+    output += `hyperz_http_request_duration_ms_avg ${snapshot.avgResponseTimeMs}\n\n`;
+
+    output += '# HELP hyperz_http_error_rate_percentage HTTP error rate percentage (4xx, 5xx)\n';
+    output += '# TYPE hyperz_http_error_rate_percentage gauge\n';
+    output += `hyperz_http_error_rate_percentage ${snapshot.errorRate}\n`;
+
+    return output;
+}

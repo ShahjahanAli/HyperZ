@@ -88,16 +88,14 @@ Response → Client
 │ • Exceptions │    │ • Factory    │    │ • Events     │
 └──────────────┘    └──────────────┘    │ • Scheduler  │
                                         │ • WebSocket  │
-┌──────────────┐    ┌──────────────┐    │ • AI Gateway │
-│  Auth Layer  │    │    Tooling   │    └──────────────┘
-│              │    │              │
-│ • JWT        │    │ • CLI (16+)  │    ┌──────────────┐
-│ • RBAC       │    │ • Playground │    │    DevTools   │
-│ • Gates      │    │ • Tinker     │    │              │
-│ • Policies   │    │ • TestClient │    │ • Admin Panel│
-└──────────────┘    └──────────────┘    │ • Logger     │
-                                        │ • Plugins    │
-                                        └──────────────┘
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Auth Layer  │    │    Tooling   │    │    DevTools   │
+│              │    │              │    │              │
+│ • JWT        │    │ • CLI (16+)  │    │ • Admin Panel│
+│ • RBAC       │    │ • Playground │    │ • Logger     │
+│ • Gates      │    │ • Tinker     │    │ • Plugins    │
+│ • Policies   │    │ • TestClient │    │ • Monitoring │
+└──────────────┘    └──────────────┘    └──────────────┘
 ```
 
 ---
@@ -113,8 +111,16 @@ app.singleton('db', () => new Database(config));
 // Register a transient binding
 app.bind('logger', () => new Logger());
 
+// Decorator-based DI (Automated)
+@Injectable()
+@Singleton()
+class AuthService {
+    constructor(private db: Database) {}
+}
+
 // Resolve
 const db = app.make<Database>('db');
+const auth = app.make(AuthService); // Nested dependencies auto-resolved
 ```
 
 **Key bindings registered during boot:**
@@ -126,6 +132,9 @@ const db = app.make<Database>('db');
 - `events` — EventDispatcher
 - `scheduler` — Task Scheduler
 - `ai` — AI Gateway
+- `prompts` — PromptManager
+- `vector` — VectorDB
+- `monitor` — MetricsCollector
 
 ---
 

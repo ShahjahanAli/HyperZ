@@ -2,6 +2,9 @@
 // HyperZ Framework — Service Container (IoC / Dependency Injection)
 // ──────────────────────────────────────────────────────────────
 
+import 'reflect-metadata';
+import { INJECTABLE_METADATA_KEY, SCOPE_METADATA_KEY, PARAM_TYPES_METADATA_KEY } from './Decorators.js';
+
 export type Constructor<T = any> = new (...args: any[]) => T;
 export type Factory<T = any> = (container: ServiceContainer) => T;
 
@@ -12,14 +15,15 @@ interface Binding<T = any> {
 }
 
 export class ServiceContainer {
-    private bindings = new Map<string | symbol, Binding>();
-    private instances = new Map<string | symbol, any>();
-    private aliases = new Map<string | symbol, string | symbol>();
+    private bindings = new Map<string | symbol | Function, Binding>();
+    private instances = new Map<string | symbol | Function, any>();
+    private aliases = new Map<string | symbol | Function, string | symbol | Function>();
+    private tags = new Map<string, (string | symbol | Function)[]>();
 
     /**
      * Register a binding in the container.
      */
-    bind<T>(abstract: string | symbol, factory: Factory<T>, singleton = false): this {
+    bind<T>(abstract: string | symbol | Constructor<T>, factory: Factory<T>, singleton = false): this {
         this.bindings.set(abstract, { factory, singleton });
         return this;
     }
@@ -27,14 +31,14 @@ export class ServiceContainer {
     /**
      * Register a shared (singleton) binding.
      */
-    singleton<T>(abstract: string | symbol, factory: Factory<T>): this {
+    singleton<T>(abstract: string | symbol | Constructor<T>, factory: Factory<T>): this {
         return this.bind(abstract, factory, true);
     }
 
     /**
      * Register an existing instance as a singleton.
      */
-    instance<T>(abstract: string | symbol, value: T): this {
+    instance<T>(abstract: string | symbol | Constructor<T>, value: T): this {
         this.instances.set(abstract, value);
         return this;
     }
@@ -42,15 +46,33 @@ export class ServiceContainer {
     /**
      * Register an alias for an abstract binding.
      */
-    alias(alias: string | symbol, abstract: string | symbol): this {
+    alias(alias: string | symbol | Function, abstract: string | symbol | Function): this {
         this.aliases.set(alias, abstract);
         return this;
     }
 
     /**
+     * Tag one or more abstracts under a group name.
+     */
+    tag(abstracts: (string | symbol | Function)[], tagName: string): this {
+        const existing = this.tags.get(tagName) ?? [];
+        existing.push(...abstracts);
+        this.tags.set(tagName, existing);
+        return this;
+    }
+
+    /**
+     * Resolve all bindings under a tag.
+     */
+    tagged<T = any>(tagName: string): T[] {
+        const abstracts = this.tags.get(tagName) ?? [];
+        return abstracts.map(ab => this.make<T>(ab as any));
+    }
+
+    /**
      * Resolve a binding from the container.
      */
-    make<T = any>(abstract: string | symbol): T {
+    make<T = any>(abstract: string | symbol | Constructor<T>): T {
         // Resolve aliases
         const resolved = this.aliases.has(abstract)
             ? this.aliases.get(abstract)!
@@ -63,24 +85,53 @@ export class ServiceContainer {
 
         // Look up binding
         const binding = this.bindings.get(resolved);
-        if (!binding) {
-            throw new Error(`[HyperZ] No binding registered for "${String(resolved)}".`);
+
+        if (binding) {
+            const instance = binding.factory(this);
+            if (binding.singleton) {
+                this.instances.set(resolved, instance);
+            }
+            return instance as T;
         }
 
-        const instance = binding.factory(this);
-
-        // Cache if singleton
-        if (binding.singleton) {
-            this.instances.set(resolved, instance);
+        // Auto-resolution for classes
+        if (typeof resolved === 'function') {
+            return this.resolveConstructor(resolved as Constructor<T>);
         }
 
-        return instance as T;
+        throw new Error(`[HyperZ] No binding registered for "${String(resolved)}".`);
+    }
+
+    /**
+     * Resolve a class constructor by injecting its dependencies.
+     */
+    private resolveConstructor<T>(ctor: Constructor<T>): T {
+        // Check if class is injectable
+        const isInjectable = Reflect.getMetadata(INJECTABLE_METADATA_KEY, ctor);
+        const paramTypes: any[] = Reflect.getMetadata(PARAM_TYPES_METADATA_KEY, ctor) || [];
+
+        const instances = paramTypes.map(type => {
+            // Recursively resolve dependency
+            // If the type is ServiceContainer itself, inject this
+            if (type === ServiceContainer) return this;
+            return this.make(type);
+        });
+
+        const instance = new ctor(...instances);
+
+        // If it's a singleton, cache it
+        const scope = Reflect.getMetadata(SCOPE_METADATA_KEY, ctor);
+        if (scope === 'singleton') {
+            this.instances.set(ctor, instance);
+        }
+
+        return instance;
     }
 
     /**
      * Check if a binding exists.
      */
-    has(abstract: string | symbol): boolean {
+    has(abstract: string | symbol | Function): boolean {
         const resolved = this.aliases.has(abstract)
             ? this.aliases.get(abstract)!
             : abstract;
@@ -90,7 +141,7 @@ export class ServiceContainer {
     /**
      * Remove a binding and its cached instance.
      */
-    forget(abstract: string | symbol): void {
+    forget(abstract: string | symbol | Function): void {
         this.bindings.delete(abstract);
         this.instances.delete(abstract);
     }
@@ -102,12 +153,15 @@ export class ServiceContainer {
         this.bindings.clear();
         this.instances.clear();
         this.aliases.clear();
+        this.tags.clear();
     }
 
     /**
      * Call a function with auto-resolved dependencies from the container.
      */
     call<T>(fn: (...args: any[]) => T, additionalArgs: Record<string, any> = {}): T {
+        // Simple implementation: pass container as first arg, or just call
         return fn(this, additionalArgs);
     }
 }
+

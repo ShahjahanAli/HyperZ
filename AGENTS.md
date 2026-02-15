@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-**HyperZ** is a Laravel-inspired, batteries-included API framework built on **Express.js 5** and **TypeScript**. It follows convention-over-configuration principles with a service-provider architecture.
+**HyperZ** is a Laravel-inspired, batteries-included, **AI-native**, and **Enterprise-grade** API framework built on **Express.js 5** and **TypeScript**. It follows convention-over-configuration principles with a modular service-provider architecture.
 
 - **Runtime:** Node.js ≥ 20, TypeScript (strict mode), ES Modules
 - **Entry point:** `server.ts` → `app.ts` → boot lifecycle
@@ -89,6 +89,18 @@ HyperZ/
 | Route files | lowercase | `api.ts`, `auth.ts` |
 | Config files | lowercase | `database.ts`, `cache.ts` |
 
+### Dependency Injection (DI)
+- Use `@Injectable()` on classes that should be manageable by the container.
+- Use `@Singleton()` for services that should have a single instance.
+- Constructor injection is the preferred way to handle dependencies.
+- Example:
+  ```typescript
+  @Injectable()
+  export class AnalyticsService {
+    constructor(private logger: Logger) {}
+  }
+  ```
+
 ### Controllers
 - Extend `Controller` from `../../src/http/Controller.js`
 - Use response helpers: `this.success()`, `this.created()`, `this.error()`, `this.noContent()`, `this.paginate()`
@@ -113,6 +125,11 @@ HyperZ/
 ### Database
 - Migrations use Knex.js — export `up(knex)` and `down(knex)` functions
 - Use `knex.schema.createTable()` in `up()`, `knex.schema.dropTableIfExists()` in `down()`
+
+### AI-native Features
+- **PromptManager:** Load templates from `app/prompts/` (e.g., `await prompts.load('email/welcome', { user: 'name' })`).
+- **VectorDB:** Use for RAG capabilities. Register adapters in `AppServiceProvider`.
+- **AIGateway:** Unified interface for OpenAI, Anthropic, and Gemini.
 
 ---
 

@@ -34,5 +34,10 @@ export class DatabaseServiceProvider extends ServiceProvider {
                 // Connection failed — logged by Database class
             }
         }
+
+        // Register graceful shutdown hook
+        this.app.terminating(async () => {
+            await Database.disconnect();
+        });
     }
 }

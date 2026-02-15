@@ -12,4 +12,15 @@ export class CacheServiceProvider extends ServiceProvider {
             return new CacheManager(config?.driver ?? 'memory');
         });
     }
+
+    async boot(): Promise<void> {
+        // Register graceful shutdown hook
+        this.app.terminating(async () => {
+            const cache = this.app.make<CacheManager>('cache');
+            const driver = (cache as any).driver;
+            if (driver.disconnect) {
+                await driver.disconnect();
+            }
+        });
+    }
 }

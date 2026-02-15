@@ -2,16 +2,19 @@
 // HyperZ Framework — Redis Cache Driver
 // ──────────────────────────────────────────────────────────────
 
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { Logger } from '../logging/Logger.js';
 import { env, envNumber } from '../support/helpers.js';
 
-interface CacheDriver {
+export interface CacheDriver {
     get(key: string): Promise<any | null>;
     put(key: string, value: any, ttlSeconds?: number): Promise<void>;
     forget(key: string): Promise<void>;
     flush(): Promise<void>;
     has(key: string): Promise<boolean>;
+    increment(key: string, value?: number): Promise<number>;
+    decrement(key: string, value?: number): Promise<number>;
+    tags(names: string[]): CacheDriver;
 }
 
 export class RedisDriver implements CacheDriver {
@@ -27,7 +30,7 @@ export class RedisDriver implements CacheDriver {
             lazyConnect: true,
         });
 
-        this.client.on('error', (err) => {
+        this.client.on('error', (err: any) => {
             Logger.error('[Cache:Redis] Connection error', { error: err.message });
         });
 
@@ -72,7 +75,62 @@ export class RedisDriver implements CacheDriver {
         return (await this.client.exists(this.key(key))) === 1;
     }
 
+    async increment(key: string, value = 1): Promise<number> {
+        return this.client.incrby(this.key(key), value);
+    }
+
+    async decrement(key: string, value = 1): Promise<number> {
+        return this.client.decrby(this.key(key), value);
+    }
+
+    tags(names: string[]): CacheDriver {
+        const tagPrefix = names.sort().join(':') + ':';
+        return new TaggedRedisDriver(this, tagPrefix, names);
+    }
+
     async disconnect(): Promise<void> {
         await this.client.quit();
+    }
+
+    async flushTags(names: string[]): Promise<void> {
+        for (const name of names) {
+            const tagKey = `${this.prefix}tags:${name}`;
+            const keys = await this.client.smembers(tagKey);
+            if (keys.length > 0) {
+                await this.client.del(...keys);
+                await this.client.del(tagKey);
+            }
+        }
+    }
+
+    async trackTag(key: string, names: string[]) {
+        for (const name of names) {
+            await this.client.sadd(`${this.prefix}tags:${name}`, this.key(key));
+        }
+    }
+}
+
+class TaggedRedisDriver implements CacheDriver {
+    private prefix: string;
+
+    constructor(private parent: RedisDriver, private baseTagPrefix: string, private tagNames: string[]) {
+        this.prefix = baseTagPrefix + tagNames.sort().join(':') + ':';
+    }
+
+    private k(key: string) { return this.prefix + key; }
+
+    async get(key: string) { return this.parent.get(this.k(key)); }
+    async put(key: string, value: any, ttlSeconds?: number) {
+        const fullKey = this.k(key);
+        await this.parent.trackTag(fullKey, this.tagNames);
+        return this.parent.put(fullKey, value, ttlSeconds);
+    }
+    async forget(key: string) { return this.parent.forget(this.k(key)); }
+    async flush() { return this.parent.flushTags(this.tagNames); }
+    async has(key: string) { return this.parent.has(this.k(key)); }
+    async increment(key: string, value?: number) { return this.parent.increment(this.k(key), value); }
+    async decrement(key: string, value?: number) { return this.parent.decrement(this.k(key), value); }
+    tags(names: string[]): CacheDriver {
+        return new TaggedRedisDriver(this.parent, this.prefix, [...this.tagNames, ...names]);
     }
 }

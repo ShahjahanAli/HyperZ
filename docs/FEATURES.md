@@ -18,7 +18,9 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 ### 2.1 Service Container (IoC)
 - Dependency injection container with singleton and transient bindings
 - `app.make<T>('binding')` resolution API
+- **Advanced Decorators (`@Injectable`, `@Singleton`)** for class-based DI
 - Auto-wiring and instance registration
+- **Constructor injection** with automatic resolution
 
 ### 2.2 Service Provider Pattern
 - Modular boot/register lifecycle
@@ -223,6 +225,18 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 - `ai.embed(text)` — text embeddings (OpenAI)
 - Token tracking and usage reporting
 - Auto-config from `.env` variables
+
+### 10.4 Prompt Management *(NEW)*
+- **Directory-based templates** in `app/prompts/`
+- **Variable interpolation** using `{{var}}` syntax
+- Recursive prompt discovery
+- `PromptManager.load(name, variables)` API
+
+### 10.5 Vector DB Adapters *(NEW)*
+- **RAG-ready interface** for similarity search
+- Adapters for Pinecone, Chroma, and Qdrant
+- Simple `upsert`, `search`, and `delete` operations
+- `VectorDB.use(adapter)` registry
 
 ### 10.3 AI Action Scaffolding
 - `make:ai-action <Name>` CLI command
@@ -535,6 +549,8 @@ Pre-built workflows in `.agent/workflows/`:
 ### 26.3 Admin Dashboard
 - SVG gauge rings for CPU, memory, V8 heap, event loop lag
 - Sparkline charts for throughput, latency, and errors (60s window)
+- **Top Endpoints Dashboard** showing most frequent and slowest routes
+- **Event Loop Lag Monitoring** to detect blocking operations
 - Auto-refresh every 2 seconds with pause/resume control
 
 ---

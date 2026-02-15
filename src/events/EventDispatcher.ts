@@ -1,18 +1,26 @@
 // ──────────────────────────────────────────────────────────────
-// HyperZ Framework — Event Dispatcher (Pub/Sub)
+// HyperZ Framework — Event Dispatcher
 // ──────────────────────────────────────────────────────────────
 
 import { Logger } from '../logging/Logger.js';
 
-type EventHandler = (...args: any[]) => void | Promise<void>;
+type Listener = (...args: any[]) => void | Promise<void>;
 
 export class EventDispatcher {
-    private static listeners = new Map<string, EventHandler[]>();
+    private static listeners = new Map<string, Listener[]>();
+    private static wildcardListeners: { pattern: RegExp; handler: Listener }[] = [];
 
     /**
      * Register an event listener.
+     * Supports wildcards like 'user.*'
      */
-    static on(event: string, handler: EventHandler): void {
+    static on(event: string, handler: Listener): void {
+        if (event.includes('*')) {
+            const pattern = new RegExp('^' + event.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
+            this.wildcardListeners.push({ pattern, handler });
+            return;
+        }
+
         const handlers = this.listeners.get(event) ?? [];
         handlers.push(handler);
         this.listeners.set(event, handlers);
@@ -21,31 +29,47 @@ export class EventDispatcher {
     /**
      * Register a one-time event listener.
      */
-    static once(event: string, handler: EventHandler): void {
-        const wrapper: EventHandler = async (...args) => {
+    static once(event: string, handler: Listener): void {
+        const onceWrapper = async (...args: any[]) => {
+            this.off(event, onceWrapper);
             await handler(...args);
-            this.off(event, wrapper);
         };
-        this.on(event, wrapper);
+        this.on(event, onceWrapper);
     }
 
     /**
-     * Remove a specific handler from an event.
+     * Remove an event listener.
      */
-    static off(event: string, handler: EventHandler): void {
+    static off(event: string, handler: Listener): void {
+        if (event.includes('*')) {
+            this.wildcardListeners = this.wildcardListeners.filter(l => l.handler !== handler);
+            return;
+        }
+
         const handlers = this.listeners.get(event) ?? [];
-        this.listeners.set(event, handlers.filter(h => h !== handler));
+        const index = handlers.indexOf(handler);
+        if (index !== -1) {
+            handlers.splice(index, 1);
+            this.listeners.set(event, handlers);
+        }
     }
 
     /**
-     * Dispatch an event — all listeners are called.
+     * Dispatch an event to all listeners.
      */
     static async dispatch(event: string, ...args: any[]): Promise<void> {
         const handlers = this.listeners.get(event) ?? [];
 
-        Logger.debug(`Event dispatched: ${event}`, { listenerCount: handlers.length });
+        // Find matching wildcard listeners
+        const matchingWildcards = this.wildcardListeners
+            .filter(l => l.pattern.test(event))
+            .map(l => l.handler);
 
-        for (const handler of handlers) {
+        const allHandlers = [...handlers, ...matchingWildcards];
+
+        Logger.debug(`Event dispatched: ${event}`, { listenerCount: allHandlers.length });
+
+        for (const handler of allHandlers) {
             try {
                 await handler(...args);
             } catch (err: any) {
@@ -55,27 +79,42 @@ export class EventDispatcher {
     }
 
     /**
-     * Check if an event has listeners.
+     * Dispatch an event synchronously.
+     * Listeners are executed in order, stops if one fails.
      */
-    static hasListeners(event: string): boolean {
-        return (this.listeners.get(event)?.length ?? 0) > 0;
+    static async dispatchSync(event: string, ...args: any[]): Promise<void> {
+        const handlers = this.listeners.get(event) ?? [];
+        const matchingWildcards = this.wildcardListeners
+            .filter(l => l.pattern.test(event))
+            .map(l => l.handler);
+
+        const allHandlers = [...handlers, ...matchingWildcards];
+
+        for (const handler of allHandlers) {
+            await handler(...args);
+        }
     }
 
     /**
-     * Get all registered event names.
+     * Check if an event has listeners.
+     */
+    static hasListeners(event: string): boolean {
+        if ((this.listeners.get(event)?.length ?? 0) > 0) return true;
+        return this.wildcardListeners.some(l => l.pattern.test(event));
+    }
+
+    /**
+     * Get all registered events.
      */
     static events(): string[] {
         return Array.from(this.listeners.keys());
     }
 
     /**
-     * Clear all listeners (or for a specific event).
+     * Clear all listeners.
      */
-    static clear(event?: string): void {
-        if (event) {
-            this.listeners.delete(event);
-        } else {
-            this.listeners.clear();
-        }
+    static clear(): void {
+        this.listeners.clear();
+        this.wildcardListeners = [];
     }
 }

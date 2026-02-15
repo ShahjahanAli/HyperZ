@@ -2,6 +2,8 @@
 // HyperZ Framework — Global Helpers
 // ──────────────────────────────────────────────────────────────
 
+import { randomUUID } from 'node:crypto';
+
 /**
  * Get environment variable with optional default.
  */
@@ -84,6 +86,127 @@ export function deepMerge<T extends Record<string, any>>(...objects: Partial<T>[
                 }
             }
         }
+    }
+    return result;
+}
+
+// ── New Helpers ───────────────────────────────────────────────
+
+/**
+ * Generate a UUID v4.
+ */
+export function uuid(): string {
+    return randomUUID();
+}
+
+/**
+ * Get the current ISO timestamp.
+ */
+export function now(): string {
+    return new Date().toISOString();
+}
+
+/**
+ * Retry an async operation with exponential backoff.
+ *
+ * @example
+ * const result = await retry(() => fetchFromAPI(), 3, 1000);
+ */
+export async function retry<T>(
+    fn: () => Promise<T>,
+    attempts = 3,
+    delayMs = 1000
+): Promise<T> {
+    let lastError: Error | undefined;
+
+    for (let i = 0; i < attempts; i++) {
+        try {
+            return await fn();
+        } catch (err: any) {
+            lastError = err;
+            if (i < attempts - 1) {
+                await sleep(delayMs * Math.pow(2, i));
+            }
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * Ensure a function only executes once.
+ * Subsequent calls return the first result.
+ */
+export function once<T extends (...args: any[]) => any>(fn: T): T {
+    let called = false;
+    let result: any;
+
+    return ((...args: any[]) => {
+        if (!called) {
+            called = true;
+            result = fn(...args);
+        }
+        return result;
+    }) as T;
+}
+
+/**
+ * Debounce a function — delays execution until after the wait period
+ * has elapsed since the last invocation.
+ */
+export function debounce<T extends (...args: any[]) => any>(fn: T, waitMs: number): T {
+    let timer: ReturnType<typeof setTimeout>;
+
+    return ((...args: any[]) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), waitMs);
+    }) as T;
+}
+
+/**
+ * Throttle a function — ensures it runs at most once per interval.
+ */
+export function throttle<T extends (...args: any[]) => any>(fn: T, intervalMs: number): T {
+    let lastRun = 0;
+
+    return ((...args: any[]) => {
+        const now = Date.now();
+        if (now - lastRun >= intervalMs) {
+            lastRun = now;
+            return fn(...args);
+        }
+    }) as T;
+}
+
+/**
+ * Pick specific keys from an object.
+ */
+export function pick<T extends Record<string, any>>(obj: T, keys: (keyof T)[]): Partial<T> {
+    const result: Partial<T> = {};
+    for (const key of keys) {
+        if (key in obj) result[key] = obj[key];
+    }
+    return result;
+}
+
+/**
+ * Omit specific keys from an object.
+ */
+export function omit<T extends Record<string, any>>(obj: T, keys: (keyof T)[]): Partial<T> {
+    const result = { ...obj };
+    for (const key of keys) {
+        delete result[key];
+    }
+    return result;
+}
+
+/**
+ * Chunk an array into smaller arrays of a specified size.
+ */
+export function chunk<T>(array: T[], size: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
     }
     return result;
 }

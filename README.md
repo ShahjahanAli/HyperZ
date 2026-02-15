@@ -54,7 +54,7 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 📦 **Queue** | Sync + **BullMQ** (Redis) drivers with delayed job dispatching |
 | 📁 **Storage** | Local filesystem + **AWS S3** drivers |
 | 🌐 **WebSocket** | Real-time communication via Socket.io with channel & room management |
-| 🤖 **AI Gateway** | Multi-provider AI integration (OpenAI, Anthropic, Google AI) with unified API |
+| 🤖 **AI Gateway** | Multi-provider AI (OpenAI, Anthropic, Google), **Prompt Templates, Vector DB / RAG** |
 | 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
 | 🏭 **Factories** | Database Factory for test data generation (Faker-ready) |
 | 🔌 **Plugins** | Auto-discovery plugin manager for modular extensions |
@@ -62,14 +62,13 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 🧪 **Testing** | HTTP test client for integration testing (Vitest-ready) |
 | ⏰ **Scheduler** | Cron-like task scheduler with fluent API |
 | 📝 **Logging** | Pino-powered structured logging with pretty dev output |
+| 🏗️ **Enterprise DI** | **Advanced IoC with TypeScript Decorators (`@Injectable`, `@Singleton`)** |
+| 📈 **Observability** | **Real-time CPU/memory/latency, event loop lag, system metrics dashboard** |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
-| 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity, and other AI coding tools |
-| 🔌 **MCP Server** | Model Context Protocol server with 13 tools, 6 resources, 4 prompts for AI automation |
+| 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity — with **MCP Server** |
 | 📖 **Swagger/OpenAPI** | Auto-generated API docs at `/api/docs` with dark-themed Swagger UI |
-| 🛡️ **Rate Limiting** | Per-user / per-API-key throttling with tiers (free/standard/pro/enterprise) |
-| 📈 **Real-time Monitoring** | Live CPU/memory/latency gauges, sparkline charts, top endpoints dashboard |
-| 🔮 **GraphQL** | Auto-generated schema from models with GraphiQL IDE at `/graphql` |
+| 🛡️ **Rate Limiting** | Per-user / per-API-key throttling with **Multi-tier support** |
 
 ---
 
@@ -261,6 +260,17 @@ const text = await ai.complete('Write a haiku about Node.js');
 
 // Text embeddings
 const embeddings = await ai.embed('HyperZ is fast');
+
+// ── Prompt Management ──
+import { PromptManager } from './src/ai/PromptManager.js';
+const prompts = new PromptManager(appPath);
+const systemPrompt = await prompts.load('agents/optimizer', { tone: 'professional' });
+
+// ── Vector DB / RAG ──
+import { VectorDB } from './src/ai/VectorDB.js';
+const vectorDb = VectorDB.use('pinecone'); // or 'chroma', 'qdrant'
+await vectorDb.upsert('docs', [{ text: 'HyperZ uses IoC', metadata: { source: 'readme' } }]);
+const context = await vectorDb.search('docs', 'How does HyperZ handle DI?');
 ```
 
 ### Configuration
@@ -272,6 +282,10 @@ AI_PROVIDER=openai          # or 'anthropic' or 'google'
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_AI_API_KEY=...
+
+# Vector DB (Optional)
+VECTOR_DB_DRIVER=pinecone
+PINECONE_API_KEY=...
 ```
 
 ### Generate AI Action Scaffolding
@@ -304,6 +318,36 @@ ws.channel('/chat', (socket) => {
   });
 });
 ```
+
+---
+
+## Enterprise Readiness
+
+HyperZ is built for scale, providing features typically found in heavy frameworks like NestJS or Spring, but with the simplicity of Express.
+
+### 🏗️ Advanced Dependency Injection
+Fully decoupled architecture using an IoC container and TypeScript decorators.
+
+```typescript
+import { Injectable, Singleton } from './src/core/Decorators.js';
+
+@Injectable()
+@Singleton()
+export class UserService {
+  constructor(private logger: Logger) {}
+  // ...
+}
+```
+
+### 📈 Observability & Monitoring
+Built-in health checks and real-time metrics dashboard:
+- **System Health:** CPU, Memory (RSS/Heap), Uptime.
+- **Performance:** Event loop lag measurement, request latency sparklines.
+- **Resource Tracking:** Active handles and requests monitoring.
+- **Log Aggregation:** Live, level-based log viewer in Admin Panel.
+
+### 🛡️ Multi-tier Rate Limiting
+Secure your API with customizable throttling tiers (Free, Standard, Pro, Enterprise) based on API keys or User IDs.
 
 ---
 

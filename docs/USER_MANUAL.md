@@ -208,6 +208,8 @@ Configuration files live in `config/` and export default objects:
 | `config/queue.ts` | Queue driver |
 | `config/storage.ts` | Storage disks |
 | `config/ai.ts` | AI provider settings |
+| **`config/docs.ts`** | **OpenAPI / Swagger configuration** |
+| **`config/monitoring.ts`** | **Observability settings** |
 
 ---
 
@@ -728,6 +730,39 @@ AI_PROVIDER=google
 GOOGLE_AI_API_KEY=...
 ```
 
+### 12.5 Prompt Templates
+Organize your prompts in `app/prompts/`. Create `app/prompts/hiring/job-desc.md`:
+```markdown
+Write a job description for a {{role}} with {{experience}} years of experience.
+```
+
+Usage in code:
+```typescript
+import { PromptManager } from '../../src/ai/PromptManager.js';
+const prompts = new PromptManager(process.cwd());
+const content = await prompts.load('hiring/job-desc', {
+    role: 'Senior Backend Engineer',
+    experience: '5+'
+});
+```
+
+### 12.6 Vector DB & RAG
+Enable a RAG pipeline by using the `VectorDB` registry.
+
+```typescript
+import { VectorDB } from '../../src/ai/VectorDB.js';
+
+const vectorDb = VectorDB.use('pinecone'); // Driver from .env
+
+// Indexing
+await vectorDb.upsert('kb_articles', [
+    { id: '1', text: 'HyperZ uses a service provider architecture.', metadata: { category: 'arch' } }
+]);
+
+// Search
+const results = await vectorDb.search('kb_articles', 'How is HyperZ structured?');
+```
+
 ---
 
 ## 13. API Playground
@@ -785,6 +820,38 @@ I18n.t('errors.not_found');               // "Resource not found."
 I18n.setLocale('bn');
 I18n.t('welcome');                        // "হাইপারজেড-এ স্বাগতম!"
 ```
+
+---
+
+## 15. Enterprise Readiness
+
+### 15.1 Dependency Injection
+HyperZ provides a robust DI system using the `Inversify`-like pattern with native decorators.
+
+```typescript
+import { Injectable, Singleton } from '../../src/core/Decorators.js';
+
+@Injectable()
+@Singleton()
+export class AnalyticsService {
+    track(event: string) { /* ... */ }
+}
+
+@Injectable()
+export class UserController extends Controller {
+    constructor(private analytics: AnalyticsService) {
+        super();
+    }
+}
+```
+
+### 15.2 Monitoring & Metrics
+Access the monitoring dashboard in the Admin Panel (`/monitoring`).
+
+- **CPU/Memory:** Real-time gauges.
+- **Event Loop Lag:** Critical for Node.js performance tuning.
+- **Top Endpoints:** Identify bottleneck routes.
+- **Error Tracking:** Real-time 5xx error rate monitoring.
 
 ### 14.3 Adding a New Language
 

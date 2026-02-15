@@ -6,6 +6,18 @@
 import { type Knex } from 'knex';
 import { Database } from './Database.js';
 
+export interface PaginationResult<T> {
+    data: T[];
+    pagination: {
+        total: number;
+        page: number;
+        perPage: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+    };
+}
+
 export abstract class Model {
     /** Table name — override in subclass */
     protected static tableName: string;
@@ -96,6 +108,90 @@ export abstract class Model {
             return qb.where(column, operator);
         }
         return qb.where(column, operator, value);
+    }
+
+    // ── Query Scopes & Pagination ─────────────────────────────
+
+    /**
+     * Paginate results with metadata.
+     */
+    static async paginate<T extends Model>(
+        this: new (attrs: any) => T & { constructor: typeof Model },
+        page = 1,
+        perPage = 15
+    ): Promise<PaginationResult<T>> {
+        const ctor = this as any as typeof Model;
+        const offset = (page - 1) * perPage;
+
+        const [{ count: total }] = await ctor.query().count('* as count');
+        const totalCount = Number(total);
+        const rows = await ctor.query().select('*').limit(perPage).offset(offset);
+
+        return {
+            data: rows.map((row: any) => new this(row)),
+            pagination: {
+                total: totalCount,
+                page,
+                perPage,
+                totalPages: Math.ceil(totalCount / perPage),
+                hasNextPage: page * perPage < totalCount,
+                hasPrevPage: page > 1,
+            },
+        };
+    }
+
+    /**
+     * Get the first record matching the query.
+     */
+    static async first<T extends Model>(
+        this: new (attrs: any) => T & { constructor: typeof Model }
+    ): Promise<T | null> {
+        const ctor = this as any as typeof Model;
+        const row = await ctor.query().first();
+        return row ? new this(row) : null;
+    }
+
+    /**
+     * Count records.
+     */
+    static async count(): Promise<number> {
+        const [{ count }] = await this.query().count('* as count');
+        return Number(count);
+    }
+
+    /**
+     * Check if any records exist.
+     */
+    static async exists(): Promise<boolean> {
+        return (await this.count()) > 0;
+    }
+
+    /**
+     * Order by column — returns query builder.
+     */
+    static orderBy(column: string, direction: 'asc' | 'desc' = 'asc'): Knex.QueryBuilder {
+        return this.query().orderBy(column, direction);
+    }
+
+    /**
+     * Order by created_at descending (latest first).
+     */
+    static latest(column = 'created_at'): Knex.QueryBuilder {
+        return this.orderBy(column, 'desc');
+    }
+
+    /**
+     * Order by created_at ascending (oldest first).
+     */
+    static oldest(column = 'created_at'): Knex.QueryBuilder {
+        return this.orderBy(column, 'asc');
+    }
+
+    /**
+     * Limit the number of results.
+     */
+    static limit(count: number): Knex.QueryBuilder {
+        return this.query().limit(count);
     }
 
     /**
@@ -219,5 +315,93 @@ export abstract class Model {
             }
         }
         return obj;
+    }
+
+    // ── Relationships ─────────────────────────────────────────
+
+    /**
+     * Has-one relationship.
+     * @example const profile = await user.hasOne(Profile, 'user_id');
+     */
+    async hasOne<T extends Model>(
+        related: (new (attrs: any) => T) & { query(): Knex.QueryBuilder; tableName: string; primaryKey: string },
+        foreignKey?: string,
+        localKey?: string
+    ): Promise<T | null> {
+        const ctor = this.constructor as typeof Model;
+        const fk = foreignKey ?? `${ctor.tableName.replace(/s$/, '')}_id`;
+        const lk = localKey ?? ctor.primaryKey;
+
+        const row = await (related as any).query()
+            .where(fk, this[lk])
+            .first();
+        return row ? new related(row) : null;
+    }
+
+    /**
+     * Has-many relationship.
+     * @example const posts = await user.hasMany(Post, 'author_id');
+     */
+    async hasMany<T extends Model>(
+        related: (new (attrs: any) => T) & { query(): Knex.QueryBuilder; tableName: string; primaryKey: string },
+        foreignKey?: string,
+        localKey?: string
+    ): Promise<T[]> {
+        const ctor = this.constructor as typeof Model;
+        const fk = foreignKey ?? `${ctor.tableName.replace(/s$/, '')}_id`;
+        const lk = localKey ?? ctor.primaryKey;
+
+        const rows = await (related as any).query()
+            .where(fk, this[lk])
+            .select('*');
+        return rows.map((row: any) => new related(row));
+    }
+
+    /**
+     * Belongs-to relationship (inverse of hasOne/hasMany).
+     * @example const author = await post.belongsTo(User, 'author_id');
+     */
+    async belongsTo<T extends Model>(
+        related: (new (attrs: any) => T) & { query(): Knex.QueryBuilder; tableName: string; primaryKey: string },
+        foreignKey?: string,
+        ownerKey?: string
+    ): Promise<T | null> {
+        const relatedCtor = related as any;
+        const fk = foreignKey ?? `${relatedCtor.tableName.replace(/s$/, '')}_id`;
+        const ok = ownerKey ?? relatedCtor.primaryKey;
+
+        const row = await relatedCtor.query()
+            .where(ok, this[fk])
+            .first();
+        return row ? new related(row) : null;
+    }
+
+    /**
+     * Eager-load relationships to avoid N+1 queries.
+     * Each relation name must correspond to a method on the model instance
+     * that returns a Promise (e.g. hasOne, hasMany, belongsTo).
+     *
+     * @example const users = await User.with('posts', 'profile');
+     */
+    static async with<T extends Model>(
+        this: (new (attrs: any) => T) & typeof Model,
+        ...relations: string[]
+    ): Promise<T[]> {
+        const ctor = this as any as typeof Model;
+        const rows = await ctor.query().select('*');
+        const instances = rows.map((row: any) => new this(row)) as T[];
+
+        // Load each relationship for all instances
+        for (const relation of relations) {
+            await Promise.all(
+                instances.map(async (instance) => {
+                    if (typeof (instance as any)[relation] === 'function') {
+                        (instance as any)[`_${relation}`] = await (instance as any)[relation]();
+                    }
+                })
+            );
+        }
+
+        return instances;
     }
 }

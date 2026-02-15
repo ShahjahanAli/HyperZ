@@ -9,7 +9,9 @@ import { I18n } from './src/i18n/I18n.js';
 import { getMCPServerInfo } from './src/mcp/MCPServer.js';
 import { registerSwaggerUI } from './src/docs/SwaggerUI.js';
 import { createGlobalRateLimiter } from './src/rateLimit/RateLimitManager.js';
-import { metricsMiddleware } from './src/monitoring/MetricsCollector.js';
+import { metricsMiddleware, getPrometheusMetrics } from './src/monitoring/MetricsCollector.js';
+import { HealthController } from './src/http/controllers/HealthController.js';
+import { requestIdMiddleware } from './src/http/middleware/RequestIdMiddleware.js';
 import { registerGraphQL } from './src/graphql/GraphQLServer.js';
 import docsConfig from './config/docs.js';
 import rateLimitConfig from './config/ratelimit.js';
@@ -19,8 +21,16 @@ import * as path from 'node:path';
 async function main(): Promise<void> {
     const app = createApp();
 
-    // Register metrics collection (must be first to capture all requests)
+    // Register tracing and metrics collection
+    app.express.use(requestIdMiddleware());
     app.express.use(metricsMiddleware());
+
+    // Register health and metrics endpoints
+    app.express.get('/health', HealthController.check);
+    app.express.get('/metrics', (req, res) => {
+        res.set('Content-Type', 'text/plain');
+        res.send(getPrometheusMetrics());
+    });
 
     // Register global rate limiter
     app.express.use(createGlobalRateLimiter(rateLimitConfig));

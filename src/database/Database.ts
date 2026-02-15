@@ -78,6 +78,41 @@ export class Database {
     // ── Utilities ─────────────────────────────────────────────
 
     /**
+     * Run a callback within a database transaction.
+     * Automatically commits on success, rolls back on error.
+     *
+     * @example
+     * await Database.transaction(async (trx) => {
+     *     await trx('users').insert({ name: 'John' });
+     *     await trx('orders').insert({ user_id: 1, total: 99.99 });
+     * });
+     */
+    static async transaction<T>(callback: (trx: Knex.Transaction) => Promise<T>): Promise<T> {
+        const knex = this.getKnex();
+        return knex.transaction(async (trx) => {
+            return callback(trx);
+        });
+    }
+
+    /**
+     * Execute a raw SQL query.
+     *
+     * @example
+     * const result = await Database.raw('SELECT COUNT(*) FROM users WHERE active = ?', [true]);
+     */
+    static async raw(sql: string, bindings: any[] = []): Promise<any> {
+        return this.getKnex().raw(sql, bindings);
+    }
+
+    /**
+     * Get the configured database driver name.
+     */
+    static getDriverName(): string | null {
+        if (!this.knexInstance) return null;
+        return (this.knexInstance.client as any)?.config?.client ?? null;
+    }
+
+    /**
      * Disconnect all database connections.
      */
     static async disconnect(): Promise<void> {

@@ -27,7 +27,9 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **API Playground** | ✅ Built-in | ✅ Swagger | ❌ None | ❌ Manual | ❌ 3rd party | ✅ API Platform | ✅ Swagger | ✅ Swagger |
 | **Admin Panel** | ✅ Built-in | ❌ 3rd party | ❌ None | ❌ None | ✅ Nova (paid) | ✅ EasyAdmin | ❌ 3rd party | ✅ Spring Admin |
 | **AI Agent Support** | ✅ **First-class** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Prompt/Vector DB** | ✅ **Built-in** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
 | **i18n** | ✅ Built-in | ✅ nestjs-i18n | ✅ Built-in | ❌ Manual | ✅ Built-in | ✅ Built-in | ✅ Built-in | ✅ MessageSource |
+| **DI Decorators** | ✅ **Built-in** | ✅ Core | ❌ Global | ❌ Manual | ❌ Minimal | ❌ Minimal | ✅ Core | ✅ Core |
 | **Testing** | ✅ HTTP Client | ✅ Built-in | ✅ Japa | ❌ Manual | ✅ PHPUnit | ✅ PHPUnit | ✅ xUnit | ✅ JUnit |
 | **Docker** | ✅ Included | ❌ Manual | ❌ Manual | ❌ Manual | ✅ Sail | ❌ Manual | ✅ Built-in | ✅ Buildpacks |
 
@@ -46,8 +48,9 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **Structure** | File-based: `app/controllers/`, `app/models/` | Module-based: `@Module`, `@Controller`, `@Injectable` |
 | **Boilerplate** | Minimal — CLI generates ready-to-use files | Higher — modules, providers, DTOs required |
 | **Performance** | Express 5 direct (lightweight) | Express/Fastify adapter (abstraction layer) |
-| **Unique to HyperZ** | AI Gateway, Admin Panel, API Playground, AI Agent configs | GraphQL module, Microservices, gRPC, CQRS |
-| **Best For** | Rapid API development, startups, solo devs | Enterprise, complex architectures, large teams |
+| **Unique to HyperZ** | AI Gateway, **Prompt Mgmt, Vector DB**, Admin Panel, API Playground, AI Agent configs | GraphQL module, Microservices, gRPC, CQRS |
+| **Monitoring** | Built-in real-time dashboard | Via Prometheus/Grafana (external) |
+| **Best For** | Rapid API development, **RAG-based AI apps**, startups | Enterprise, complex architectures, large teams |
 
 > **Verdict:** NestJS is more mature for enterprise microservices, but HyperZ offers a dramatically simpler experience with more built-in tools (AI, admin panel, playground). NestJS requires significantly more boilerplate.
 
