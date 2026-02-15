@@ -29,8 +29,17 @@ function getAuth(): AuthManager {
 async function getKnex() {
     try {
         const { Database } = await import('../database/Database.js');
-        if (!Database.isSQLConnected()) return null;
-        return Database.getKnex();
+        if (Database.isSQLConnected()) return Database.getKnex();
+
+        // Attempt to connect if environment is ready
+        const { default: dbConfig } = await import('../../config/database.js');
+        const driver = env('DB_DRIVER', dbConfig.driver || 'sqlite');
+        const connConfig = (dbConfig.connections as any)[driver];
+
+        if (connConfig) {
+            return await Database.connectSQL(connConfig);
+        }
+        return null;
     } catch {
         return null;
     }

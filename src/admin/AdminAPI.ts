@@ -718,27 +718,7 @@ function extractRoutes(expressApp: any): any[] {
 }
 
 async function loadKnexConfig(): Promise<any> {
-    const configPath = path.join(ROOT, 'config', 'database.ts');
-    const mod = await import(`file://${configPath.replace(/\\/g, '/')}`);
-    const config = mod.default || mod;
-
-    const driver = process.env.DB_DRIVER || config.driver || 'sqlite';
-
-    if (driver === 'sqlite') {
-        return {
-            client: 'sqlite3',
-            connection: { filename: path.join(ROOT, 'database', 'hyperz.sqlite') },
-            useNullAsDefault: true,
-        };
-    }
-    return {
-        client: driver === 'postgresql' ? 'pg' : driver,
-        connection: {
-            host: process.env.DB_HOST || '127.0.0.1',
-            port: Number(process.env.DB_PORT || 3306),
-            database: process.env.DB_NAME || 'hyperz',
-            user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASSWORD || '',
-        },
-    };
+    const { default: config } = await import('../../config/database.js');
+    const driver = (process.env.DB_DRIVER || config.driver || 'sqlite') as string;
+    return (config.connections as any)[driver];
 }
