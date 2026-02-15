@@ -376,3 +376,36 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 - Strict mode enabled
 - ES module output
 - Path aliases configured
+
+---
+
+## 21. Admin Panel *(NEW)*
+
+### 21.1 Next.js Dashboard
+- Separate Next.js application in `admin/` directory
+- Dark glassmorphism UI matching API Playground aesthetic
+- Proxied API communication via `next.config.js` rewrites
+- Runs on port **3100**, connects to HyperZ API on port **7700**
+
+### 21.2 Admin API (`/api/_admin/*`)
+- System overview (uptime, memory, CPU, Node version)
+- `.env` read/write endpoints
+- Config file browser
+- Route introspection (lists all registered Express routes)
+- Scaffolding engine (create controllers, models, migrations, seeders, middleware, routes, jobs, factories)
+- Database management (list tables, browse data, run migrations, rollback, seed)
+- Log file viewer
+- Cache flush
+- Project file browser (safe directories only)
+
+### 21.3 Admin Pages
+| Page | Features |
+|---|---|
+| Dashboard | System health stats, quick actions, uptime, memory |
+| Scaffolding | 8-type resource creator with visual selector |
+| Database | Table browser, schema viewer, migration runner |
+| Routes | Route list with method badges, search, filter |
+| Config & Env | Inline `.env` editor, config file viewer |
+| Cache & Queue | Service status cards, cache flush |
+| Logs | Auto-refresh log viewer with color-coded levels |
+| AI Gateway | Provider status, config overview |

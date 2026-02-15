@@ -946,7 +946,71 @@ await pm.loadAll(app);
 
 ---
 
-## 20. CLI Reference
+## 20. Admin Panel
+
+HyperZ includes a **built-in Next.js admin panel** for visual management — no terminal required.
+
+### 20.1 Setup
+
+```bash
+# Navigate to the admin directory
+cd admin
+
+# Install dependencies
+npm install
+
+# Start the admin panel (port 3100)
+npm run dev
+```
+
+> The HyperZ API must be running on port 7700 (`npm run dev` in the project root).
+
+### 20.2 Pages
+
+1. **📊 Dashboard** — System health overview: uptime, memory usage, Node version, route count, table count. Includes quick action buttons to navigate to other pages.
+
+2. **🏗️ Scaffolding** — Visual resource creator. Select a type (controller, model, migration, seeder, middleware, route, job, factory), enter a name, and click Create. Models can optionally include a migration.
+
+3. **🗄️ Database** — Browse all database tables, view column schema and data. Run migrations, rollback, or seed directly from the UI. Supports pagination for large tables.
+
+4. **🛤️ Routes** — View all registered Express routes with color-coded method badges (GET=green, POST=blue, PUT=yellow, DELETE=red). Search and filter by method.
+
+5. **⚙️ Config & Env** — Two tabs:
+   - **Environment Variables** — Inline key-value editor for `.env`. Add, edit, remove variables and save.
+   - **Config Files** — Browse and view all config files in `config/`.
+
+6. **💾 Cache & Queue** — Service status overview for Cache, Queue, Storage, and WebSocket. Flush all cache with one click.
+
+7. **📋 Logs** — View application log files with:
+   - Color-coded log levels (ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan)
+   - Text filter
+   - Log file selector
+   - Auto-refresh toggle (every 3 seconds)
+
+8. **🤖 AI Gateway** — Provider status cards for OpenAI, Anthropic, and Google AI. Shows API key status, default models, and gateway configuration.
+
+### 20.3 Admin API Endpoints
+
+The admin panel communicates via `/api/_admin/*` endpoints:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/_admin/overview` | GET | System health & stats |
+| `/api/_admin/env` | GET/PUT | Read/update `.env` |
+| `/api/_admin/config` | GET | List config files |
+| `/api/_admin/routes` | GET | List all routes |
+| `/api/_admin/scaffold/:type` | POST | Create resources |
+| `/api/_admin/database/tables` | GET | List database tables |
+| `/api/_admin/database/tables/:name` | GET | Browse table data |
+| `/api/_admin/database/migrate` | POST | Run migrations |
+| `/api/_admin/database/rollback` | POST | Rollback migrations |
+| `/api/_admin/database/seed` | POST | Run seeders |
+| `/api/_admin/logs` | GET | Read log files |
+| `/api/_admin/cache/flush` | POST | Flush cache |
+
+---
+
+## 21. CLI Reference
 
 | Command | Description |
 |---|---|
@@ -971,9 +1035,34 @@ await pm.loadAll(app);
 
 ---
 
-## 21. Deployment
+## 22. Deployment
 
-### 21.1 Production Environment
+### 22.1 Docker Deployment (Recommended)
+
+**Production** — build and start the full stack:
+```bash
+# Build and start (app + Redis)
+docker compose up -d --build
+
+# View logs
+docker compose logs -f app
+
+# Stop
+docker compose down
+```
+
+**Development** — hot-reload with source mounting:
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+**Standalone** — without Docker Compose:
+```bash
+docker build -t hyperz .
+docker run -d --name hyperz -p 7700:7700 --env-file .env hyperz
+```
+
+### 22.2 Manual Deployment
 
 ```env
 APP_ENV=production
@@ -981,19 +1070,19 @@ APP_DEBUG=false
 APP_PORT=3000
 ```
 
-### 21.2 Build
+### 22.3 Build
 
 ```bash
 npm run build
 ```
 
-### 21.3 Start Production Server
+### 22.4 Start Production Server
 
 ```bash
 node dist/server.js
 ```
 
-### 21.4 Process Manager (PM2)
+### 22.5 Process Manager (PM2)
 
 ```bash
 npm install -g pm2

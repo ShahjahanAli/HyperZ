@@ -22,6 +22,7 @@
   <a href="#cli-commands">CLI</a> •
   <a href="#api-playground">Playground</a> •
   <a href="#ai-gateway">AI Gateway</a> •
+  <a href="#admin-panel">Admin Panel</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#documentation">Docs</a> •
   <a href="#contributing">Contributing</a>
@@ -300,10 +301,63 @@ ws.channel('/chat', (socket) => {
 
 ---
 
+## Admin Panel
+
+HyperZ ships with a **built-in Next.js admin panel** for visual management of your application — no terminal required.
+
+### Setup
+
+```bash
+cd admin
+npm install
+npm run dev       # Starts on http://localhost:3100
+```
+
+> **Note:** The HyperZ API must be running on port 7700 for the admin panel to communicate with it.
+
+### Features
+
+| Page | Description |
+|---|---|
+| 📊 **Dashboard** | System health, uptime, memory usage, route/table counts |
+| 🏗️ **Scaffolding** | Create controllers, models, migrations, seeders, middleware, jobs, factories via UI |
+| 🗄️ **Database** | Browse tables, view schema & data, run migrations, rollback, seed |
+| 🛤️ **Routes** | View all registered Express routes with method badges & search |
+| ⚙️ **Config & Env** | Edit `.env` variables inline, browse config files |
+| 💾 **Cache & Queue** | Cache flush, queue status, storage & WebSocket overview |
+| 📋 **Logs** | Live log viewer with auto-refresh, level-based colors, file selector |
+| 🤖 **AI Gateway** | Provider status (OpenAI, Anthropic, Google AI), config overview |
+
+### Admin API Endpoints
+
+The admin panel communicates via internal REST endpoints at `/api/_admin/*`:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/_admin/overview` | GET | System health & stats |
+| `/api/_admin/env` | GET/PUT | Read/update `.env` |
+| `/api/_admin/config` | GET | List config files |
+| `/api/_admin/routes` | GET | List all routes |
+| `/api/_admin/scaffold/:type` | POST | Create resources |
+| `/api/_admin/database/tables` | GET | List database tables |
+| `/api/_admin/database/tables/:name` | GET | Browse table data |
+| `/api/_admin/database/migrate` | POST | Run migrations |
+| `/api/_admin/database/rollback` | POST | Rollback migrations |
+| `/api/_admin/database/seed` | POST | Run seeders |
+| `/api/_admin/logs` | GET | Read log files |
+| `/api/_admin/cache/flush` | POST | Flush cache |
+
+---
+
 ## Architecture
 
 ```
 HyperZ/
+├── admin/                        # Next.js Admin Panel
+│   ├── app/                      # Admin pages (Dashboard, DB, Routes, etc.)
+│   ├── components/               # Shared components (Sidebar, Layout)
+│   └── package.json              # Admin dependencies
+│
 ├── app/                          # Your application code
 │   ├── ai/                       # AI action classes
 │   ├── controllers/              # HTTP controllers
@@ -590,6 +644,57 @@ scheduler.start();
 
 ---
 
+## Docker Deployment
+
+### Production
+
+```bash
+# Build and start the full stack (app + Redis)
+docker compose up -d --build
+
+# View logs
+docker compose logs -f app
+
+# Stop
+docker compose down
+```
+
+This starts:
+- **HyperZ app** — multi-stage Alpine build, non-root user, health checks
+- **Redis 7** — for cache and queue backends
+
+The app is available at **http://localhost:7700**
+
+### Development (Hot-Reload)
+
+```bash
+# Start with source-mounted hot-reload + Redis
+docker compose -f docker-compose.dev.yml up
+```
+
+### Standalone Docker
+
+```bash
+# Build the image
+docker build -t hyperz .
+
+# Run with your .env
+docker run -d --name hyperz -p 7700:7700 --env-file .env hyperz
+```
+
+### Environment Variables
+
+Pass environment variables via `.env` file or `docker compose` overrides:
+
+```env
+APP_PORT=7700
+CACHE_DRIVER=redis
+QUEUE_DRIVER=redis
+REDIS_HOST=redis        # Use 'redis' as host when using docker compose
+```
+
+---
+
 ## Contributing
 
 We welcome contributions! Here's how to get started:
@@ -650,8 +755,8 @@ npm run dev
 - [ ] Rate limiting per user/API key
 - [ ] Real-time dashboard & monitoring
 - [ ] GraphQL integration layer
-- [ ] Docker & deployment templates
-- [ ] Admin panel UI
+- [x] Docker & deployment templates
+- [x] Admin panel UI (Next.js)
 
 ---
 

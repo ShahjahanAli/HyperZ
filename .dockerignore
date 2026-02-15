@@ -1,0 +1,57 @@
+# ──────────────────────────────────────────────────────────────
+# HyperZ Framework — Docker Ignore
+# ──────────────────────────────────────────────────────────────
+
+# Dependencies (rebuilt in container)
+node_modules
+
+# Build output (rebuilt in container)
+dist
+
+# Version control
+.git
+.gitignore
+
+# IDE & editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment (injected at runtime)
+.env
+.env.local
+.env.*.local
+
+# Logs & temp files
+storage/logs/*
+storage/cache/*
+*.log
+npm-debug.log*
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+LICENSE
+
+# Docker files (avoid recursive copies)
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# Gemini / agent files
+.gemini
+.agent

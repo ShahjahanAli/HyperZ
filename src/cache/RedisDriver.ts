@@ -23,7 +23,7 @@ export class RedisDriver implements CacheDriver {
         this.client = new Redis({
             host: config?.host ?? env('REDIS_HOST', '127.0.0.1'),
             port: config?.port ?? envNumber('REDIS_PORT', 6379),
-            password: config?.password ?? env('REDIS_PASSWORD', '') || undefined,
+            password: (config?.password ?? env('REDIS_PASSWORD', '')) || undefined,
             lazyConnect: true,
         });
 

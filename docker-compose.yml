@@ -1,0 +1,70 @@
+# ──────────────────────────────────────────────────────────────
+# HyperZ Framework — Docker Compose (Production Stack)
+# ──────────────────────────────────────────────────────────────
+
+services:
+  # ── HyperZ API ───────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hyperz-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-7700}:7700"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - APP_ENV=production
+      - REDIS_HOST=redis
+    volumes:
+      - hyperz-storage:/app/storage
+      - hyperz-database:/app/database
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - hyperz-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7700/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Redis (Cache & Queue) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hyperz-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - hyperz-redis:/data
+    networks:
+      - hyperz-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ── Volumes ────────────────────────────────────────────────────
+volumes:
+  hyperz-storage:
+    driver: local
+  hyperz-database:
+    driver: local
+  hyperz-redis:
+    driver: local
+
+# ── Network ────────────────────────────────────────────────────
+networks:
+  hyperz-network:
+    driver: bridge

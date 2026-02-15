@@ -1,0 +1,9 @@
+{
+  "/page": "app/page.js",
+  "/scaffold/page": "app/scaffold/page.js",
+  "/database/page": "app/database/page.js",
+  "/routes/page": "app/routes/page.js",
+  "/config/page": "app/config/page.js",
+  "/services/page": "app/services/page.js",
+  "/logs/page": "app/logs/page.js"
+}
