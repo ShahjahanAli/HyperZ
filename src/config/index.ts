@@ -9,6 +9,7 @@ import { config as loadEnv } from 'dotenv';
 export class ConfigManager {
     private items: Record<string, any> = {};
     private envLoaded = false;
+    private configLoaded = false;
 
     constructor(private basePath: string) { }
 
@@ -29,6 +30,8 @@ export class ConfigManager {
      * Load all config files from the config/ directory.
      */
     async loadConfigFiles(): Promise<void> {
+        if (this.configLoaded) return;
+
         const configDir = path.join(this.basePath, 'config');
         if (!fs.existsSync(configDir)) return;
 
@@ -44,6 +47,8 @@ export class ConfigManager {
                 // Skip files that can't be imported
             }
         }
+
+        this.configLoaded = true;
     }
 
     /**

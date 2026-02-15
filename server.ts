@@ -21,6 +21,10 @@ import * as path from 'node:path';
 async function main(): Promise<void> {
     const app = createApp();
 
+    // Ensure environment is loaded before registration
+    app.config.loadEnv();
+    await app.config.loadConfigFiles();
+
     // Register tracing and metrics collection
     app.express.use(requestIdMiddleware());
     app.express.use(metricsMiddleware());
