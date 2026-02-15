@@ -56,6 +56,13 @@ export default function LandingPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [checking, setChecking] = useState(false);
+
+    const handleCheckConnection = async () => {
+        setChecking(true);
+        await refreshStatus();
+        setChecking(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -140,19 +147,40 @@ export default function LandingPage() {
                             <div style={{ textAlign: 'center', marginBottom: 20 }}>
                                 <div style={{ fontSize: 40, marginBottom: 8 }}>🗄️</div>
                                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                                    Database Setup Required
+                                    Getting Started
                                 </h2>
                                 <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                                    Configure your database connection to get started
+                                    Complete these steps to set up your admin panel
                                 </p>
                             </div>
 
+                            {/* Step 1: Generate Keys */}
                             <div style={{
                                 background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 10, padding: 16, marginBottom: 16,
+                                borderRadius: 10, padding: 16, marginBottom: 12,
                             }}>
                                 <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    Step 1 — Edit .env file
+                                    Step 1 — Generate Security Keys
+                                </div>
+                                <div style={{
+                                    fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--cyan)',
+                                    background: 'var(--bg)', borderRadius: 6, padding: '10px 14px',
+                                    border: '1px solid var(--border)',
+                                }}>
+                                    npx tsx bin/hyperz.ts key:generate
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                                    Generates <strong style={{ color: 'var(--accent)' }}>APP_KEY</strong> and <strong style={{ color: 'var(--accent)' }}>JWT_SECRET</strong> in your .env file
+                                </div>
+                            </div>
+
+                            {/* Step 2: Configure DB */}
+                            <div style={{
+                                background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                borderRadius: 10, padding: 16, marginBottom: 12,
+                            }}>
+                                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                                    Step 2 — Configure Database in .env
                                 </div>
                                 <pre style={{
                                     fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text)',
@@ -163,25 +191,28 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=your_database
 DB_USER=root
-DB_PASSWORD=secret
-JWT_SECRET=change-this-to-random-string`}
+DB_PASSWORD=secret`}
                                 </pre>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                                    Supported: <strong>mysql</strong>, <strong>postgresql</strong>, <strong>sqlite</strong>
+                                </div>
                             </div>
 
+                            {/* Restart Warning */}
                             <div style={{
-                                background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
-                                borderRadius: 8, padding: 12, fontSize: 12, color: 'var(--yellow)',
+                                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                                borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 12, color: 'var(--red)',
                             }}>
-                                💡 Supported drivers: <strong>mysql</strong>, <strong>postgresql</strong>, <strong>sqlite</strong>
+                                ⚠️ After editing <strong>.env</strong>, you must <strong>restart the HyperZ server</strong> for changes to take effect.
                             </div>
 
-                            <button onClick={refreshStatus} style={{
-                                width: '100%', marginTop: 16, padding: '12px 20px', borderRadius: 10,
+                            <button onClick={handleCheckConnection} disabled={checking} style={{
+                                width: '100%', padding: '12px 20px', borderRadius: 10,
                                 background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
                                 color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
-                                fontSize: 14,
+                                fontSize: 14, opacity: checking ? 0.6 : 1,
                             }}>
-                                🔄 Check Connection
+                                {checking ? '⏳ Checking…' : '🔄 Check Connection'}
                             </button>
                         </div>
                     )}
@@ -221,13 +252,13 @@ JWT_SECRET=change-this-to-random-string`}
                                 ℹ️ This creates the <code style={{ color: 'var(--accent)' }}>hyperz_admins</code> table and all other pending migrations.
                             </div>
 
-                            <button onClick={refreshStatus} style={{
+                            <button onClick={handleCheckConnection} disabled={checking} style={{
                                 width: '100%', marginTop: 16, padding: '12px 20px', borderRadius: 10,
                                 background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
                                 color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
-                                fontSize: 14,
+                                fontSize: 14, opacity: checking ? 0.6 : 1,
                             }}>
-                                🔄 Check Again
+                                {checking ? '⏳ Checking…' : '🔄 Check Again'}
                             </button>
                         </div>
                     )}
@@ -374,10 +405,11 @@ JWT_SECRET=change-this-to-random-string`}
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                             {[
-                                { step: '1', title: 'Configure Database', desc: 'Set DB credentials in .env', icon: '🗄️', active: step === 'db_setup' },
-                                { step: '2', title: 'Run Migrations', desc: 'npx tsx bin/hyperz.ts migrate', icon: '🔄', active: step === 'migrate' },
-                                { step: '3', title: 'Create Admin', desc: 'Register your admin account', icon: '🛡️', active: step === 'register' },
-                                { step: '4', title: 'Start Building', desc: 'Access the full admin panel', icon: '🚀', active: step === 'login' },
+                                { step: '1', title: 'Generate Keys', desc: 'npx tsx bin/hyperz.ts key:generate', icon: '🔑', active: step === 'db_setup' },
+                                { step: '2', title: 'Configure Database', desc: 'Set DB credentials in .env & restart', icon: '🗄️', active: step === 'db_setup' },
+                                { step: '3', title: 'Run Migrations', desc: 'npx tsx bin/hyperz.ts migrate', icon: '🔄', active: step === 'migrate' },
+                                { step: '4', title: 'Create Admin', desc: 'Register your first admin account', icon: '🛡️', active: step === 'register' },
+                                { step: '5', title: 'Start Building', desc: 'Access the full admin panel', icon: '🚀', active: step === 'login' },
                             ].map(s => (
                                 <div key={s.step} style={{
                                     background: s.active ? 'var(--accent-glow)' : 'var(--bg-input)',

@@ -242,24 +242,36 @@ export function registerCommands(program: Command): void {
     // ── key:generate ────────────────────────────────────────
     program
         .command('key:generate')
-        .description('Generate a new application key')
+        .description('Generate application key and JWT secret')
         .action(() => {
-            const key = randomString(64);
+            const appKey = randomString(64);
+            const jwtSecret = randomString(64);
             const envPath = path.join(ROOT, '.env');
 
             if (fs.existsSync(envPath)) {
                 let content = fs.readFileSync(envPath, 'utf-8');
+
+                // APP_KEY
                 if (content.includes('APP_KEY=')) {
-                    content = content.replace(/APP_KEY=.*/, `APP_KEY=${key}`);
+                    content = content.replace(/APP_KEY=.*/, `APP_KEY=${appKey}`);
                 } else {
-                    content += `\nAPP_KEY=${key}`;
+                    content += `\nAPP_KEY=${appKey}`;
                 }
+
+                // JWT_SECRET
+                if (content.includes('JWT_SECRET=')) {
+                    content = content.replace(/JWT_SECRET=.*/, `JWT_SECRET=${jwtSecret}`);
+                } else {
+                    content += `\nJWT_SECRET=${jwtSecret}`;
+                }
+
                 fs.writeFileSync(envPath, content);
             } else {
-                fs.writeFileSync(envPath, `APP_KEY=${key}\n`);
+                fs.writeFileSync(envPath, `APP_KEY=${appKey}\nJWT_SECRET=${jwtSecret}\n`);
             }
 
-            console.log(chalk.green(`✓ Application key generated: ${key.substring(0, 16)}...`));
+            console.log(chalk.green(`✓ APP_KEY generated: ${appKey.substring(0, 16)}...`));
+            console.log(chalk.green(`✓ JWT_SECRET generated: ${jwtSecret.substring(0, 16)}...`));
         });
 
     // ── make:auth ───────────────────────────────────────────
