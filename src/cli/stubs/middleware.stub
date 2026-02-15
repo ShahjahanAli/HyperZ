@@ -1,0 +1,9 @@
+import type { Request, Response, NextFunction } from 'express';
+
+/**
+ * {{name}} Middleware
+ */
+export function {{camelName}}(req: Request, res: Response, next: NextFunction): void {
+  // Add your middleware logic here
+  next();
+}

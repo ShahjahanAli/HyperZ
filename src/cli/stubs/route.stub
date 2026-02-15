@@ -1,0 +1,8 @@
+import { HyperZRouter } from '../../src/http/Router.js';
+
+const router = new HyperZRouter();
+
+// Define your routes here
+// router.get('/', (req, res) => res.json({ message: 'Hello from {{name}} routes' }));
+
+export default router;

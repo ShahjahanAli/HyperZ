@@ -1,0 +1,47 @@
+import { Controller } from '../../src/http/Controller.js';
+import type { Request, Response } from 'express';
+
+export class {{name}} extends Controller {
+  /**
+   * List all resources.
+   * GET /
+   */
+  async index(req: Request, res: Response): Promise<void> {
+    this.success(res, [], '{{name}} index');
+  }
+
+  /**
+   * Get a single resource.
+   * GET /:id
+   */
+  async show(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    this.success(res, { id }, '{{name}} show');
+  }
+
+  /**
+   * Create a new resource.
+   * POST /
+   */
+  async store(req: Request, res: Response): Promise<void> {
+    this.created(res, req.body, 'Resource created');
+  }
+
+  /**
+   * Update an existing resource.
+   * PUT /:id
+   */
+  async update(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    this.success(res, { id, ...req.body }, 'Resource updated');
+  }
+
+  /**
+   * Delete a resource.
+   * DELETE /:id
+   */
+  async destroy(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    this.noContent(res);
+  }
+}

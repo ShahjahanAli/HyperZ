@@ -1,0 +1,64 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "Node16",
+        "moduleResolution": "Node16",
+        "lib": [
+            "ES2022"
+        ],
+        "outDir": "./dist",
+        "rootDir": ".",
+        "strict": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "paths": {
+            "@core/*": [
+                "./src/core/*"
+            ],
+            "@http/*": [
+                "./src/http/*"
+            ],
+            "@database/*": [
+                "./src/database/*"
+            ],
+            "@auth/*": [
+                "./src/auth/*"
+            ],
+            "@config/*": [
+                "./src/config/*"
+            ],
+            "@support/*": [
+                "./src/support/*"
+            ],
+            "@cli/*": [
+                "./src/cli/*"
+            ],
+            "@app/*": [
+                "./app/*"
+            ]
+        },
+        "baseUrl": ".",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true
+    },
+    "include": [
+        "src/**/*.ts",
+        "app/**/*.ts",
+        "config/**/*.ts",
+        "database/**/*.ts",
+        "bin/**/*.ts",
+        "app.ts",
+        "server.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "storage"
+    ]
+}

@@ -1,0 +1,18 @@
+import { Model } from '../../src/database/Model.js';
+
+export class {{name}} extends Model {
+  protected static tableName = '{{tableName}}';
+  protected static primaryKey = 'id';
+  protected static timestamps = true;
+  protected static softDeletes = false;
+
+  /** Fields that can be mass-assigned */
+  protected static fillable: string[] = [
+    // Add your fillable fields here
+  ];
+
+  /** Fields hidden from JSON serialization */
+  protected static hidden: string[] = [
+    // e.g. 'password'
+  ];
+}
