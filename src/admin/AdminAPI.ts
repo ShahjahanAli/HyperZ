@@ -268,6 +268,36 @@ export async function createAdminRouter(app?: any): Promise<Router> {
     // ────────────────────────────────────────────────────────
     // 5. SCAFFOLD — Create controllers, models, etc.
     // ────────────────────────────────────────────────────────
+    router.get('/scaffold/discovery', async (_req: Request, res: Response) => {
+        try {
+            const getFiles = (dir: string) => {
+                const fullDir = path.join(ROOT, dir);
+                if (!fs.existsSync(fullDir)) return [];
+                return fs.readdirSync(fullDir)
+                    .filter(f => (f.endsWith('.ts') || f.endsWith('.js')) && !f.endsWith('.d.ts'))
+                    .map(f => f.replace(/\.(ts|js)$/, ''));
+            };
+
+            const models = getFiles('app/models');
+            const controllers = getFiles('app/controllers');
+            const routes = getFiles('app/routes');
+            const migrationsDir = path.join(ROOT, 'database', 'migrations');
+            const migrations = fs.existsSync(migrationsDir)
+                ? fs.readdirSync(migrationsDir).filter(f => f.endsWith('.ts') || f.endsWith('.js')).sort()
+                : [];
+
+            res.json({
+                models,
+                controllers,
+                routes,
+                migrations: migrations.map(m => ({ name: m, path: `database/migrations/${m}` })),
+                total: models.length + controllers.length + routes.length + migrations.length
+            });
+        } catch (err: any) {
+            res.status(500).json({ error: 'Failed to discover resources', detail: err.message });
+        }
+    });
+
     router.post('/scaffold/:type', (req: Request, res: Response) => {
         const { type } = req.params;
         const { name, withMigration } = req.body;
