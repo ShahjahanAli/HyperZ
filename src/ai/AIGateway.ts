@@ -38,6 +38,18 @@ export interface AIEmbeddingResponse {
     usage?: { totalTokens: number };
 }
 
+export interface ModelCost {
+    prompt: number; // Cost per 1k tokens
+    completion: number;
+}
+
+const MODEL_COSTS: Record<string, ModelCost> = {
+    'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
+    'gpt-4o': { prompt: 0.005, completion: 0.015 },
+    'claude-sonnet-4-20250514': { prompt: 0.003, completion: 0.015 },
+    'gemini-2.0-flash': { prompt: 0.0001, completion: 0.0004 },
+};
+
 // ── Provider Interface ──────────────────────────────────────
 
 interface AIProvider {
@@ -45,6 +57,50 @@ interface AIProvider {
     chat(messages: AIMessage[], options?: AICompletionOptions): Promise<AIResponse>;
     complete(prompt: string, options?: AICompletionOptions): Promise<AIResponse>;
     embed(input: string | string[], model?: string): Promise<AIEmbeddingResponse>;
+}
+
+// ── AI Action Builder ───────────────────────────────────────
+
+export class AIAction {
+    private gateway: AIGateway;
+    private name: string;
+    private context: Record<string, any> = {};
+    private modelName?: string;
+    private providerName?: string;
+
+    constructor(gateway: AIGateway, name: string) {
+        this.gateway = gateway;
+        this.name = name;
+    }
+
+    withContext(context: Record<string, any>): this {
+        this.context = { ...this.context, ...context };
+        return this;
+    }
+
+    withModel(model: string): this {
+        this.modelName = model;
+        return this;
+    }
+
+    withProvider(provider: string): this {
+        this.providerName = provider;
+        return this;
+    }
+
+    async execute(): Promise<AIResponse> {
+        // In a real implementation, this would load a prompt template named this.name
+        // and interpolate this.context. For now, we simulate a system message.
+        const messages: AIMessage[] = [
+            { role: 'system', content: `Action: ${this.name}. Context: ${JSON.stringify(this.context)}` },
+            { role: 'user', content: `Process the action ${this.name} with the provided context.` }
+        ];
+
+        return this.gateway.chat(messages, {
+            model: this.modelName,
+            provider: this.providerName
+        });
+    }
 }
 
 // ── OpenAI Provider ─────────────────────────────────────────
@@ -263,6 +319,7 @@ export class AIGateway {
     private providers = new Map<string, AIProvider>();
     private defaultProvider: string;
     private totalTokensUsed = 0;
+    private totalCost = 0;
 
     constructor(defaultProvider = 'openai') {
         this.defaultProvider = defaultProvider;
@@ -299,6 +356,13 @@ export class AIGateway {
     }
 
     /**
+     * Create a new AI action builder.
+     */
+    action(name: string): AIAction {
+        return new AIAction(this, name);
+    }
+
+    /**
      * Get a specific provider.
      */
     provider(name?: string): AIProvider {
@@ -309,16 +373,47 @@ export class AIGateway {
     }
 
     /**
-     * Chat with an AI model.
+     * Chat with an AI model with automatic fallback support.
      */
     async chat(
         messages: AIMessage[],
-        options?: AICompletionOptions & { provider?: string }
+        options?: AICompletionOptions & { provider?: string; fallbackProviders?: string[] }
     ): Promise<AIResponse> {
-        const response = await this.provider(options?.provider).chat(messages, options);
-        this.totalTokensUsed += response.usage?.totalTokens ?? 0;
-        Logger.debug(`[AI] Chat response from ${response.provider}/${response.model} (${response.latencyMs}ms, ${response.usage?.totalTokens ?? 0} tokens)`);
-        return response;
+        const providersToTry = [
+            options?.provider ?? this.defaultProvider,
+            ...(options?.fallbackProviders ?? [])
+        ];
+
+        let lastError: Error | null = null;
+
+        for (const providerName of providersToTry) {
+            try {
+                const response = await this.provider(providerName).chat(messages, options);
+                this.trackUsage(response);
+                Logger.debug(`[AI] Chat response from ${response.provider}/${response.model} (${response.latencyMs}ms, ${response.usage?.totalTokens ?? 0} tokens)`);
+                return response;
+            } catch (error: any) {
+                Logger.warn(`[AI] Provider "${providerName}" failed: ${error.message}. Trying fallback...`);
+                lastError = error;
+            }
+        }
+
+        throw new Error(`[AI] All providers failed. Last error: ${lastError?.message}`);
+    }
+
+    /**
+     * Track token usage and estimate cost.
+     */
+    private trackUsage(response: AIResponse): void {
+        const tokens = response.usage?.totalTokens ?? 0;
+        this.totalTokensUsed += tokens;
+
+        const costConfig = MODEL_COSTS[response.model];
+        if (costConfig && response.usage) {
+            const cost = (response.usage.promptTokens / 1000 * costConfig.prompt) +
+                (response.usage.completionTokens / 1000 * costConfig.completion);
+            this.totalCost += cost;
+        }
     }
 
     /**

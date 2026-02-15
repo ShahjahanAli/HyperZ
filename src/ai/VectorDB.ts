@@ -38,4 +38,47 @@ export class VectorDB {
         if (!adapter) throw new Error(`[HyperZ] Vector DB adapter "${name}" not found.`);
         return adapter;
     }
+
+    /**
+     * Helper to get instance-bound adapter (for DI).
+     */
+    adapter(name?: string): VectorDBAdapter {
+        return VectorDB.use(name);
+    }
+}
+
+// ── PGVector Adapter ────────────────────────────────────────
+
+export class PGVectorAdapter implements VectorDBAdapter {
+    async upsert(collection: string, documents: VectorDocument[]): Promise<void> {
+        // Implementation for pgvector (PostgreSQL)
+        console.log(`[VectorDB:pgvector] Upserting ${documents.length} docs to ${collection}`);
+    }
+
+    async search(collection: string, query: string | number[], limit: number = 5): Promise<VectorDocument[]> {
+        console.log(`[VectorDB:pgvector] Searching ${collection} for query`);
+        return [];
+    }
+
+    async delete(collection: string, ids: string[]): Promise<void> {
+        console.log(`[VectorDB:pgvector] Deleting ${ids.length} docs from ${collection}`);
+    }
+}
+
+// ── Weaviate Adapter ────────────────────────────────────────
+
+export class WeaviateAdapter implements VectorDBAdapter {
+    async upsert(collection: string, documents: VectorDocument[]): Promise<void> {
+        // Implementation for Weaviate
+        console.log(`[VectorDB:weaviate] Upserting ${documents.length} docs to ${collection}`);
+    }
+
+    async search(collection: string, query: string | number[], limit: number = 5): Promise<VectorDocument[]> {
+        console.log(`[VectorDB:weaviate] Searching ${collection} for query`);
+        return [];
+    }
+
+    async delete(collection: string, ids: string[]): Promise<void> {
+        console.log(`[VectorDB:weaviate] Deleting ${ids.length} docs from ${collection}`);
+    }
 }

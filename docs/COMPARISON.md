@@ -23,13 +23,12 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **Cache** | ✅ Memory + Redis | ✅ via modules | ✅ Built-in | ❌ Manual | ✅ Built-in | ✅ Built-in | ✅ IDistributedCache | ✅ Spring Cache |
 | **Queue/Jobs** | ✅ Sync + BullMQ | ✅ Bull module | ❌ Planned | ❌ Manual | ✅ Built-in | ✅ Messenger | ✅ Background Services | ✅ Spring Batch |
 | **WebSocket** | ✅ Socket.io | ✅ Built-in | ❌ 3rd party | ❌ Manual | ✅ Broadcasting | ✅ Mercure | ✅ SignalR | ✅ Spring WebSocket |
-| **AI Gateway** | ✅ 3 providers | ❌ Manual | ❌ None | ❌ Manual | ❌ 3rd party | ❌ None | ✅ Extensions.AI | ❌ Spring AI (early) |
+| **AI Engine** | ✅ **Fallback + Cost** | ❌ Manual | ❌ None | ❌ Manual | ❌ 3rd party | ❌ None | ✅ AI SDK | ❌ Spring AI |
+| **SaaS Multi-tenancy**| ✅ **Built-in** | ❌ 3rd party | ❌ None | ❌ Manual | ✅ Tenancy pak | ❌ None | ❌ Manual | ❌ Manual |
 | **API Playground** | ✅ Built-in | ✅ Swagger | ❌ None | ❌ Manual | ❌ 3rd party | ✅ API Platform | ✅ Swagger | ✅ Swagger |
 | **Admin Panel** | ✅ Built-in | ❌ 3rd party | ❌ None | ❌ None | ✅ Nova (paid) | ✅ EasyAdmin | ❌ 3rd party | ✅ Spring Admin |
-| **AI Agent Support** | ✅ **First-class** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **AI Agents** | ✅ **First-class** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
 | **Prompt/Vector DB** | ✅ **Built-in** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
-| **i18n** | ✅ Built-in | ✅ nestjs-i18n | ✅ Built-in | ❌ Manual | ✅ Built-in | ✅ Built-in | ✅ Built-in | ✅ MessageSource |
-| **DI Decorators** | ✅ **Built-in** | ✅ Core | ❌ Global | ❌ Manual | ❌ Minimal | ❌ Minimal | ✅ Core | ✅ Core |
 | **Testing** | ✅ HTTP Client | ✅ Built-in | ✅ Japa | ❌ Manual | ✅ PHPUnit | ✅ PHPUnit | ✅ xUnit | ✅ JUnit |
 | **Docker** | ✅ Included | ❌ Manual | ❌ Manual | ❌ Manual | ✅ Sail | ❌ Manual | ✅ Built-in | ✅ Buildpacks |
 
@@ -176,11 +175,11 @@ These features are **exclusive to HyperZ** — no other framework listed offers 
 
 | Feature | What It Is | Why It Matters |
 |---|---|---|
-| 🧠 **AI Agent Configs** | `.cursorrules`, `AGENTS.md`, `.agent/workflows/`, `.github/copilot-instructions.md` | First framework designed for AI-assisted development |
-| 🤖 **Built-in AI Gateway** | OpenAI + Anthropic + Google AI with unified API | No package hunting — `ai.chat()` works out of the box |
+| 🤖 **Built-in AI Engine** | OpenAI + Anthropic + Google with **Fallback & Cost Tracking** | No package hunting — `ai.chat()` works out of the box with infra features |
 | 🎮 **API Playground** | Postman-like testing UI built into the framework | Test APIs without external tools |
 | 🏗️ **Admin Panel** | Full Next.js management dashboard (free) | Database, routes, env, scaffolding — all in browser |
-| 🔧 **CLI + Admin Scaffolding** | Create resources via CLI *or* web UI | Two ways to scaffold — terminal or browser |
+| 🏢 **Native SaaS Core** | Subdomain Tenancy, **DB Pooling**, Stripe Metering | Build multi-tenant AI SaaS apps in record time |
+| 🕵️ **Autonomous Agents** | Native `Agent` factory with Skill & Memory | Deploy autonomous AI workforce directly in your API |
 
 ---
 

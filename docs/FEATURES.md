@@ -195,6 +195,23 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 
 ---
 
+### 20.1 Multi-Tenancy Engine
+- Subdomain-aware tenant resolution
+- Automated tenant config isolation
+- **Tenant-aware DB connection pooling**
+
+### 20.2 Billing & Metering
+- Native **Stripe integration** classes
+- Usage recording API (`billing.recordUsage`)
+- Plan-based feature gating middleware
+
+### 20.3 API Key Management
+- Tenant-scoped API key generation
+- Automated key validation middleware
+- **Audit Logging** for enterprise compliance
+
+---
+
 ## 9. WebSocket *(NEW)*
 
 ### 9.1 Socket.io Integration
@@ -226,17 +243,23 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 - Token tracking and usage reporting
 - Auto-config from `.env` variables
 
-### 10.4 Prompt Management *(NEW)*
+### 10.4 Prompt Management
 - **Directory-based templates** in `app/prompts/`
-- **Variable interpolation** using `{{var}}` syntax
-- Recursive prompt discovery
+- **Versioning support** using `@v1` or `@latest` tags in naming
+- Variable interpolation using `{{var}}` syntax
 - `PromptManager.load(name, variables)` API
 
-### 10.5 Vector DB Adapters *(NEW)*
+### 10.5 Vector DB Adapters
 - **RAG-ready interface** for similarity search
-- Adapters for Pinecone, Chroma, and Qdrant
+- Adapters for **pgvector (Postgres)**, **Weaviate**, Pinecone, and Qdrant
 - Simple `upsert`, `search`, and `delete` operations
 - `VectorDB.use(adapter)` registry
+
+### 10.6 AI Agent Module (NEW)
+- **Autonomous Agent Factory** (`Agent.create()`)
+- Skill-based behavior configuration
+- Memory management (Short-term, Vector, Persistent)
+- Tool-calling infrastructure integration
 
 ### 10.3 AI Action Scaffolding
 - `make:ai-action <Name>` CLI command

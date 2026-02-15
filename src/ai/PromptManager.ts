@@ -13,17 +13,18 @@ export class PromptManager {
 
     /**
      * Load a prompt template and substitute variables.
-     * @example promptManager.load('hiring/job-desc', { role: 'Engineer' })
+     * @example promptManager.load('hiring/job-desc@v2', { role: 'Engineer' })
      */
     async load(name: string, variables: Record<string, string> = {}): Promise<string> {
-        const filePath = path.join(this.promptPath, `${name}.md`);
+        const [baseName, version] = name.split('@');
+        const fileName = version ? `${baseName}.${version}.md` : `${baseName}.md`;
+        const filePath = path.join(this.promptPath, fileName);
 
         try {
             let content = await fs.readFile(filePath, 'utf-8');
 
             for (const [key, value] of Object.entries(variables)) {
-                const regex = new RegExp(`{{${key}}}`, 'g');
-                content = content.replace(regex, value);
+                content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
             }
 
             return content.trim();

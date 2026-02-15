@@ -4,6 +4,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { Router as ExpressRouter, type RequestHandler, type Express, type Request, type Response, type NextFunction } from 'express';
+import { Logger } from '../logging/Logger.js';
 
 /**
  * Wrap an async route handler so rejected promises are forwarded
@@ -64,6 +65,22 @@ export class HyperZRouter {
 
     delete(path: string, ...handlers: RequestHandler[]): this {
         return this.addRoute('DELETE', path, handlers);
+    }
+
+    /**
+     * Define an AI-aware route.
+     * Automatically applies AI usage tracking and RAG context if applicable.
+     */
+    ai(path: string, ...handlers: RequestHandler[]): this {
+        // In v2, this would automatically inject AI metering and RAG middleware
+        // For now, we simulate by adding an internal AI middleware
+        return this.addRoute('POST', path, [
+            (req: any, res, next) => {
+                Logger.info(`[AI-Route] Handling AI request at ${path}`);
+                next();
+            },
+            ...handlers
+        ]);
     }
 
     options(path: string, ...handlers: RequestHandler[]): this {

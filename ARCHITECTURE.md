@@ -89,12 +89,18 @@ Response → Client
 └──────────────┘    └──────────────┘    │ • Scheduler  │
                                         │ • WebSocket  │
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Auth Layer  │    │    Tooling   │    │    DevTools   │
+│  Auth Layer  │    │  AI Engine   │    │  SaaS Core   │
 │              │    │              │    │              │
-│ • JWT        │    │ • CLI (16+)  │    │ • Admin Panel│
-│ • RBAC       │    │ • Playground │    │ • Logger     │
-│ • Gates      │    │ • Tinker     │    │ • Plugins    │
-│ • Policies   │    │ • TestClient │    │ • Monitoring │
+│ • JWT        │    │ • Fallback   │    │ • Tenancy    │
+│ • RBAC       │    │ • Cost Track │    │ • Billing    │
+│ • API Keys   │    │ • Actions    │    │ • DB Pooling │
+└──────────────┘    └──────────────┘    └──────────────┘
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  RAG System  │    │   Tooling    │    │   DevTools   │
+│              │    │              │    │              │
+│ • Ingestion  │    │ • CLI (16+)  │    │ • Admin Panel│
+│ • Vector DB  │    │ • MCP Server │    │ • Playground │
+│ • Semantic   │    │ • Agents     │    │ • Monitoring │
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 

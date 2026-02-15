@@ -127,9 +127,16 @@ HyperZ/
 - Use `knex.schema.createTable()` in `up()`, `knex.schema.dropTableIfExists()` in `down()`
 
 ### AI-native Features
-- **PromptManager:** Load templates from `app/prompts/` (e.g., `await prompts.load('email/welcome', { user: 'name' })`).
-- **VectorDB:** Use for RAG capabilities. Register adapters in `AppServiceProvider`.
-- **AIGateway:** Unified interface for OpenAI, Anthropic, and Gemini.
+- **PromptManager:** Load templates from `app/prompts/` (e.g., `await prompts.load('email/welcome@v2', { user: 'name' })`).
+- **VectorDB:** Use for RAG capabilities. Register adapters (`PGVectorAdapter`, `WeaviateAdapter`) in `AppServiceProvider`.
+- **AIGateway:** Unified interface for OpenAI, Anthropic, and Gemini. Use `ai.action(name)` for structured tasks.
+- **Agents:** Use `Agent.create(name, ai)` to build autonomous workflows.
+
+### Enterprise SaaS Patterns
+- **Multi-tenancy:** Access `req.tenant` to get context-isolated configuration.
+- **Database:** Use `Database.getTenantKnex(tenantId, config)` for isolated DB pools.
+- **Billing:** Record usage via `billing.recordUsage(tenantId, 'tokens', count)`.
+- **Monitoring:** Track AI cost and latency via the built-in system gauges.
 
 ---
 

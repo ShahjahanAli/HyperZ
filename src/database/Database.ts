@@ -9,6 +9,7 @@ import { env, envBool } from '../support/helpers.js';
 
 export class Database {
     private static knexInstance: Knex | null = null;
+    private static tenantPool = new Map<string, Knex>();
     private static mongoConnected = false;
 
     // ── SQL (Knex) ────────────────────────────────────────────
@@ -31,6 +32,21 @@ export class Database {
         }
 
         return this.knexInstance;
+    }
+
+    /**
+     * Get a tenant-specific Knex instance.
+     */
+    static async getTenantKnex(tenantId: string, config: Knex.Config): Promise<Knex> {
+        let instance = this.tenantPool.get(tenantId);
+
+        if (!instance) {
+            Logger.info(`[Database] Initializing connection for tenant: ${tenantId}`);
+            instance = knex(config);
+            this.tenantPool.set(tenantId, instance);
+        }
+
+        return instance;
     }
 
     /**

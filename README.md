@@ -2,10 +2,10 @@
   <img src="https://img.shields.io/badge/⚡-HyperZ-blueviolet?style=for-the-badge&labelColor=000000" alt="HyperZ" />
 </p>
 
-<h1 align="center">HyperZ Framework</h1>
+<h1 align="center">HyperZ v2</h1>
 
 <p align="center">
-  <strong>A modern, Laravel-inspired, enterprise-grade API framework built on Express.js & TypeScript</strong>
+  <strong>The World's First AI-Native Enterprise SaaS Framework built on Express.js & TypeScript</strong>
 </p>
 
 <p align="center">
@@ -30,9 +30,9 @@
 
 ---
 
-## Why HyperZ?
+## Why HyperZ v2?
 
-HyperZ brings the developer experience you love from Laravel to the Node.js ecosystem — an opinionated, batteries-included framework with a powerful CLI, built-in auth, RBAC, AI gateway, live API playground, and a modular service-provider architecture. If you've ever wished Express had the structure and tooling of a full-stack framework, HyperZ is for you.
+HyperZ v2 transforms the Express.js ecosystem into a powerhouse for **AI SaaS** development. It bridges the gap between "building a wrapper" and "building an enterprise platform." With native multi-tenancy, subscription metering, RAG pipelines, and autonomous agent modules, HyperZ provides everything you need to ship a scalable AI product in days, not months.
 
 ---
 
@@ -54,16 +54,13 @@ HyperZ brings the developer experience you love from Laravel to the Node.js ecos
 | 📦 **Queue** | Sync + **BullMQ** (Redis) drivers with delayed job dispatching |
 | 📁 **Storage** | Local filesystem + **AWS S3** drivers |
 | 🌐 **WebSocket** | Real-time communication via Socket.io with channel & room management |
-| 🤖 **AI Gateway** | Multi-provider AI (OpenAI, Anthropic, Google), **Prompt Templates, Vector DB / RAG** |
+| 🤖 **AI Engine** | **Model Fallback, Cost Tracking**, Prompt Versioning, Unified **AI Actions** |
+| 📚 **Native RAG** | **Document Ingestion Pipeline**, Semantic Search Middleware, **pgvector/Weaviate** |
+| 🏢 **SaaS Core** | **Subdomain Multi-tenancy, Tenant-aware DB Pooling**, Stripe Billing, API Keys |
+| 🕵️ **AI Agents** | **Autonomous Agent Factory** with Skill & Memory management system |
+| 🛡️ **Enterprise** | **Audit Logging**, RBAC Policy Engine, Secrets Mgmt, Advanced IoC Decorators |
+| 📊 **Observability** | Real-time Metrics Dashboard, **AI Latency & Cost Analytics**, System Health |
 | 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
-| 🏭 **Factories** | Database Factory for test data generation (Faker-ready) |
-| 🔌 **Plugins** | Auto-discovery plugin manager for modular extensions |
-| 🌍 **i18n** | Multi-language localization with JSON-based translations |
-| 🧪 **Testing** | HTTP test client for integration testing (Vitest-ready) |
-| ⏰ **Scheduler** | Cron-like task scheduler with fluent API |
-| 📝 **Logging** | Pino-powered structured logging with pretty dev output |
-| 🏗️ **Enterprise DI** | **Advanced IoC with TypeScript Decorators (`@Injectable`, `@Singleton`)** |
-| 📈 **Observability** | **Real-time CPU/memory/latency, event loop lag, system metrics dashboard** |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
 | 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity — with **MCP Server** |

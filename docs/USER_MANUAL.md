@@ -763,9 +763,49 @@ await vectorDb.upsert('kb_articles', [
 const results = await vectorDb.search('kb_articles', 'How is HyperZ structured?');
 ```
 
+### 12.7 AI Actions & Fallback
+Define structured AI actions with automatic provider fallback.
+
+```typescript
+const job = await ai.action('code-review')
+    .withContext({ code: 'const x = 1;' })
+    .withProvider('openai')
+    .execute();
+```
+
+## 13. Enterprise SaaS Core
+
+### 13.1 Multi-Tenancy
+Access the current tenant automatically via `req.tenant`.
+
+```typescript
+router.get('/settings', (req, res) => {
+    const tenant = req.tenant; // { id: 'acme', name: 'ACME Corp', ... }
+});
+```
+
+### 13.2 Billing & Usage
+Record usage for billing purposes.
+
+```typescript
+await billing.recordUsage(req.tenant.id, 'tokens', 1500);
+```
+
+### 13.3 AI Agents
+Create autonomous agents with specific skills.
+
+```typescript
+const supportAgent = Agent.create('Support-Bot', ai)
+    .withSkills(['troubleshooting', 'politeness'])
+    .withMemory('short-term')
+    .build();
+
+const response = await supportAgent.run('My API key is not working');
+```
+
 ---
 
-## 13. API Playground
+## 14. API Playground
 
 ### 13.1 Access
 
@@ -786,7 +826,7 @@ Navigate to **http://localhost:7700/api/playground** after starting the server.
 
 ---
 
-## 14. i18n / Localization
+## 15. i18n / Localization
 
 ### 14.1 Translation Files
 
@@ -823,7 +863,7 @@ I18n.t('welcome');                        // "হাইপারজেড-এ �
 
 ---
 
-## 15. Enterprise Readiness
+## 16. Enterprise Readiness
 
 ### 15.1 Dependency Injection
 HyperZ provides a robust DI system using the `Inversify`-like pattern with native decorators.
@@ -861,7 +901,7 @@ Access the monitoring dashboard in the Admin Panel (`/monitoring`).
 
 ---
 
-## 15. Events & Scheduling
+## 17. Events & Scheduling
 
 ### 15.1 Events
 
@@ -905,7 +945,7 @@ scheduler.start();
 
 ---
 
-## 16. Mail
+## 18. Mail
 
 ### 16.1 Configuration
 
@@ -933,7 +973,7 @@ await Mailer.send({
 
 ---
 
-## 17. Testing
+## 19. Testing
 
 ### 17.1 HTTP Test Client
 
@@ -958,7 +998,7 @@ const res3 = await client.withToken('your-jwt-token').get('/api/profile');
 
 ---
 
-## 18. Tinker REPL
+## 20. Tinker REPL
 
 Start an interactive REPL with preloaded app context:
 
@@ -981,7 +1021,7 @@ hyperz > .exit               // Quit
 
 ---
 
-## 19. Plugins
+## 21. Plugins
 
 ### 19.1 Creating a Plugin
 
@@ -1013,7 +1053,7 @@ await pm.loadAll(app);
 
 ---
 
-## 20. Admin Panel
+## 22. Admin Panel
 
 HyperZ includes a **built-in Next.js admin panel** for visual management — no terminal required.
 
@@ -1077,7 +1117,7 @@ The admin panel communicates via `/api/_admin/*` endpoints:
 
 ---
 
-## 21. CLI Reference
+## 23. CLI Reference
 
 | Command | Description |
 |---|---|
@@ -1102,7 +1142,7 @@ The admin panel communicates via `/api/_admin/*` endpoints:
 
 ---
 
-## 22. Deployment
+## 24. Deployment
 
 ### 22.1 Docker Deployment (Recommended)
 
@@ -1159,7 +1199,7 @@ pm2 save
 
 ---
 
-## 22. Troubleshooting
+## 25. Troubleshooting
 
 ### Common Issues
 
