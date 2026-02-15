@@ -804,6 +804,7 @@ npm run dev
 - 🏗️ [Architecture Guide](ARCHITECTURE.md)
 - 📋 [Product Features Specification](docs/FEATURES.md)
 - 📖 [User Manual](docs/USER_MANUAL.md)
+- ⚔️ [Framework Comparison](docs/COMPARISON.md)
 - 📄 [Changelog](CHANGELOG.md)
 
 ---
