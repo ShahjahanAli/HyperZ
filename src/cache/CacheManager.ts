@@ -3,13 +3,14 @@
 // ──────────────────────────────────────────────────────────────
 
 import { Logger } from '../logging/Logger.js';
+import { RedisDriver } from './RedisDriver.js';
 
 interface CacheEntry {
     value: any;
     expiresAt: number | null; // null = never expires
 }
 
-interface CacheDriver {
+export interface CacheDriver {
     get(key: string): Promise<any | null>;
     put(key: string, value: any, ttlSeconds?: number): Promise<void>;
     forget(key: string): Promise<void>;
@@ -59,9 +60,12 @@ class MemoryDriver implements CacheDriver {
 export class CacheManager {
     private driver: CacheDriver;
 
-    constructor(driverName: string = 'memory') {
-        // Redis driver can be added later
-        this.driver = new MemoryDriver();
+    constructor(driverName: string = 'memory', config?: Record<string, any>) {
+        if (driverName === 'redis') {
+            this.driver = new RedisDriver(config);
+        } else {
+            this.driver = new MemoryDriver();
+        }
         Logger.debug(`Cache driver: ${driverName}`);
     }
 

@@ -1,0 +1,15 @@
+import { Factory } from '../../src/database/Factory.js';
+// import { faker } from '@faker-js/faker';
+
+/**
+ * {{name}} Factory
+ *
+ * Uncomment the faker import above and use it to generate realistic data:
+ * name: faker.person.fullName(),
+ * email: faker.internet.email(),
+ */
+Factory.define('{{tableName}}', () => ({
+  // Define your factory fields here
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+}));

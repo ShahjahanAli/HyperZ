@@ -1,0 +1,14 @@
+import { BaseJob } from '../../src/queue/QueueManager.js';
+
+export class {{name}} extends BaseJob {
+  name = '{{name}}';
+
+  constructor(private data: Record<string, any>) {
+    super();
+  }
+
+  async handle(): Promise<void> {
+    // Process the job
+    console.log(`Processing ${this.name}`, this.data);
+  }
+}

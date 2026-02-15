@@ -1,0 +1,17 @@
+{
+    "welcome": "Welcome to HyperZ!",
+    "greeting": "Hello, :name!",
+    "errors": {
+        "not_found": "Resource not found.",
+        "unauthorized": "You are not authorized.",
+        "forbidden": "Access denied.",
+        "validation": "Validation failed.",
+        "server_error": "An internal server error occurred."
+    },
+    "auth": {
+        "login_success": "Logged in successfully.",
+        "register_success": "Registration successful.",
+        "logout_success": "Logged out successfully.",
+        "invalid_credentials": "Invalid email or password."
+    }
+}

@@ -6,7 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Logger } from '../logging/Logger.js';
 
-interface StorageDriver {
+export interface StorageDriver {
     put(filePath: string, content: Buffer | string): Promise<string>;
     get(filePath: string): Promise<Buffer | null>;
     delete(filePath: string): Promise<void>;
@@ -65,6 +65,16 @@ export class StorageManager {
         // Register default local disk
         const localRoot = disksConfig?.local?.root ?? './storage/uploads';
         this.disks.set('local', new LocalDriver(localRoot));
+
+        // Register S3 disk if configured
+        if (disksConfig?.s3?.bucket) {
+            import('./S3Driver.js').then(({ S3Driver }) => {
+                this.disks.set('s3', new S3Driver(disksConfig.s3));
+                Logger.debug('[Storage] S3 disk registered');
+            }).catch(() => {
+                Logger.debug('[Storage] S3 driver not available (install @aws-sdk/client-s3)');
+            });
+        }
     }
 
     /**

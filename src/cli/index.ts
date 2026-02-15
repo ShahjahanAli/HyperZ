@@ -415,4 +415,91 @@ export async function down(knex: Knex): Promise<void> {
             console.log(chalk.gray('  → app/routes/auth.ts'));
             console.log(chalk.gray('  → database/migrations/*_create_auth_tables.ts'));
         });
+
+    // ── make:job ────────────────────────────────────────────
+    program
+        .command('make:job <name>')
+        .description('Create a new queue job')
+        .action((name: string) => {
+            const stub = readStub('job').replace(/\{\{name\}\}/g, name);
+            const filePath = path.join(ROOT, 'app', 'jobs', `${name}.ts`);
+            writeFile(filePath, stub);
+            console.log(chalk.green(`✓ Job created: app/jobs/${name}.ts`));
+        });
+
+    // ── make:factory ────────────────────────────────────────
+    program
+        .command('make:factory <name>')
+        .description('Create a new database factory')
+        .action((name: string) => {
+            const tableName = toTableName(name.replace('Factory', ''));
+            const stub = readStub('factory')
+                .replace(/\{\{name\}\}/g, name)
+                .replace(/\{\{tableName\}\}/g, tableName);
+            const filePath = path.join(ROOT, 'database', 'factories', `${name}.ts`);
+            writeFile(filePath, stub);
+            console.log(chalk.green(`✓ Factory created: database/factories/${name}.ts`));
+        });
+
+    // ── make:ai-action ──────────────────────────────────────
+    program
+        .command('make:ai-action <name>')
+        .description('Create a new AI action')
+        .action((name: string) => {
+            const content = `import { AIGateway } from '../../src/ai/AIGateway.js';
+import type { AIMessage, AICompletionOptions } from '../../src/ai/AIGateway.js';
+
+const ai = new AIGateway();
+ai.autoConfig();
+
+export class ${name} {
+  /**
+   * Execute the AI action.
+   */
+  async execute(input: string, options?: AICompletionOptions): Promise<string> {
+    const messages: AIMessage[] = [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: input },
+    ];
+
+    const response = await ai.chat(messages, options);
+    return response.content;
+  }
 }
+`;
+            const filePath = path.join(ROOT, 'app', 'ai', `${name}.ts`);
+            writeFile(filePath, content);
+            console.log(chalk.green(`✓ AI Action created: app/ai/${name}.ts`));
+        });
+
+    // ── tinker ──────────────────────────────────────────────
+    program
+        .command('tinker')
+        .description('Interactive REPL with preloaded app context')
+        .action(async () => {
+            console.log(chalk.cyan('\n⚡ HyperZ Tinker — Interactive REPL\n'));
+            console.log(chalk.gray('  Available: db, env, helpers, Logger, Factory'));
+            console.log(chalk.gray('  Type .exit to quit\n'));
+
+            const repl = await import('node:repl');
+            loadEnv();
+
+            const r = repl.start({ prompt: chalk.magenta('hyperz > '), useGlobal: true });
+
+            // Preload common modules into REPL context
+            try {
+                const { Database } = await import('../database/Database.js');
+                const { Logger } = await import('../logging/Logger.js');
+                const helpers = await import('../support/helpers.js');
+
+                r.context.db = Database;
+                r.context.Logger = Logger;
+                r.context.env = helpers.env;
+                r.context.sleep = helpers.sleep;
+                r.context.randomString = helpers.randomString;
+            } catch {
+                // Some modules may not load outside full app boot
+            }
+        });
+}
+
