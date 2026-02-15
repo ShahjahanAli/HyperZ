@@ -58,32 +58,6 @@ export default function LandingPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [checking, setChecking] = useState(false);
 
-    const handleCheckConnection = async () => {
-        setChecking(true);
-        await refreshStatus();
-        setChecking(false);
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        try {
-            if (mode === 'register') {
-                const result = await register(form.email, form.password, form.name);
-                if (!result.success) setError(result.error || 'Registration failed');
-            } else {
-                const result = await login(form.email, form.password);
-                if (!result.success) setError(result.error || 'Login failed');
-            }
-        } catch {
-            setError('An unexpected error occurred');
-        }
-
-        setLoading(false);
-    };
-
     // Determine which step to show
     const step = !status
         ? 'loading'
@@ -97,6 +71,32 @@ export default function LandingPage() {
 
     // Auto-set mode based on step
     const effectiveMode = step === 'register' ? 'register' : mode;
+
+    const handleCheckConnection = async () => {
+        setChecking(true);
+        await refreshStatus();
+        setChecking(false);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            if (effectiveMode === 'register') {
+                const result = await register(form.email, form.password, form.name);
+                if (!result.success) setError(result.error || 'Registration failed');
+            } else {
+                const result = await login(form.email, form.password);
+                if (!result.success) setError(result.error || 'Login failed');
+            }
+        } catch {
+            setError('An unexpected error occurred');
+        }
+
+        setLoading(false);
+    };
 
     return (
         <div style={{
