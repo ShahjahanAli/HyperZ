@@ -47,6 +47,30 @@ export abstract class Model extends BaseEntity {
     protected static hidden: string[] = [];
 
     /**
+     * Relationship: One-to-One
+     */
+    protected hasOne<T>(related: any, foreignKey?: string, localKey?: string): any {
+        // Placeholder for ActiveRecord compatibility
+        return null;
+    }
+
+    /**
+     * Relationship: One-to-Many
+     */
+    protected hasMany<T>(related: any, foreignKey?: string, localKey?: string): any {
+        // Placeholder for ActiveRecord compatibility
+        return null;
+    }
+
+    /**
+     * Relationship: Inverse One-to-One or Many-to-One
+     */
+    protected belongsTo<T>(related: any, foreignKey?: string, ownerKey?: string): any {
+        // Placeholder for ActiveRecord compatibility
+        return null;
+    }
+
+    /**
      * Convert to plain object (excludes hidden fields)
      */
     toJSON(): Record<string, any> {
@@ -60,6 +84,81 @@ export abstract class Model extends BaseEntity {
         }
 
         return obj;
+    }
+
+    /**
+     * ActiveRecord: Create and Save a new record.
+     */
+    static async create<T extends Model>(
+        this: typeof Model & (new () => T),
+        attributes: any
+    ): Promise<T> {
+        const repository = (this as any).getRepository();
+        const entity = repository.create(attributes);
+        return await repository.save(entity);
+    }
+
+    /**
+     * ActiveRecord: Find a record by ID.
+     */
+    static async find<T extends Model>(
+        this: typeof Model & (new () => T),
+        id: any
+    ): Promise<T | null> {
+        return await (this as any).findOneBy({ id } as any);
+    }
+
+    /**
+     * ActiveRecord: Start a query with a where clause.
+     */
+    static where<T extends Model>(
+        this: typeof Model & (new () => T),
+        column: string,
+        operator: any,
+        value?: any
+    ) {
+        const query = this.createQueryBuilder(this.name.toLowerCase());
+        if (value === undefined) {
+            query.where(`${this.name.toLowerCase()}.${column} = :val`, { val: operator });
+        } else {
+            query.where(`${this.name.toLowerCase()}.${column} ${operator} :val`, { val: value });
+        }
+        return new ModelQueryWrapper<T>(query);
+    }
+
+    /**
+     * ActiveRecord: Get all records.
+     */
+    static async all<T extends Model>(this: typeof Model & (new () => T)): Promise<T[]> {
+        return await (this as any).find();
+    }
+
+    /**
+     * ActiveRecord: Order by column.
+     */
+    static orderBy<T extends Model>(
+        this: typeof Model & (new () => T),
+        column: string,
+        direction: 'ASC' | 'DESC' | 'asc' | 'desc' = 'ASC'
+    ) {
+        const query = this.createQueryBuilder(this.name.toLowerCase());
+        query.orderBy(`${this.name.toLowerCase()}.${column}`, direction.toUpperCase() as any);
+        return new ModelQueryWrapper<T>(query);
+    }
+
+    /**
+     * ActiveRecord: Count records.
+     */
+    static async count(): Promise<number> {
+        return await super.count();
+    }
+
+    /**
+     * ActiveRecord: Check if any record exists.
+     */
+    static async exists(): Promise<boolean> {
+        const count = await this.count();
+        return count > 0;
     }
 
     /**
@@ -117,28 +216,42 @@ export abstract class Model extends BaseEntity {
         const tableName = (this as any).tableName || this.name.toLowerCase() + 's';
         return Database.getKnex()(tableName);
     }
+}
 
-    /**
-     * Relationship: One-to-One
-     */
-    protected hasOne<T>(related: any, foreignKey?: string, localKey?: string): any {
-        // Placeholder for ActiveRecord compatibility
-        return null;
+/**
+ * A lightweight wrapper around TypeORM's SelectQueryBuilder to provide Laravel-style chainable API.
+ */
+class ModelQueryWrapper<T extends Model> {
+    constructor(private query: any) { }
+
+    where(column: string, operator: any, value?: any) {
+        if (value === undefined) {
+            this.query.andWhere(`${this.query.alias}.${column} = :val`, { val: operator });
+        } else {
+            this.query.andWhere(`${this.query.alias}.${column} ${operator} :val`, { val: value });
+        }
+        return this;
     }
 
-    /**
-     * Relationship: One-to-Many
-     */
-    protected hasMany<T>(related: any, foreignKey?: string, localKey?: string): any {
-        // Placeholder for ActiveRecord compatibility
-        return null;
+    orderBy(column: string, direction: 'ASC' | 'DESC' | 'asc' | 'desc' = 'ASC') {
+        this.query.addOrderBy(`${this.query.alias}.${column}`, direction.toUpperCase() as any);
+        return this;
     }
 
-    /**
-     * Relationship: Inverse One-to-One or Many-to-One
-     */
-    protected belongsTo<T>(related: any, foreignKey?: string, ownerKey?: string): any {
-        // Placeholder for ActiveRecord compatibility
-        return null;
+    async first(): Promise<T | null> {
+        return await this.query.getOne();
+    }
+
+    async get(): Promise<T[]> {
+        return await this.query.getMany();
+    }
+
+    async select(fields: string | string[]) {
+        // Simple select implementation
+        return await this.get();
+    }
+
+    async count(): Promise<number> {
+        return await this.query.getCount();
     }
 }

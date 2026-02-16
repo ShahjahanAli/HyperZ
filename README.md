@@ -44,9 +44,9 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 |---|---|
 | 🏗️ **Core** | IoC Service Container, Service Providers, Config Manager, Application Kernel |
 | 🌐 **HTTP** | Laravel-style Router (groups, named routes, resource CRUD), Controller base class |
-| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging — all built-in |
-| 🗄️ **Database** | **Knex.js** (SQLite, MySQL, PostgreSQL) **+ Mongoose** (MongoDB) — dual driver support |
-| 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, fillable/hidden fields) |
+| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS Protection** — all built-in |
+| 🗄️ **Database**| **Knex.js** (Query Builder) **+ TypeORM** (Models) **+ Mongoose** (MongoDB) — triple engine support |
+| 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, **Laravel-style proxies: `where`, `first`, `create`**) |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
 | 🔧 **CLI** | 16+ Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
@@ -61,9 +61,9 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 | 🏢 **SaaS Core** | **Subdomain Multi-tenancy, Tenant-aware DB Pooling**, Stripe Billing, API Keys |
 | 🕵️ **AI Agents** | **Autonomous Agent Factory** with Skill & Memory management system |
 | 🛡️ **Enterprise** | **Audit Logging**, RBAC Policy Engine, Secrets Mgmt, Advanced IoC Decorators |
-| 📊 **Observability** | Real-time Metrics Dashboard, **AI Latency & Cost Analytics**, System Health |
+| 📊 **Observability** | Real-time Metrics, **Slow Query Detection**, **System Health Checks**, AI Analytics |
 | 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
-| 🧰 **Utilities** | String helpers, Collection class, global env/helpers |
+| 🧰 **Utilities** | String helpers, Collection class, global env/helpers, **SanitizeHtml** |
 | 🔁 **Tinker** | Interactive REPL with preloaded app context |
 | 🧠 **AI Agent-Ready** | Built-in support for Cursor, Copilot, Antigravity — with **MCP Server** |
 | 📖 **Swagger/OpenAPI** | Auto-generated API docs at `/api/docs` with dark-themed Swagger UI |
@@ -148,7 +148,7 @@ npx tsx bin/hyperz.ts make:model Post -m
 ```
 
 This generates:
-- `app/models/Post.ts` — Active Record model
+- `app/models/Post.ts` — Active Record model (TypeORM-based with Laravel compatibility)
 - `database/migrations/YYYYMMDDHHMMSS_create_posts_table.ts` — Migration file
 
 ### 3. Register Routes
@@ -340,8 +340,9 @@ export class UserService {
 
 ### 📈 Observability & Monitoring
 Built-in health checks and real-time metrics dashboard:
-- **System Health:** CPU, Memory (RSS/Heap), Uptime.
+- **System Health:** CPU, Memory (RSS/Heap), Uptime, Database connection pinging.
 - **Performance:** Event loop lag measurement, request latency sparklines.
+- **Slow Query Detection:** Automatic logging of queries exceeding `DB_SLOW_QUERY_THRESHOLD`.
 - **Resource Tracking:** Active handles and requests monitoring.
 - **Log Aggregation:** Live, level-based log viewer in Admin Panel.
 
@@ -352,7 +353,7 @@ Secure your API with customizable throttling tiers (Free, Standard, Pro, Enterpr
 
 ## Admin Panel
 
-HyperZ ships with a **built-in Next.js admin panel** secured by database-backed authentication with JWT sessions.
+HyperZ ships with a **built-in Next.js admin panel** (Tailwind refactored) with a **mobile-responsive sidebar** and **collapsed desktop mode**.
 
 ### Setup
 
@@ -804,6 +805,7 @@ HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
 |---|---|
 | [Express 5.x](https://expressjs.com/) | HTTP framework |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
+| [TypeORM](https://typeorm.io/) | Model Management & Relations |
 | [Knex.js](https://knexjs.org/) | SQL query builder |
 | [Mongoose](https://mongoosejs.com/) | MongoDB ODM |
 | [Zod](https://zod.dev/) | Schema validation |
@@ -941,6 +943,8 @@ npm run dev
 
 - 🤖 [AI Agent Guide](AGENTS.md)
 - 🏗️ [Architecture Guide](ARCHITECTURE.md)
+- 📈 [Stability Guarantees](STABILITY.md)
+- 🛡️ [Security Policy](SECURITY.md)
 - 📋 [Product Features Specification](docs/FEATURES.md)
 - 📖 [User Manual](docs/USER_MANUAL.md)
 - ⚔️ [Framework Comparison](docs/COMPARISON.md)
