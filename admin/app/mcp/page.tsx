@@ -84,7 +84,7 @@ export default function MCPPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>🔌 MCP_COMMAND_CENTER</h1>
+                <h1>🔌 MCP_COMMAND_CENTER</h1>
                 <span className="topbar-meta">UPLINK: ACTIVE • v{info?.version || '?.?.?'}</span>
             </div>
 
@@ -129,7 +129,7 @@ export default function MCPPage() {
                         </div>
 
                         {/* Tabs */}
-                        <div className="btn-group" style={{ marginBottom: 32 }}>
+                        <div className="btn-group mb-8">
                             {[
                                 { key: 'map', label: '// SYSTEM_MAP' },
                                 { key: 'tools', label: '// TOOL_TESTER' },
@@ -139,7 +139,6 @@ export default function MCPPage() {
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key as any)}
                                     className={`btn ${activeTab === tab.key ? 'btn-primary' : 'btn-secondary'}`}
-                                    style={{ fontSize: '10px' }}
                                 >
                                     {tab.label}
                                 </button>
@@ -149,20 +148,20 @@ export default function MCPPage() {
                         {/* Tab Content */}
                         <div className="page-transition" key={activeTab}>
                             {activeTab === 'map' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="card">
                                         <div className="card-header">// SYSTEM_TOOLS_REGISTRY</div>
                                         <div className="table-container">
                                             <table>
                                                 <thead>
-                                                    <tr><th>Name</th><th>Category</th><th>Description</th></tr>
+                                                    <tr><th>NAME</th><th>CATEGORY</th><th>DESCRIPTION</th></tr>
                                                 </thead>
                                                 <tbody>
                                                     {info.tools.map(tool => (
                                                         <tr key={tool.name}>
-                                                            <td style={{ color: 'var(--accent)' }}>{tool.name}</td>
-                                                            <td><span className="badge badge-info" style={{ color: categoryColors[tool.category] }}>{tool.category}</span></td>
-                                                            <td style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{tool.description}</td>
+                                                            <td className="font-bold text-[var(--accent)] italic">{tool.name}</td>
+                                                            <td><span className="badge badge-info">{tool.category.toUpperCase()}</span></td>
+                                                            <td className="text-[10px] text-[var(--text-muted)] italic font-medium">{tool.description}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -170,17 +169,17 @@ export default function MCPPage() {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    <div className="space-y-8">
                                         <div className="card">
                                             <div className="card-header">// SHARED_RESOURCES</div>
                                             <div className="table-container">
                                                 <table>
-                                                    <thead><tr><th>Name</th><th>URI</th></tr></thead>
+                                                    <thead><tr><th>NAME</th><th>URI_HANDLE</th></tr></thead>
                                                     <tbody>
                                                         {info.resources.map(res => (
                                                             <tr key={res.uri}>
-                                                                <td>{res.name}</td>
-                                                                <td style={{ color: 'var(--accent-secondary)' }}>{res.uri}</td>
+                                                                <td className="font-bold">{res.name}</td>
+                                                                <td className="text-[var(--accent-secondary)] italic">{res.uri}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -189,45 +188,46 @@ export default function MCPPage() {
                                         </div>
                                         <div className="card">
                                             <div className="card-header">// LOGIC_PROMPTS</div>
-                                            {info.prompts.map(p => (
-                                                <div key={p.name} style={{ marginBottom: 12 }}>
-                                                    <div style={{ color: 'var(--yellow)', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--mono)' }}>{p.name}</div>
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{p.description}</div>
-                                                </div>
-                                            ))}
+                                            <div className="space-y-4">
+                                                {info.prompts.map(p => (
+                                                    <div key={p.name} className="border-l-2 border-[var(--yellow)] pl-4">
+                                                        <div className="text-[var(--yellow)] text-[12px] font-black font-mono italic">{p.name}</div>
+                                                        <div className="text-[var(--text-muted)] text-[10px] uppercase font-bold mt-1">{p.description}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'tools' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="card">
                                         <div className="card-header">// EXECUTE_COMMANDS</div>
-                                        <div className="btn-group" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                        <div className="flex flex-col gap-3">
                                             {info.tools.map(tool => (
                                                 <button
                                                     key={tool.name}
                                                     onClick={() => executeTool(tool.name)}
                                                     disabled={!!executing}
-                                                    className="btn btn-secondary"
-                                                    style={{ justifyContent: 'space-between' }}
+                                                    className="btn btn-secondary flex justify-between items-center group/btn"
                                                 >
-                                                    <span>{tool.name}</span>
-                                                    <span style={{ fontSize: '9px', opacity: 0.5 }}>{tool.category}</span>
+                                                    <span className="group-hover/btn:text-[var(--text)] transition-colors">{tool.name}</span>
+                                                    <span className="badge badge-info opacity-50 group-hover/btn:opacity-100 transition-opacity">{tool.category.toUpperCase()}</span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                     <div className="card">
                                         <div className="card-header">// ACTIVITY_LOG</div>
-                                        <div className="log-viewer">
+                                        <div className="log-viewer h-[400px]">
                                             {activityLog.length === 0 && <div className="empty-state">NO_ACTIVITY_DETECTED</div>}
                                             {activityLog.map((entry, i) => (
                                                 <div key={i} className="log-line">
-                                                    <span style={{ color: 'var(--text-muted)' }}>[{entry.time}]</span>{' '}
-                                                    <span style={{ color: 'var(--accent)' }}>{entry.tool}</span>{' '}
-                                                    <span style={{ color: entry.status.includes('❌') ? 'var(--red)' : entry.status.includes('✅') ? 'var(--green)' : 'var(--yellow)' }}>
+                                                    <span className="text-[var(--text-muted)] font-mono">[{entry.time}]</span>
+                                                    <span className="text-[var(--accent)] font-black italic">{entry.tool}</span>
+                                                    <span className={`badge ${entry.status.includes('❌') ? 'badge-danger' : entry.status.includes('✅') ? 'badge-success' : 'badge-warning'}`}>
                                                         {entry.status}
                                                     </span>
                                                 </div>
@@ -240,16 +240,16 @@ export default function MCPPage() {
                             {activeTab === 'automation' && (
                                 <div className="card">
                                     <div className="card-header">// AI_AUTOMATION_UPLINK</div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {[
                                             { label: 'CLAUDE DESKTOP', cmd: 'npx tsx bin/hyperz-mcp.ts', detail: 'Local bridge for Anthropic Claude' },
                                             { label: 'CURSOR AI', cmd: 'npx tsx bin/hyperz-mcp.ts', detail: 'IDE context injection' },
                                             { label: 'WEB AGENTS', cmd: 'HTTP/SSE Endpoint', detail: 'Remote execution via SSE' },
                                         ].map(bridge => (
-                                            <div key={bridge.label} className="stat-card" style={{ background: 'var(--bg-input)' }}>
-                                                <div className="stat-label" style={{ color: 'var(--accent)' }}>{bridge.label}</div>
-                                                <div style={{ fontFamily: 'var(--mono)', fontSize: '12px', margin: '8px 0', wordBreak: 'break-all' }}>{bridge.cmd}</div>
-                                                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{bridge.detail}</div>
+                                            <div key={bridge.label} className="stat-card !bg-slate-500/5 hover:!border-[var(--accent)] hover:shadow-2xl transition-all">
+                                                <div className="stat-label !text-[var(--accent)]">{bridge.label}</div>
+                                                <div className="font-mono text-[11px] my-4 word-break break-all font-black italic bg-[var(--bg-input)] p-3 border border-[var(--border)] rounded-sm">{bridge.cmd}</div>
+                                                <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest font-bold">{bridge.detail}</div>
                                             </div>
                                         ))}
                                     </div>

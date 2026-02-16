@@ -3,19 +3,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { adminFetch } from '@/lib/api';
+import {
+    Rocket,
+    Gamepad2,
+    Box,
+    FileText,
+    Sprout,
+    ShieldCheck,
+    GitMerge,
+    Zap,
+    Factory,
+    Activity,
+    CheckCircle2,
+    AlertCircle,
+    Loader2,
+    Search,
+    ChevronRight,
+    SearchCode
+} from 'lucide-react';
 
 const API = '/api/_admin';
 
 const scaffoldTypes = [
-    { value: 'resource', label: 'RESOURCE', icon: '🚀', description: 'Model + Migration + Controller + Route' },
-    { value: 'controller', label: 'CONTROLLER', icon: '🎮', description: 'Logic Handler' },
-    { value: 'model', label: 'MODEL', icon: '📦', description: 'Data Structure', hasMigration: true },
-    { value: 'migration', label: 'MIGRATION', icon: '📝', description: 'DB Schema Change' },
-    { value: 'seeder', label: 'SEEDER', icon: '🌱', description: 'Test Data' },
-    { value: 'middleware', label: 'MIDDLEWARE', icon: '🛡️', description: 'Request Filter' },
-    { value: 'route', label: 'ROUTE', icon: 'Tracks', description: 'URL Routing' },
-    { value: 'job', label: 'JOB', icon: '⚡', description: 'Background Task' },
-    { value: 'factory', label: 'FACTORY', icon: '🏭', description: 'Data Generator' },
+    { value: 'resource', label: 'RESOURCE', icon: <Rocket size={20} />, description: 'Model + Migration + Controller + Route' },
+    { value: 'controller', label: 'CONTROLLER', icon: <Gamepad2 size={20} />, description: 'Logic Handler' },
+    { value: 'model', label: 'MODEL', icon: <Box size={20} />, description: 'Data Structure', hasMigration: true },
+    { value: 'migration', label: 'MIGRATION', icon: <FileText size={20} />, description: 'DB Schema Change' },
+    { value: 'seeder', label: 'SEEDER', icon: <Sprout size={20} />, description: 'Test Data' },
+    { value: 'middleware', label: 'MIDDLEWARE', icon: <ShieldCheck size={20} />, description: 'Request Filter' },
+    { value: 'route', label: 'ROUTE', icon: <GitMerge size={20} />, description: 'URL Routing' },
+    { value: 'job', label: 'JOB', icon: <Zap size={20} />, description: 'Background Task' },
+    { value: 'factory', label: 'FACTORY', icon: <Factory size={20} />, description: 'Data Generator' },
 ];
 
 interface Discovery {
@@ -23,6 +41,7 @@ interface Discovery {
     controllers: string[];
     routes: string[];
     migrations: { name: string; path: string }[];
+    total: number;
 }
 
 export default function ScaffoldPage() {
@@ -64,7 +83,7 @@ export default function ScaffoldPage() {
             setResult(data);
             if (data.success) {
                 setName('');
-                fetchData(); // Refresh the big picture
+                fetchData();
             }
         } catch (err: any) {
             setResult({ error: err.message });
@@ -75,159 +94,174 @@ export default function ScaffoldPage() {
 
     return (
         <AdminLayout>
-            <div className="topbar">
-                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>🏗️ SCAFFOLD_ENGINE_V2</h1>
-                <span className="topbar-meta">CORE: ACTIVE • DISCOVERY_PROTOCOL: ENABLED</span>
-            </div>
+            {/* Topbar */}
+            <header className="px-10 py-5 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)] sticky top-0 z-50 backdrop-blur-3xl">
+                <h1 className="font-tactical text-sm tracking-[2px] font-bold text-[var(--text)] flex items-center gap-3">
+                    <Rocket className="text-[var(--accent)] w-5 h-5" />
+                    SCAFFOLD_ENGINE_V2
+                </h1>
+                <span className="font-mono text-[var(--accent-secondary)] text-[11px] uppercase opacity-80 italic">
+                    CORE: ACTIVE • DISCOVERY_PROTOCOL: ENABLED
+                </span>
+            </header>
 
-            <div className="page-content">
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32 }} className="responsive-grid">
+            <div className="p-10 space-y-10">
+                <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr] gap-8">
 
                     {/* Left: Creator */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        <div className="card">
-                            <div className="card-header">// SELECT_BLUEPRINT</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
+                    <div className="space-y-6">
+                        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-sm p-8 backdrop-blur-xl relative overflow-hidden group hover:border-[var(--border-bright)] transition-all duration-300">
+                            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[var(--accent)] rounded-tl-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            <h2 className="font-tactical text-[11px] uppercase tracking-[2px] text-[var(--accent-secondary)] font-semibold mb-6 pb-3 border-b border-[var(--border)] flex items-center gap-2 text-[var(--text)]">
+                                 // SELECT_BLUEPRINT
+                            </h2>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
                                 {scaffoldTypes.map(s => (
                                     <button
                                         key={s.value}
                                         onClick={() => { setType(s.value); setResult(null); }}
-                                        className={`btn ${type === s.value ? 'btn-primary' : 'btn-secondary'}`}
-                                        style={{
-                                            padding: '12px 8px', flexDirection: 'column', gap: 4, height: 'auto',
-                                            borderColor: type === s.value ? 'var(--accent)' : 'var(--border)',
-                                            background: type === s.value ? 'var(--accent-glow)' : 'transparent',
-                                            fontSize: '9px'
-                                        }}
+                                        className={`
+                                            flex flex-col items-center gap-3 p-5 rounded-sm border transition-all duration-300 relative overflow-hidden
+                                            ${type === s.value
+                                                ? 'bg-[var(--accent-glow)] border-[var(--accent)] text-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]'
+                                                : 'bg-white/5 border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent-secondary)] hover:text-[var(--text)] hover:bg-slate-500/5'}
+                                        `}
                                     >
-                                        <span style={{ fontSize: '18px' }}>{s.icon}</span>
-                                        <span>{s.label}</span>
+                                        <div className={`transition-transform duration-300 ${type === s.value ? 'scale-110 text-[var(--accent)]' : ''}`}>
+                                            {s.icon}
+                                        </div>
+                                        <span className="font-tactical text-[9px] tracking-wider uppercase font-bold">{s.label}</span>
+                                        {type === s.value && <div className="absolute top-1 right-1"><CheckCircle2 size={10} className="text-[var(--accent)]" /></div>}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="card-header">// EXECUTION_PARAMETERS</div>
-                            <div className="form-group" style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: '10px', color: 'var(--accent)', fontFamily: 'var(--tactical)', marginBottom: 8 }}>TARGET_NAME</div>
-                                <input
-                                    className="form-input"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    placeholder={`e.g. ${type === 'resource' ? 'Order' : 'User'}`}
-                                    onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                                />
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 8, fontFamily: 'var(--mono)' }}>
-                                    TYPE: {selected.label} • {selected.description.toUpperCase()}
-                                </div>
-                            </div>
+                            <h2 className="font-tactical text-[11px] uppercase tracking-[2px] text-[var(--accent-secondary)] font-semibold mb-6 pb-3 border-b border-[var(--border)] flex items-center gap-2 text-[var(--text)]">
+                                // EXECUTION_PARAMETERS
+                            </h2>
 
-                            {selected.hasMigration && (
-                                <div style={{ marginBottom: 20 }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '11px', fontFamily: 'var(--tactical)' }}>
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="text-[10px] text-[var(--accent)] font-tactical uppercase tracking-widest mb-2 font-bold opacity-80">Target_Name</div>
+                                    <input
+                                        className="w-full bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] px-4 py-3 font-mono text-sm rounded-sm focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-glow)] transition-all placeholder:text-[var(--text-muted)] opacity-80"
+                                        value={name}
+                                        onChange={e => setName(e.target.value)}
+                                        placeholder={`e.g. ${type === 'resource' ? 'Order' : 'User'}`}
+                                        onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                                    />
+                                    <div className="text-[10px] text-[var(--text-muted)] mt-2 font-mono flex items-center gap-2 italic font-medium">
+                                        <ChevronRight size={10} /> TYPE: {selected.label} • {selected.description.toUpperCase()}
+                                    </div>
+                                </div>
+
+                                {selected.hasMigration && (
+                                    <label className="flex items-center gap-3 cursor-pointer group select-none">
+                                        <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-all ${withMigration ? 'bg-[var(--accent)] border-[var(--accent)]' : 'bg-transparent border-[var(--border)] group-hover:border-[var(--accent-secondary)]'}`}>
+                                            {withMigration && <CheckCircle2 size={10} className="text-white" />}
+                                        </div>
                                         <input
                                             type="checkbox"
+                                            className="hidden"
                                             checked={withMigration}
                                             onChange={e => setWithMigration(e.target.checked)}
-                                            style={{ accentColor: 'var(--accent)' }}
                                         />
-                                        AUTO_GENERATE_MIGRATION
+                                        <span className="text-[11px] font-tactical uppercase tracking-widest text-[var(--text)] opacity-80 group-hover:opacity-100 transition-opacity font-bold">Auto_Generate_Migration</span>
                                     </label>
-                                </div>
-                            )}
+                                )}
 
-                            <button className="btn btn-primary" onClick={handleCreate} disabled={loading || !name.trim()} style={{ width: '100%', justifyContent: 'center' }}>
-                                {loading ? '⏳ INITIALIZING…' : `⚡ EXECUTE_SCAFFOLD_${selected.label}`}
-                            </button>
+                                <button
+                                    className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-white font-tactical uppercase tracking-[2px] text-xs py-4 rounded-sm transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-3"
+                                    onClick={handleCreate}
+                                    disabled={loading || !name.trim()}
+                                >
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap size={16} fill="currentColor" />}
+                                    {loading ? 'INITIALIZING_SCAFFOLD…' : `EXECUTE_SCAFFOLD_${selected.label}`}
+                                </button>
 
-                            {result && (
-                                <div style={{ marginTop: 20, padding: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', borderRadius: 2 }}>
-                                    {result.success ? (
-                                        <div style={{ color: 'var(--green)', fontSize: '12px', fontFamily: 'var(--mono)' }}>
-                                            ✅ DEPLOYMENT_SUCCESSFUL:
-                                            {result.created?.map((f: string) => (
-                                                <div key={f} style={{ color: 'var(--accent-secondary)', marginTop: 6, fontSize: '11px' }}>
-                                                    → {f}
+                                {result && (
+                                    <div className={`animate-in slide-in-from-bottom-2 duration-300 p-5 rounded-sm border font-mono text-xs ${result.success ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600' : 'bg-rose-500/10 border-rose-500/30 text-rose-600'}`}>
+                                        {result.success ? (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 font-bold uppercase"><CheckCircle2 size={14} /> Deployment_Successful:</div>
+                                                <div className="space-y-1 pl-6 opacity-90 font-medium">
+                                                    {result.created?.map((f: string) => (
+                                                        <div key={f} className="flex items-center gap-2 text-[11px]"><ChevronRight size={10} /> {f}</div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div style={{ color: 'var(--red)', fontSize: '12px', fontFamily: 'var(--mono)' }}>❌ ERROR: {result.error}</div>
-                                    )}
-                                </div>
-                            )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 uppercase tracking-wide font-bold"><AlertCircle size={14} /> Error: {result.error}</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Right: Big Picture */}
-                    <div className="card" style={{ height: 'fit-content' }}>
-                        <div className="card-header">// SYSTEM_INVENTORY (BIG_PICTURE)</div>
+                    <div className="space-y-6">
+                        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-sm p-8 backdrop-blur-xl h-fit relative group hover:border-[var(--border-bright)] transition-all duration-300">
+                            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[var(--accent)] rounded-tr-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <h2 className="font-tactical text-[11px] uppercase tracking-[2px] text-[var(--accent-secondary)] font-semibold mb-6 pb-3 border-b border-[var(--border)] flex items-center gap-2 text-[var(--text)]">
+                                <SearchCode size={14} /> // SYSTEM_INVENTORY (BIG_PICTURE)
+                            </h2>
 
-                        {!discovery ? (
-                            <div style={{ padding: '20px 0', textAlign: 'center', opacity: 0.5 }}>
-                                <div className="loading">⚡</div>
-                                <div style={{ fontSize: '10px', marginTop: 10, fontFamily: 'var(--mono)' }}>SCANNING_SYSTEM…</div>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                <div>
-                                    <div style={{ fontSize: '10px', color: 'var(--accent)', fontFamily: 'var(--tactical)', marginBottom: 10 }}>📦 MODELS</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                        {discovery.models.length === 0 && <span style={{ opacity: 0.5, fontSize: '10px' }}>NONE</span>}
-                                        {discovery.models.map(m => (
-                                            <span key={m} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 2, fontFamily: 'var(--mono)' }}>
-                                                {m}
-                                            </span>
-                                        ))}
+                            {!discovery ? (
+                                <div className="py-20 flex flex-col items-center justify-center gap-4 opacity-50">
+                                    <Activity className="text-[var(--accent)] animate-spin" size={32} />
+                                    <div className="font-mono text-[10px] uppercase tracking-widest italic animate-pulse whitespace-nowrap">Scanning_System_Resources…</div>
+                                </div>
+                            ) : (
+                                <div className="space-y-8">
+                                    <InventorySection title="Models" color="text-indigo-600" items={discovery.models} icon={<Box size={14} />} />
+                                    <InventorySection title="Controllers" color="text-cyan-600" items={discovery.controllers} icon={<Gamepad2 size={14} />} />
+                                    <InventorySection title="Routes" color="text-amber-600" items={discovery.routes} icon={<GitMerge size={14} />} />
+
+                                    <div className="space-y-3">
+                                        <div className="font-tactical text-[10px] uppercase tracking-widest text-emerald-600 flex items-center gap-2 font-bold">
+                                            <Sprout size={14} /> Recent_Migrations
+                                        </div>
+                                        <div className="space-y-2 border-l border-[var(--border)] ml-1.5 pl-4">
+                                            {discovery.migrations.length === 0 && <span className="text-[10px] opacity-40 italic">No records found</span>}
+                                            {discovery.migrations.slice(-5).reverse().map(m => (
+                                                <div key={m.name} className="font-mono text-[10px] text-[var(--text-muted)] flex items-center gap-2 hover:text-emerald-600 transition-colors cursor-default whitespace-nowrap overflow-hidden text-ellipsis font-medium">
+                                                    <ChevronRight size={10} className="shrink-0" /> {m.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8 mt-10 border-t border-[var(--border)] flex flex-col items-center gap-2 opacity-50">
+                                        <div className="font-mono text-[10px] uppercase tracking-[2px]">System_Resource_Density</div>
+                                        <div className="font-tactical text-xl font-black text-[var(--text)]">{discovery.total} <span className="text-[var(--accent-secondary)]">UNITS</span></div>
                                     </div>
                                 </div>
-
-                                <div>
-                                    <div style={{ fontSize: '10px', color: 'var(--accent-secondary)', fontFamily: 'var(--tactical)', marginBottom: 10 }}>🎮 CONTROLLERS</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                        {discovery.controllers.length === 0 && <span style={{ opacity: 0.5, fontSize: '10px' }}>NONE</span>}
-                                        {discovery.controllers.map(c => (
-                                            <span key={c} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 2, fontFamily: 'var(--mono)' }}>
-                                                {c}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{ fontSize: '10px', color: 'var(--yellow)', fontFamily: 'var(--tactical)', marginBottom: 10 }}>🛤️ ROUTES</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                        {discovery.routes.length === 0 && <span style={{ opacity: 0.5, fontSize: '10px' }}>NONE</span>}
-                                        {discovery.routes.map(r => (
-                                            <span key={r} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 2, fontFamily: 'var(--mono)' }}>
-                                                {r}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{ fontSize: '10px', color: 'var(--green)', fontFamily: 'var(--tactical)', marginBottom: 10 }}>📝 RECENT_MIGRATIONS</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        {discovery.migrations.slice(-5).reverse().map(m => (
-                                            <div key={m.name} style={{ fontSize: '9px', fontFamily: 'var(--mono)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                → {m.name}
-                                            </div>
-                                        ))}
-                                        {discovery.migrations.length === 0 && <span style={{ opacity: 0.5, fontSize: '10px' }}>NONE</span>}
-                                    </div>
-                                </div>
-
-                                <div style={{
-                                    borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8,
-                                    fontSize: '9px', fontFamily: 'var(--mono)', color: 'var(--text-muted)', textAlign: 'center'
-                                }}>
-                                    SYSTEM_RESOURCE_DENSITY: {discovery.total} UNITS
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
         </AdminLayout>
+    );
+}
+
+function InventorySection({ title, color, items, icon }: { title: string, color: string, items: string[], icon: React.ReactNode }) {
+    return (
+        <div className="space-y-3">
+            <div className={`font-tactical text-[10px] uppercase tracking-widest ${color} flex items-center gap-2 font-bold`}>
+                {icon} {title}
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {items.length === 0 && <span className="text-[10px] opacity-40 italic">None registered</span>}
+                {items.map(item => (
+                    <span key={item} className="bg-slate-500/5 border border-[var(--border)] rounded-sm px-2.5 py-1 font-mono text-[10px] text-[var(--text)] hover:bg-[var(--accent-glow)] hover:border-[var(--accent)] transition-all cursor-default font-bold">
+                        {item}
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }

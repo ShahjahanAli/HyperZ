@@ -1,7 +1,4 @@
-// ──────────────────────────────────────────────────────────────
-// HyperZ Framework — Server Bootstrap
-// ──────────────────────────────────────────────────────────────
-
+import 'dotenv/config';
 import 'reflect-metadata';
 import { createApp } from './app.js';
 import { registerPlayground } from './src/playground/Playground.js';
@@ -17,8 +14,7 @@ import * as path from 'node:path';
 async function main(): Promise<void> {
     const app = createApp();
 
-    // Ensure environment is loaded before registration
-    app.config.loadEnv();
+    // Ensure config files are loaded
     await app.config.loadConfigFiles();
 
     // Register tracing and metrics collection

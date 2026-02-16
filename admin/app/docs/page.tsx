@@ -6,7 +6,7 @@ export default function DocsPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>📖 SERVICE_DOCUMENTATION_OPENAPI</h1>
+                <h1>📖 SERVICE_DOCUMENTATION_OPENAPI</h1>
                 <span className="topbar-meta">HYPERZ v2 • API EXPLORER</span>
             </div>
 

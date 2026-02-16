@@ -6,6 +6,7 @@ import express, { Router, type Request, type Response } from 'express';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import * as cp from 'node:child_process';
 import pluralize from 'pluralize';
 import { Logger } from '../logging/Logger.js';
 import { getAdminStatus, registerAdmin, loginAdmin, verifyAdminToken } from './AdminAuth.js';
@@ -712,6 +713,61 @@ export async function createAdminRouter(app?: any): Promise<Router> {
         } catch (err: any) {
             res.status(500).json({ error: err.message });
         }
+    });
+
+    // ────────────────────────────────────────────────────────
+    // 15. Package Management
+    // ────────────────────────────────────────────────────────
+    router.get('/packages', (_req: Request, res: Response) => {
+        try {
+            const pkgPath = path.join(ROOT, 'package.json');
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+
+            const deps = Object.entries(pkg.dependencies || {}).map(([name, version]) => ({ name, version, type: 'prod' }));
+            const devDeps = Object.entries(pkg.devDependencies || {}).map(([name, version]) => ({ name, version, type: 'dev' }));
+
+            res.json([...deps, ...devDeps]);
+        } catch (err: any) {
+            res.status(500).json({ error: 'Failed to read package.json' });
+        }
+    });
+
+    router.post('/packages/install', (req: Request, res: Response) => {
+        const { name, isDev } = req.body || {};
+        if (!name || !/^[a-z0-9-@/]+$/.test(name)) {
+            return res.status(400).json({ error: 'Invalid package name' });
+        }
+
+        const cmd = `npm install ${name}${isDev ? ' --save-dev' : ''}`;
+        Logger.info(`[Admin:Package] Installing: ${cmd}`);
+
+        cp.exec(cmd, { cwd: ROOT }, (err, stdout, stderr) => {
+            if (err) {
+                Logger.error(`[Admin:Package] Install failed: ${stderr}`);
+                return res.status(500).json({ error: 'Installation failed', detail: stderr });
+            }
+            Logger.info(`[Admin:Package] Install success: ${name}`);
+            res.json({ success: true, stdout });
+        });
+    });
+
+    router.post('/packages/remove', (req: Request, res: Response) => {
+        const { name } = req.body || {};
+        if (!name || !/^[a-z0-9-@/]+$/.test(name)) {
+            return res.status(400).json({ error: 'Invalid package name' });
+        }
+
+        const cmd = `npm uninstall ${name}`;
+        Logger.info(`[Admin:Package] Removing: ${cmd}`);
+
+        cp.exec(cmd, { cwd: ROOT }, (err, stdout, stderr) => {
+            if (err) {
+                Logger.error(`[Admin:Package] Removal failed: ${stderr}`);
+                return res.status(500).json({ error: 'Removal failed', detail: stderr });
+            }
+            Logger.info(`[Admin:Package] Removal success: ${name}`);
+            res.json({ success: true, stdout });
+        });
     });
 
     Logger.info('  🔧 Admin API available at /api/_admin');

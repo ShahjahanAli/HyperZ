@@ -47,7 +47,7 @@ export default function GraphQLPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>🔮 GRAPHQL_INTEGRATION_HUB</h1>
+                <h1>🔮 GRAPHQL_INTEGRATION_HUB</h1>
                 <span className="topbar-meta">SCHEMA: DISCOVERED • {schema?.queryCount || 0} QUERIES</span>
             </div>
 
@@ -136,11 +136,7 @@ export default function GraphQLPage() {
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         spellCheck={false}
-                                        style={{
-                                            width: '100%', height: 120, background: 'var(--bg-input)', color: 'var(--text)',
-                                            border: '1px solid var(--border)', borderRadius: 4, padding: 12,
-                                            fontFamily: 'var(--mono)', fontSize: '12px', resize: 'vertical',
-                                        }}
+                                        className="form-input w-full h-[120px] resize-vertical p-4"
                                     />
                                     <button
                                         onClick={executeQuery}
