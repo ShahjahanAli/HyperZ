@@ -1,15 +1,10 @@
+import { Entity, Column } from 'typeorm';
 import { Model } from '../../src/database/Model.js';
 
+@Entity('{{tableName}}')
 export class {{name}} extends Model {
-  protected static tableName = '{{tableName}}';
-  protected static primaryKey = 'id';
-  protected static timestamps = true;
-  protected static softDeletes = false;
-
-  /** Fields that can be mass-assigned */
-  protected static fillable: string[] = [
-    // Add your fillable fields here
-  ];
+  @Column()
+  name: string;
 
   /** Fields hidden from JSON serialization */
   protected static hidden: string[] = [

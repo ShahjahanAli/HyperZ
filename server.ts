@@ -2,6 +2,7 @@
 // HyperZ Framework — Server Bootstrap
 // ──────────────────────────────────────────────────────────────
 
+import 'reflect-metadata';
 import { createApp } from './app.js';
 import { registerPlayground } from './src/playground/Playground.js';
 import { createAdminRouter } from './src/admin/AdminAPI.js';

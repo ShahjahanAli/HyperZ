@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Database } from '../database/Database.js';
-import { Model } from '../database/Model.ts';
+import { Model } from '../database/Model.js';
 
 // Use a class that can be safely used in tests
 class TestUser extends Model {

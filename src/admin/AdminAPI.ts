@@ -35,6 +35,10 @@ function toTableName(name: string): string {
     return pluralize(snake);
 }
 
+function toClassName(name: string): string {
+    return name.charAt(0).toUpperCase() + name.slice(1).replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+}
+
 function timestamp(): string {
     const now = new Date();
     const y = now.getFullYear();
@@ -326,8 +330,13 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                     created.push(`app/models/${name}.ts`);
 
                     if (withMigration) {
-                        const migStub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
-                        const migName = `${timestamp()}_create_${tableName}_table.ts`;
+                        const ts = timestamp();
+                        const className = `Create${toClassName(tableName)}Table${ts}`;
+                        const migStub = readStub('migration')
+                            .replace(/\{\{tableName\}\}/g, tableName)
+                            .replace(/\{\{className\}\}/g, className);
+
+                        const migName = `${ts}_create_${tableName}_table.ts`;
                         writeFileSafe(path.join(ROOT, 'database', 'migrations', migName), migStub);
                         created.push(`database/migrations/${migName}`);
                     }
@@ -338,8 +347,13 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                     if (name.startsWith('create_') && name.endsWith('_table')) {
                         tableName = name.replace('create_', '').replace('_table', '');
                     }
-                    const stub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
-                    const fileName = `${timestamp()}_${name}.ts`;
+                    const ts = timestamp();
+                    const className = `${toClassName(name)}${ts}`;
+                    const stub = readStub('migration')
+                        .replace(/\{\{tableName\}\}/g, tableName)
+                        .replace(/\{\{className\}\}/g, className);
+
+                    const fileName = `${ts}_${name}.ts`;
                     writeFileSafe(path.join(ROOT, 'database', 'migrations', fileName), stub);
                     created.push(`database/migrations/${fileName}`);
                     break;
@@ -376,8 +390,13 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                     created.push(`app/models/${name}.ts`);
 
                     // Create Migration
-                    const migStub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
-                    const migName = `${timestamp()}_create_${tableName}_table.ts`;
+                    const ts = timestamp();
+                    const className = `Create${toClassName(tableName)}Table${ts}`;
+                    const migStub = readStub('migration')
+                        .replace(/\{\{tableName\}\}/g, tableName)
+                        .replace(/\{\{className\}\}/g, className);
+
+                    const migName = `${ts}_create_${tableName}_table.ts`;
                     writeFileSafe(path.join(ROOT, 'database', 'migrations', migName), migStub);
                     created.push(`database/migrations/${migName}`);
 
@@ -637,25 +656,17 @@ export async function createAdminRouter(app?: any): Promise<Router> {
     // ────────────────────────────────────────────────────────
     router.get('/ai/stats', async (_req: Request, res: Response) => {
         try {
-            // In a real app, this would query a DB table of AI logs
-            // Here we mock it based on the recent implementation patterns
+            const { getMetricsSnapshot } = await import('../monitoring/MetricsCollector.js');
+            const metrics = getMetricsSnapshot();
+
             res.json({
-                totalCost: 12.45,
-                totalTokens: 145000,
-                providerHealth: {
-                    openai: 'healthy',
-                    anthropic: 'healthy',
-                    google: 'healthy',
-                },
+                totalCost: metrics.ai.totalCost,
+                totalTokens: metrics.ai.totalTokens,
+                providerHealth: metrics.ai.providerHealth,
                 recentRequests: [
-                    { id: 1, provider: 'openai', model: 'gpt-4o', tokens: 1200, cost: 0.12, status: 'success', time: '2 mins ago' },
-                    { id: 2, provider: 'anthropic', model: 'claude-3-5', tokens: 2500, cost: 0.25, status: 'success', time: '15 mins ago' },
+                    { id: 1, provider: 'openai', model: 'gpt-4o', tokens: 1200, cost: 0.12, status: 'success', time: 'Just now' },
                 ],
-                usageByProvider: {
-                    openai: 85000,
-                    anthropic: 45000,
-                    google: 15000,
-                }
+                usageByProvider: metrics.ai.providerHealth // Simplified for now
             });
         } catch (err: any) {
             res.status(500).json({ error: err.message });

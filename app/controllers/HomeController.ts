@@ -500,11 +500,27 @@ export class HomeController extends Controller {
      * GET /api/health
      */
     async health(req: Request, res: Response): Promise<void> {
+        const { Database } = await import('../../src/database/Database.js');
+
+        const sql = Database.isSQLConnected() ? 'UP' : 'DOWN';
+        const typeorm = Database.isTypeORMConnected() ? 'UP' : 'DOWN';
+        const mongo = Database.isMongoConnected() ? 'UP' : 'DOWN';
+
+        const isHealthy = sql === 'UP' && typeorm === 'UP';
+
         this.success(res, {
-            status: 'healthy',
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            timestamp: new Date().toISOString(),
-        }, 'System is healthy');
+            status: isHealthy ? 'UP' : 'DEGRADED',
+            timestamp: Date.now(),
+            uptime: Math.floor(process.uptime()),
+            dependencies: {
+                sql,
+                typeorm,
+                mongo,
+            },
+            memory: {
+                heapUsed: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + ' MB',
+                heapTotal: (process.memoryUsage().heapTotal / 1024 / 1024).toFixed(2) + ' MB',
+            }
+        }, isHealthy ? 'System is healthy' : 'System is degraded');
     }
 }

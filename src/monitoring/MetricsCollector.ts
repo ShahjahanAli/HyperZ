@@ -25,12 +25,26 @@ interface MetricsSnapshot {
     methodCounts: Record<string, number>;
     topEndpoints: Array<{ path: string; count: number; avgMs: number }>;
     errorRate: number;
+    ai: {
+        totalTokens: number;
+        totalCost: number;
+        providerHealth: Record<string, string>;
+    };
 }
 
 // Circular buffer for last N metrics (1 hour of data at ~500 req/s = capped)
 const MAX_HISTORY = 50_000;
 const metrics: RequestMetric[] = [];
 let totalRequests = 0;
+
+// AI Metrics State
+let totalTokens = 0;
+let totalCost = 0;
+const providerHealth: Record<string, string> = {
+    openai: 'healthy',
+    anthropic: 'healthy',
+    google: 'healthy',
+};
 
 /**
  * Express middleware — records response time and status code.
@@ -113,7 +127,28 @@ export function getMetricsSnapshot(): MetricsSnapshot {
         methodCounts,
         topEndpoints,
         errorRate: recentMetrics.length ? Math.round((errorCount / recentMetrics.length) * 10000) / 100 : 0,
+        ai: {
+            totalTokens,
+            totalCost: Math.round(totalCost * 100) / 100,
+            providerHealth,
+        }
     };
+}
+
+/**
+ * Record AI usage metrics.
+ */
+export function recordAIUsage(tokens: number, cost: number, provider: string): void {
+    totalTokens += tokens;
+    totalCost += cost;
+    providerHealth[provider] = 'healthy';
+}
+
+/**
+ * Update AI provider health.
+ */
+export function updateProviderStatus(provider: string, status: 'healthy' | 'degraded' | 'down'): void {
+    providerHealth[provider] = status;
 }
 
 /**

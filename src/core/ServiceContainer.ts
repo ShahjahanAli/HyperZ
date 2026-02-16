@@ -3,7 +3,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import 'reflect-metadata';
-import { INJECTABLE_METADATA_KEY, SCOPE_METADATA_KEY, PARAM_TYPES_METADATA_KEY } from './Decorators.js';
+import { INJECTABLE_METADATA_KEY, SCOPE_METADATA_KEY, PARAM_TYPES_METADATA_KEY, PROPERTIES_METADATA_KEY } from './Decorators.js';
 
 export type Constructor<T = any> = new (...args: any[]) => T;
 export type Factory<T = any> = (container: ServiceContainer) => T;
@@ -106,6 +106,10 @@ export class ServiceContainer {
      * Resolve a class constructor by injecting its dependencies.
      */
     private resolveConstructor<T>(ctor: Constructor<T>): T {
+        if (typeof ctor !== 'function') {
+            console.log("INVALID_CONSTRUCTOR_IN_RESOLVE:", ctor);
+            throw new TypeError(`${String(ctor)} is not a constructor`);
+        }
         // Check if class is injectable
         const isInjectable = Reflect.getMetadata(INJECTABLE_METADATA_KEY, ctor);
         const paramTypes: any[] = Reflect.getMetadata(PARAM_TYPES_METADATA_KEY, ctor) || [];
@@ -119,6 +123,9 @@ export class ServiceContainer {
 
         const instance = new ctor(...instances);
 
+        // Resolve property injections
+        this.resolveProperties(instance);
+
         // If it's a singleton, cache it
         const scope = Reflect.getMetadata(SCOPE_METADATA_KEY, ctor);
         if (scope === 'singleton') {
@@ -126,6 +133,18 @@ export class ServiceContainer {
         }
 
         return instance;
+    }
+
+    /**
+     * Resolve property injections for an instance.
+     */
+    private resolveProperties(instance: any): void {
+        const target = instance.constructor;
+        const properties: Map<string | symbol, any> = Reflect.getMetadata(PROPERTIES_METADATA_KEY, target) || new Map();
+
+        for (const [key, type] of properties.entries()) {
+            instance[key] = this.make(type);
+        }
     }
 
     /**

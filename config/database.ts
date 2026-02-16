@@ -54,4 +54,13 @@ export default {
     seeds: {
         directory: './database/seeders',
     },
+
+    // TypeORM specific
+    typeorm: {
+        entities: ['app/models/**/*.ts', 'src/models/**/*.ts'],
+        migrations: ['database/migrations/typeorm/**/*.ts'],
+        subscribers: ['app/subscribers/**/*.ts'],
+        synchronize: envBool('DB_SYNC', false),
+        logging: envBool('DB_LOGGING', false),
+    },
 };

@@ -102,6 +102,12 @@ async function tryRegisterYoga(app: Express | Router, gqlPath: string, modelsDir
     });
 
     app.use(gqlPath, yoga as any);
+
+    // Schema info endpoint for admin panel (compatible with yoga)
+    (app as any).get(`${gqlPath}/schema`, (_req: any, res: any) => {
+        const schemaInfo = getGraphQLSchemaInfo(modelsDir);
+        res.json(schemaInfo);
+    });
 }
 
 /**
