@@ -82,11 +82,12 @@ export function registerCommands(program: Command): void {
             console.log(chalk.green(`✓ Model created: app/models/${name}.ts`));
 
             if (opts.migration) {
-                const className = toPascalCase(`create_${tableName}_table`);
+                const ts = timestamp();
+                const className = toPascalCase(`create_${tableName}_table`) + ts;
                 const migStub = readStub('migration')
                     .replace(/\{\{tableName\}\}/g, tableName)
                     .replace(/\{\{className\}\}/g, className);
-                const migName = `${timestamp()}_create_${tableName}_table.ts`;
+                const migName = `${ts}_create_${tableName}_table.ts`;
                 const migPath = path.join(ROOT, 'database', 'migrations', migName);
                 writeFile(migPath, migStub);
                 console.log(chalk.green(`✓ Migration created: database/migrations/${migName}`));
@@ -104,11 +105,12 @@ export function registerCommands(program: Command): void {
                 tableName = name.replace('create_', '').replace('_table', '');
             }
 
-            const className = toPascalCase(name);
+            const ts = timestamp();
+            const className = toPascalCase(name) + ts;
             const stub = readStub('migration')
                 .replace(/\{\{tableName\}\}/g, tableName)
                 .replace(/\{\{className\}\}/g, className);
-            const fileName = `${timestamp()}_${name}.ts`;
+            const fileName = `${ts}_${name}.ts`;
             const filePath = path.join(ROOT, 'database', 'migrations', fileName);
             writeFile(filePath, stub);
             console.log(chalk.green(`✓ Migration created: database/migrations/${fileName}`));
@@ -363,59 +365,124 @@ export default router;
 `;
 
             // Auth Migration
-            const authMigration = `import type { Knex } from 'knex';
+            const ts = timestamp();
+            const authMigration = `import { MigrationInterface, QueryRunner, Table, TableForeignKey } from "typeorm";
 
-export async function up(knex: Knex): Promise<void> {
-  await knex.schema.createTable('users', (table) => {
-    table.increments('id').primary();
-    table.string('name').notNullable();
-    table.string('email').unique().notNullable();
-    table.string('password').notNullable();
-    table.string('role').defaultTo('user');
-    table.timestamp('email_verified_at').nullable();
-    table.timestamps(true, true);
-    table.timestamp('deleted_at').nullable();
-  });
+export class CreateAuthTables${ts} implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // Users table
+        await queryRunner.createTable(
+            new Table({
+                name: "users",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isNullable: false },
+                    { name: "email", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "password", type: "varchar", isNullable: false },
+                    { name: "role", type: "varchar", default: "'user'" },
+                    { name: "email_verified_at", type: "timestamp", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "deleted_at", type: "timestamp", isNullable: true },
+                ],
+            }),
+            true
+        );
 
-  // Roles table
-  await knex.schema.createTable('roles', (table) => {
-    table.increments('id').primary();
-    table.string('name').unique().notNullable();
-    table.string('description').nullable();
-    table.timestamps(true, true);
-  });
+        // Roles table
+        await queryRunner.createTable(
+            new Table({
+                name: "roles",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "description", type: "varchar", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                ],
+            }),
+            true
+        );
 
-  // Permissions table
-  await knex.schema.createTable('permissions', (table) => {
-    table.increments('id').primary();
-    table.string('name').unique().notNullable();
-    table.string('description').nullable();
-    table.timestamps(true, true);
-  });
+        // Permissions table
+        await queryRunner.createTable(
+            new Table({
+                name: "permissions",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "description", type: "varchar", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                ],
+            }),
+            true
+        );
 
-  // Role-Permission pivot
-  await knex.schema.createTable('role_permissions', (table) => {
-    table.increments('id').primary();
-    table.integer('role_id').unsigned().references('id').inTable('roles').onDelete('CASCADE');
-    table.integer('permission_id').unsigned().references('id').inTable('permissions').onDelete('CASCADE');
-    table.unique(['role_id', 'permission_id']);
-  });
+        // Role-Permission pivot
+        await queryRunner.createTable(
+            new Table({
+                name: "role_permissions",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "role_id", type: "int" },
+                    { name: "permission_id", type: "int" },
+                ],
+                indices: [{ columnNames: ["role_id", "permission_id"], isUnique: true }]
+            }),
+            true
+        );
 
-  // User-Role pivot
-  await knex.schema.createTable('user_roles', (table) => {
-    table.increments('id').primary();
-    table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
-    table.integer('role_id').unsigned().references('id').inTable('roles').onDelete('CASCADE');
-    table.unique(['user_id', 'role_id']);
-  });
-}
+        await queryRunner.createForeignKey("role_permissions", new TableForeignKey({
+            columnNames: ["role_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "roles",
+            onDelete: "CASCADE"
+        }));
 
-export async function down(knex: Knex): Promise<void> {
-  await knex.schema.dropTableIfExists('user_roles');
-  await knex.schema.dropTableIfExists('role_permissions');
-  await knex.schema.dropTableIfExists('permissions');
-  await knex.schema.dropTableIfExists('roles');
-  await knex.schema.dropTableIfExists('users');
+        await queryRunner.createForeignKey("role_permissions", new TableForeignKey({
+            columnNames: ["permission_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "permissions",
+            onDelete: "CASCADE"
+        }));
+
+        // User-Role pivot
+        await queryRunner.createTable(
+            new Table({
+                name: "user_roles",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "user_id", type: "int" },
+                    { name: "role_id", type: "int" },
+                ],
+                indices: [{ columnNames: ["user_id", "role_id"], isUnique: true }]
+            }),
+            true
+        );
+
+        await queryRunner.createForeignKey("user_roles", new TableForeignKey({
+            columnNames: ["user_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "users",
+            onDelete: "CASCADE"
+        }));
+
+        await queryRunner.createForeignKey("user_roles", new TableForeignKey({
+            columnNames: ["role_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "roles",
+            onDelete: "CASCADE"
+        }));
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable("user_roles");
+        await queryRunner.dropTable("role_permissions");
+        await queryRunner.dropTable("permissions");
+        await queryRunner.dropTable("roles");
+        await queryRunner.dropTable("users");
+    }
 }
 `;
 
@@ -423,7 +490,7 @@ export async function down(knex: Knex): Promise<void> {
             writeFile(path.join(ROOT, 'app', 'controllers', 'AuthController.ts'), authController);
             writeFile(path.join(ROOT, 'app', 'routes', 'auth.ts'), authRoutes);
             writeFile(
-                path.join(ROOT, 'database', 'migrations', `${timestamp()}_create_auth_tables.ts`),
+                path.join(ROOT, 'database', 'migrations', `${ts}_create_auth_tables.ts`),
                 authMigration
             );
 
