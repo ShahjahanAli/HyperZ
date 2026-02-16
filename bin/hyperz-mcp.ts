@@ -18,6 +18,7 @@
  *   }
  */
 
+import 'dotenv/config';
 import { startStdioServer } from '../src/mcp/MCPServer.js';
 
 const args = process.argv.slice(2);

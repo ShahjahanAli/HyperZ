@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid'; // I'll use my own helper if uuid isn't there, but let's see
+import { requestContext } from '../../core/Context.js';
 
 export function requestIdMiddleware() {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -9,7 +9,10 @@ export function requestIdMiddleware() {
         req.id = id;
         res.setHeader('X-Request-ID', id);
 
-        next();
+        // Wrap the rest of the request lifecycle in the context
+        requestContext.run({ requestId: id }, () => {
+            next();
+        });
     };
 }
 

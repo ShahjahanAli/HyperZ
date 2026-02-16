@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+package-lock.json
+hyperz-analysis.md
+hyperz-critical-improvements.md
 
 # Build output
 dist/

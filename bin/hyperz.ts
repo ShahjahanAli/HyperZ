@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-// ──────────────────────────────────────────────────────────────
-// HyperZ Framework — CLI Entry Point
-// ──────────────────────────────────────────────────────────────
-
+import 'dotenv/config';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { registerCommands } from '../src/cli/index.js';

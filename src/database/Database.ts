@@ -4,6 +4,7 @@
 
 import knex, { type Knex } from 'knex';
 import mongoose from 'mongoose';
+import { DataSource, EntityManager } from 'typeorm';
 import { Logger } from '../logging/Logger.js';
 import { env, envBool } from '../support/helpers.js';
 
@@ -11,6 +12,7 @@ export class Database {
     private static knexInstance: Knex | null = null;
     private static tenantPool = new Map<string, Knex>();
     private static mongoConnected = false;
+    private static typeormDataSource: DataSource | null = null;
 
     // ── SQL (Knex) ────────────────────────────────────────────
 
@@ -57,6 +59,34 @@ export class Database {
             throw new Error('[HyperZ] SQL database not initialized. Call Database.connectSQL() first.');
         }
         return this.knexInstance;
+    }
+
+    // ── TypeORM ───────────────────────────────────────────────
+
+    /**
+     * Set TypeORM DataSource.
+     */
+    static setDataSource(ds: DataSource): void {
+        console.log("SETTING_DATASOURCE_IN_DATABASE_CLASS", ds.isInitialized);
+        this.typeormDataSource = ds;
+    }
+
+    /**
+     * Get TypeORM DataSource.
+     */
+    static getDataSource(): DataSource {
+        if (!this.typeormDataSource) {
+            console.log("GETTING_DATASOURCE_BUT_ITS_NULL", this.typeormDataSource);
+            throw new Error('[HyperZ] TypeORM DataSource not initialized.');
+        }
+        return this.typeormDataSource;
+    }
+
+    /**
+     * Get TypeORM EntityManager.
+     */
+    static getEntityManager(): EntityManager {
+        return this.getDataSource().manager;
     }
 
     // ── MongoDB (Mongoose) ────────────────────────────────────
@@ -143,6 +173,12 @@ export class Database {
             this.mongoConnected = false;
             Logger.info('MongoDB disconnected');
         }
+
+        if (this.typeormDataSource?.isInitialized) {
+            await this.typeormDataSource.destroy();
+            this.typeormDataSource = null;
+            Logger.info('TypeORM DataSource disconnected');
+        }
     }
 
     /**
@@ -157,5 +193,12 @@ export class Database {
      */
     static isMongoConnected(): boolean {
         return this.mongoConnected;
+    }
+
+    /**
+     * Check if TypeORM is connected.
+     */
+    static isTypeORMConnected(): boolean {
+        return this.typeormDataSource?.isInitialized ?? false;
     }
 }

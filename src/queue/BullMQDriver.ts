@@ -3,7 +3,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { Queue, Worker } from 'bullmq';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { Logger } from '../logging/Logger.js';
 import { env, envNumber } from '../support/helpers.js';
 import type { Job } from './QueueManager.js';
@@ -27,7 +27,7 @@ export class BullMQDriver implements QueueDriver {
             maxRetriesPerRequest: null,
         });
 
-        this.queue = new Queue(queueName, { connection: this.connection });
+        this.queue = new Queue(queueName, { connection: this.connection as any });
         Logger.info('[Queue:BullMQ] Queue initialized');
     }
 
@@ -64,7 +64,7 @@ export class BullMQDriver implements QueueDriver {
                     Logger.warn(`[Queue:BullMQ] No handler for job: ${bullJob.name}`);
                 }
             },
-            { connection: this.connection }
+            { connection: this.connection as any }
         );
 
         this.worker.on('completed', (job) => {

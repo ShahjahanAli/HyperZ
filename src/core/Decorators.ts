@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 export const INJECTABLE_METADATA_KEY = Symbol('injectable');
 export const SCOPE_METADATA_KEY = Symbol('scope');
+export const PROPERTIES_METADATA_KEY = Symbol('properties');
 export const PARAM_TYPES_METADATA_KEY = 'design:paramtypes';
 
 /**
@@ -28,6 +29,13 @@ export function Singleton(): ClassDecorator {
  */
 export function Inject(token?: string | any): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
-        // Implementation for property injection if needed
+        const ctor = target.constructor;
+        const properties = Reflect.getMetadata(PROPERTIES_METADATA_KEY, ctor) || new Map();
+
+        // If no token is provided, try to use design:type
+        const type = token || Reflect.getMetadata('design:type', target, propertyKey);
+
+        properties.set(propertyKey, type);
+        Reflect.defineMetadata(PROPERTIES_METADATA_KEY, properties, ctor);
     };
 }

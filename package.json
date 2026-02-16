@@ -27,6 +27,7 @@
     "mcp:http": "tsx bin/hyperz-mcp.ts --http"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.990.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.69.2",
@@ -38,6 +39,8 @@
     "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "glob": "^13.0.3",
+    "graphql": "^16.12.0",
+    "graphql-yoga": "^5.18.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.3",
@@ -53,6 +56,7 @@
     "reflect-metadata": "^0.2.2",
     "socket.io": "^4.8.3",
     "sqlite3": "^5.0.2",
+    "typeorm": "^0.3.28",
     "zod": "^3.25.67"
   },
   "devDependencies": {

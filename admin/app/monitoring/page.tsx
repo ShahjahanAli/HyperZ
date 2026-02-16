@@ -50,27 +50,34 @@ function GaugeRing({ value, max, label, color, unit }: { value: number; max: num
     const circ = 2 * Math.PI * r;
     const offset = circ - (pct / 100) * circ;
     return (
-        <div style={{ textAlign: 'center' }}>
-            <svg width="110" height="110" viewBox="0 0 110 110">
-                <circle cx="55" cy="55" r={r} stroke="var(--border)" strokeWidth="8" fill="none" />
-                <circle cx="55" cy="55" r={r} stroke={color} strokeWidth="8" fill="none"
+        <div className="flex flex-col items-center">
+            <svg width="100" height="100" viewBox="0 0 110 110" className="drop-shadow-sm">
+                <circle cx="55" cy="55" r={r} stroke="var(--border)" strokeWidth="6" fill="none" opacity="0.3" />
+                <circle cx="55" cy="55" r={r} stroke={color} strokeWidth="6" fill="none"
                     strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-                    transform="rotate(-90 55 55)" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-                <text x="55" y="50" textAnchor="middle" fill="var(--text)" fontSize="18" fontWeight="700" fontFamily="var(--mono)">{Math.round(pct)}%</text>
-                <text x="55" y="68" textAnchor="middle" fill="var(--text-muted)" fontSize="10" fontFamily="var(--mono)">{value}{unit}</text>
+                    transform="rotate(-90 55 55)" className="transition-all duration-1000 ease-out" />
+                <text x="55" y="52" textAnchor="middle" fill="var(--text)" fontSize="20" fontWeight="900" className="font-mono italic">{Math.round(pct)}%</text>
+                <text x="55" y="70" textAnchor="middle" fill="var(--text-muted)" fontSize="9" className="font-mono uppercase font-black opacity-60 tracking-tighter">{value}{unit}</text>
             </svg>
-            <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: 4, fontFamily: 'var(--tactical)' }}>{label}</div>
+            <div className="text-[9px] text-[var(--text-muted)] mt-3 font-tactical uppercase tracking-widest font-black italic">{label}</div>
         </div>
     );
 }
 
 function Sparkline({ data, color, height = 40 }: { data: number[]; color: string; height?: number }) {
     const max = Math.max(...data, 1);
-    const w = 400; // Increased width for better responsiveness
-    const points = data.map((v, i) => `${(i / (data.length - 1)) * w},${height - (v / max) * (height - 4)}`).join(' ');
+    const w = 400;
+    const points = data.map((v, i) => `${(i / (data.length - 1)) * w},${height - (v / max) * (height - 8)}`).join(' ');
     return (
-        <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-            <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" className="block drop-shadow-sm">
+            <defs>
+                <linearGradient id={`grad-${color.replace(/[^a-z]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+            </defs>
+            <path d={`M ${points} L ${w},${height} L 0,${height} Z`} fill={`url(#grad-${color.replace(/[^a-z]/g, '')})`} />
+            <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         </svg>
     );
 }
@@ -100,7 +107,7 @@ export default function MonitoringPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1 style={{ fontFamily: 'var(--tactical)', fontSize: '14px', letterSpacing: '2px' }}>📊 LIVE_SYSTEM_METRICS</h1>
+                <h1>📊 LIVE_SYSTEM_METRICS</h1>
                 <span className="topbar-meta">STATUS: {autoRefresh ? 'STREAMING' : 'PAUSED'} • UPTIME: {data ? formatUptime(data.system.uptime) : '…'}</span>
             </div>
 
@@ -139,31 +146,31 @@ export default function MonitoringPage() {
                         </div>
 
                         {/* Charts Area */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.50fr', gap: 24, marginBottom: 24 }} className="responsive-grid">
-                            <div className="card">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                            <div className="card lg:col-span-2">
                                 <div className="card-header">// RESOURCE_UTILIZATION</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 12 }}>
-                                    <GaugeRing value={data.system.cpu.usage} max={100} label="CPU_USAGE" color="var(--accent)" unit="%" />
-                                    <GaugeRing value={data.system.memory.usagePercent} max={100} label="RAM_USAGE" color="var(--accent-secondary)" unit="%" />
-                                    <GaugeRing value={data.system.memory.heapUsedMB} max={data.system.memory.heapTotalMB} label="V8_HEAP" color="var(--green)" unit="MB" />
-                                    <GaugeRing value={data.system.eventLoopLagMs} max={100} label="LOOP_LAG" color={data.system.eventLoopLagMs > 50 ? 'var(--red)' : 'var(--blue)'} unit="ms" />
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-10 py-4">
+                                    <GaugeRing value={data.system.cpu.usage} max={100} label="CPU_LOAD" color="var(--accent)" unit="%" />
+                                    <GaugeRing value={data.system.memory.usagePercent} max={100} label="RAM_PHYSICAL" color="var(--accent-secondary)" unit="%" />
+                                    <GaugeRing value={data.system.memory.heapUsedMB} max={data.system.memory.heapTotalMB} label="V8_HEAP_ALLOC" color="var(--green)" unit="MB" />
+                                    <GaugeRing value={data.system.eventLoopLagMs} max={100} label="LOOP_LAG_LATENCY" color={data.system.eventLoopLagMs > 50 ? 'var(--red)' : 'var(--blue)'} unit="ms" />
                                 </div>
                             </div>
 
-                            <div className="card">
+                            <div className="card lg:col-span-3">
                                 <div className="card-header">// TELEMETRY_TIME_SERIES</div>
-                                <div style={{ padding: '0 12px' }}>
-                                    <div style={{ marginBottom: 20 }}>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: 8, fontFamily: 'var(--tactical)' }}>THROUGHPUT_60S</div>
-                                        <Sparkline data={data.timeSeries.map(t => t.reqCount)} color="var(--accent)" height={60} />
-                                    </div>
-                                    <div style={{ marginBottom: 20 }}>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: 8, fontFamily: 'var(--tactical)' }}>LATENCY_60S</div>
-                                        <Sparkline data={data.timeSeries.map(t => t.avgMs)} color="var(--green)" height={60} />
+                                <div className="space-y-10">
+                                    <div>
+                                        <div className="text-[9px] text-[var(--accent)] mb-3 font-tactical uppercase tracking-widest font-black italic">THROUGHPUT_SIGNAL_60S</div>
+                                        <Sparkline data={data.timeSeries.map(t => t.reqCount)} color="var(--accent)" height={70} />
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: 8, fontFamily: 'var(--tactical)' }}>ERRORS_60S</div>
-                                        <Sparkline data={data.timeSeries.map(t => t.errorCount)} color="var(--red)" height={40} />
+                                        <div className="text-[9px] text-[var(--green)] mb-3 font-tactical uppercase tracking-widest font-black italic">LATENCY_STABILITY_60S</div>
+                                        <Sparkline data={data.timeSeries.map(t => t.avgMs)} color="var(--green)" height={70} />
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-[var(--red)] mb-3 font-tactical uppercase tracking-widest font-black italic">ERROR_DETECTION_PULSE</div>
+                                        <Sparkline data={data.timeSeries.map(t => t.errorCount)} color="var(--red)" height={50} />
                                     </div>
                                 </div>
                             </div>
@@ -191,9 +198,9 @@ export default function MonitoringPage() {
                         </div>
 
                         {/* System Metadata */}
-                        <div className="card" style={{ marginTop: 24 }}>
+                        <div className="card">
                             <div className="card-header">// NODE_SYSTEM_MANIFEST</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                                 {[
                                     { k: 'PLATFORM', v: data.system.platform },
                                     { k: 'CPU_MODEL', v: data.system.cpu.model },
@@ -202,9 +209,9 @@ export default function MonitoringPage() {
                                     { k: 'ACTIVE_HANDLES', v: data.system.activeHandles },
                                     { k: 'RSS_MEMORY', v: `${data.system.memory.rssMB} MB` },
                                 ].map(item => (
-                                    <div key={item.k} style={{ padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 4 }}>
-                                        <div style={{ fontSize: '9px', color: 'var(--accent)', fontFamily: 'var(--tactical)' }}>{item.k}</div>
-                                        <div style={{ fontSize: '12px', color: 'var(--text)', fontFamily: 'var(--mono)', marginTop: 4 }}>{item.v}</div>
+                                    <div key={item.k} className="bg-slate-500/5 border border-[var(--border)] p-4 rounded-sm group hover:border-[var(--accent-secondary)] transition-all">
+                                        <div className="text-[8px] text-[var(--accent-secondary)] font-tactical font-black uppercase tracking-widest mb-2 opacity-70 italic">{item.k}</div>
+                                        <div className="text-[11px] text-[var(--text)] font-mono font-bold truncate italic" title={String(item.v)}>{item.v}</div>
                                     </div>
                                 ))}
                             </div>

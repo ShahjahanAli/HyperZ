@@ -4,6 +4,7 @@
 
 import pino from 'pino';
 import { env } from '../support/helpers.js';
+import { getRequestId } from '../core/Context.js';
 
 const isProduction = env('APP_ENV', 'development') === 'production';
 
@@ -23,19 +24,27 @@ const logger = pino({
 
 export class Logger {
     static info(msg: string, data?: Record<string, any>): void {
-        data ? logger.info(data, msg) : logger.info(msg);
+        const requestId = getRequestId();
+        const payload = requestId ? { requestId, ...data } : data;
+        payload ? logger.info(payload, msg) : logger.info(msg);
     }
 
     static error(msg: string, data?: Record<string, any>): void {
-        data ? logger.error(data, msg) : logger.error(msg);
+        const requestId = getRequestId();
+        const payload = requestId ? { requestId, ...data } : data;
+        payload ? logger.error(payload, msg) : logger.error(msg);
     }
 
     static warn(msg: string, data?: Record<string, any>): void {
-        data ? logger.warn(data, msg) : logger.warn(msg);
+        const requestId = getRequestId();
+        const payload = requestId ? { requestId, ...data } : data;
+        payload ? logger.warn(payload, msg) : logger.warn(msg);
     }
 
     static debug(msg: string, data?: Record<string, any>): void {
-        data ? logger.debug(data, msg) : logger.debug(msg);
+        const requestId = getRequestId();
+        const payload = requestId ? { requestId, ...data } : data;
+        payload ? logger.debug(payload, msg) : logger.debug(msg);
     }
 
     static fatal(msg: string, data?: Record<string, any>): void {

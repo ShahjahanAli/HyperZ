@@ -23,39 +23,39 @@ export default function ServicesPage() {
     return (
         <AdminLayout>
             <div className="topbar">
-                <h1>💾 Cache & Queue</h1>
-                <span className="topbar-meta">Service management</span>
+                <h1>💾 CACHE_QUEUE_CENTRAL</h1>
+                <span className="topbar-meta">SERVICE_INFRASTRUCTURE • UPLINK: STABLE</span>
             </div>
 
             <div className="page-content">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Cache */}
                     <div className="card">
-                        <div className="card-header">Cache Manager</div>
-                        <div style={{ marginTop: 12, marginBottom: 16 }}>
+                        <div className="card-header">// CACHE_LAYER_MANAGER</div>
+                        <div className="table-container mb-6">
                             <table>
                                 <tbody>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Driver</td><td><span className="badge badge-info">{process.env.CACHE_DRIVER || 'file'}</span></td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Redis Host</td><td style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>127.0.0.1</td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Status</td><td><span className="badge badge-success">Active</span></td></tr>
+                                    <tr><th className="w-1/3">DRIVER</th><td><span className="badge badge-info">{process.env.CACHE_DRIVER || 'FILE'}</span></td></tr>
+                                    <tr><th>REDIS_HOST</th><td className="italic">127.0.0.1</td></tr>
+                                    <tr><th>STATUS</th><td><span className="badge badge-success">ACTIVE</span></td></tr>
                                 </tbody>
                             </table>
                         </div>
                         <div className="btn-group">
-                            <button className="btn btn-danger btn-sm" onClick={flushCache}>🗑️ Flush All Cache</button>
+                            <button className="btn btn-danger" onClick={flushCache}>🗑️ FLUSH_TOTAL_CACHE</button>
                         </div>
-                        {flushResult && <div style={{ marginTop: 12, fontSize: 14 }}>{flushResult}</div>}
+                        {flushResult && <div className="mt-4 text-[11px] font-mono text-[var(--accent)] animate-pulse">{flushResult}</div>}
                     </div>
 
                     {/* Queue */}
                     <div className="card">
-                        <div className="card-header">Queue Manager</div>
-                        <div style={{ marginTop: 12 }}>
+                        <div className="card-header">// ASYNC_QUEUE_WORKER</div>
+                        <div className="table-container">
                             <table>
                                 <tbody>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Driver</td><td><span className="badge badge-info">{process.env.QUEUE_DRIVER || 'sync'}</span></td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>BullMQ</td><td style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>Available</td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Status</td><td><span className="badge badge-success">Active</span></td></tr>
+                                    <tr><th className="w-1/3">DRIVER</th><td><span className="badge badge-info">{process.env.QUEUE_DRIVER || 'SYNC'}</span></td></tr>
+                                    <tr><th>BULLMQ_ENGINE</th><td className="italic">AVAILABLE</td></tr>
+                                    <tr><th>STATUS</th><td><span className="badge badge-success">ACTIVE</span></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -63,13 +63,13 @@ export default function ServicesPage() {
 
                     {/* Storage */}
                     <div className="card">
-                        <div className="card-header">Storage Manager</div>
-                        <div style={{ marginTop: 12 }}>
+                        <div className="card-header">// VIRTUAL_STORAGE_ASSETS</div>
+                        <div className="table-container">
                             <table>
                                 <tbody>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Default Disk</td><td><span className="badge badge-info">local</span></td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>S3 Configured</td><td style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>Available</td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Storage Path</td><td style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>storage/</td></tr>
+                                    <tr><th className="w-1/3">DEFAULT_DISK</th><td><span className="badge badge-info">LOCAL</span></td></tr>
+                                    <tr><th>S3_UPLINK</th><td className="italic">CONFIGURED</td></tr>
+                                    <tr><th>ROOT_PATH</th><td className="italic font-bold">STORAGE/</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -77,12 +77,13 @@ export default function ServicesPage() {
 
                     {/* WebSocket */}
                     <div className="card">
-                        <div className="card-header">WebSocket</div>
-                        <div style={{ marginTop: 12 }}>
+                        <div className="card-header">// REALTIME_WEBSOCKET_UPLINK</div>
+                        <div className="table-container">
                             <table>
                                 <tbody>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Provider</td><td><span className="badge badge-info">Socket.io</span></td></tr>
-                                    <tr><td style={{ color: 'var(--text-muted)' }}>Status</td><td><span className="badge badge-success">Ready</span></td></tr>
+                                    <tr><th className="w-1/3">PROVIDER</th><td><span className="badge badge-info">SOCKET.IO</span></td></tr>
+                                    <tr><th>STATUS</th><td><span className="badge badge-success">READY</span></td></tr>
+                                    <tr><th>CONNECTIONS</th><td className="italic font-bold text-emerald-700">ACTIVE</td></tr>
                                 </tbody>
                             </table>
                         </div>

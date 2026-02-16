@@ -123,7 +123,15 @@ export class Application {
 
         // Boot all providers
         for (const provider of this.providers) {
-            await provider.boot();
+            try {
+                if (typeof provider.boot !== 'function') {
+                    Logger.error(`Provider ${provider.constructor.name} does not have a boot method`);
+                }
+                await provider.boot();
+            } catch (err: any) {
+                Logger.error(`Error booting provider ${provider.constructor.name}`, { error: err.message, stack: err.stack });
+                throw err;
+            }
         }
 
         this.booted = true;

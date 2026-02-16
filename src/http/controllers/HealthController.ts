@@ -14,17 +14,33 @@ export class HealthController {
 
         let overallStatus = 200;
 
-        // Check SQL Database
+        // Check SQL Database (Knex)
         try {
             if (Database.isSQLConnected()) {
                 await Database.getKnex().raw('SELECT 1');
-                checks.database = 'UP';
+                checks.knex = 'UP';
             } else {
-                checks.database = 'NOT_CONNECTED';
+                checks.knex = 'NOT_CONNECTED';
             }
         } catch (err: any) {
-            checks.database = 'DOWN';
-            checks.database_error = err.message;
+            checks.knex = 'DOWN';
+            checks.knex_error = err.message;
+            overallStatus = 503;
+            checks.status = 'DEGRADED';
+        }
+
+        // Check TypeORM
+        try {
+            const ds = Database.getDataSource();
+            if (ds.isInitialized) {
+                await ds.query('SELECT 1');
+                checks.typeorm = 'UP';
+            } else {
+                checks.typeorm = 'NOT_INITIALIZED';
+            }
+        } catch (err: any) {
+            checks.typeorm = 'DOWN';
+            checks.typeorm_error = err.message;
             overallStatus = 503;
             checks.status = 'DEGRADED';
         }
