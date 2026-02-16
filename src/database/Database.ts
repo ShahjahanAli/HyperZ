@@ -6,7 +6,7 @@ import knex, { type Knex } from 'knex';
 import mongoose from 'mongoose';
 import { DataSource, EntityManager } from 'typeorm';
 import { Logger } from '../logging/Logger.js';
-import { env, envBool } from '../support/helpers.js';
+import { env, envBool, envNumber } from '../support/helpers.js';
 
 export class Database {
     private static knexInstance: Knex | null = null;
@@ -24,6 +24,26 @@ export class Database {
 
         this.knexInstance = knex(config);
 
+        // Slow Query Logging
+        const queries = new Map<string, number>();
+        this.knexInstance.on('query', (data: any) => {
+            queries.set(data.__knexUid, Date.now());
+        });
+        this.knexInstance.on('query-response', (response: any, data: any) => {
+            const start = queries.get(data.__knexUid);
+            if (start) {
+                const duration = Date.now() - start;
+                queries.delete(data.__knexUid);
+                const threshold = envNumber('DB_SLOW_QUERY_THRESHOLD', 1000);
+                if (duration > threshold) {
+                    Logger.warn(`[Database] Slow query detected (${duration}ms): ${data.sql}`, {
+                        duration,
+                        sql: data.sql,
+                    });
+                }
+            }
+        });
+
         // Test connection
         try {
             await this.knexInstance.raw('SELECT 1');
@@ -34,6 +54,42 @@ export class Database {
         }
 
         return this.knexInstance;
+    }
+
+    /**
+     * Perform a health check on all connected databases.
+     */
+    static async healthCheck(): Promise<any> {
+        const status: any = {
+            sql: 'disconnected',
+            mongo: 'disconnected',
+            typeorm: 'disconnected',
+            timestamp: new Date().toISOString(),
+        };
+
+        if (this.knexInstance) {
+            try {
+                await this.knexInstance.raw('SELECT 1');
+                status.sql = 'connected';
+            } catch (err) {
+                status.sql = 'error';
+            }
+        }
+
+        if (this.mongoConnected) {
+            try {
+                await mongoose.connection.db?.admin().ping();
+                status.mongo = 'connected';
+            } catch (err) {
+                status.mongo = 'error';
+            }
+        }
+
+        if (this.typeormDataSource?.isInitialized) {
+            status.typeorm = 'connected';
+        }
+
+        return status;
     }
 
     /**
