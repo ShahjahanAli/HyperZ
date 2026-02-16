@@ -17,7 +17,7 @@
               │              Service Provider Boot Order             │
               │                                                      │
               │  1. AppServiceProvider     → core bindings           │
-              │  2. DatabaseProvider       → Knex + Mongoose         │
+              │  2. DatabaseProvider       → TypeORM + Mongoose      │
               │  3. EventServiceProvider   → event dispatcher        │
               │  4. CacheServiceProvider   → memory/redis driver     │
               │  5. RouteServiceProvider   → auto-load app/routes/*  │
@@ -130,7 +130,7 @@ const auth = app.make(AuthService); // Nested dependencies auto-resolved
 ```
 
 **Key bindings registered during boot:**
-- `db` — Knex database instance
+- `db` — TypeORM DataSource instance
 - `cache` — Cache driver (Memory or Redis)
 - `queue` — Queue driver (Sync or BullMQ)
 - `storage` — Storage driver (Local or S3)
@@ -168,7 +168,7 @@ const auth = app.make(AuthService); // Nested dependencies auto-resolved
 │                                                  │
 │  ┌──────────────┐    ┌──────────────────────┐   │
 │  │    SQL        │    │     MongoDB          │   │
-│  │  (Knex.js)   │    │   (Mongoose)         │   │
+│  │  (TypeORM)   │    │   (Mongoose)         │   │
 │  │              │    │                      │   │
 │  │ • SQLite     │    │ • Optional           │   │
 │  │ • MySQL      │    │ • MONGO_ENABLED=true │   │

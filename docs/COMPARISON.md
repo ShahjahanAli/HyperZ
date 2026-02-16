@@ -16,7 +16,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **Language** | TypeScript | TypeScript | TypeScript | JS/TS | PHP 8.2+ | PHP 8.2+ | C# | Java 21+ |
 | **Architecture** | Service Provider | Module/DI | MVC | Minimal | Service Provider | Bundle/DI | Minimal API / MVC | Auto-Config |
-| **ORM** | ✅ Knex + Mongoose | Prisma/TypeORM | ✅ Lucid | ❌ Manual | ✅ Eloquent | ✅ Doctrine | ✅ EF Core | ✅ JPA/Hibernate |
+| **ORM** | ✅ TypeORM + Mongoose | Prisma/TypeORM | ✅ Lucid | ❌ Manual | ✅ Eloquent | ✅ Doctrine | ✅ EF Core | ✅ JPA/Hibernate |
 | **Auth + RBAC** | ✅ Built-in | ✅ Passport | ✅ Built-in | ❌ Manual | ✅ Built-in | ✅ Built-in | ✅ Built-in | ✅ Spring Security |
 | **CLI Scaffolding** | ✅ 16+ commands | ✅ nest generate | ✅ ace commands | ❌ None | ✅ Artisan | ✅ Console | ✅ dotnet CLI | ❌ Limited |
 | **Validation** | ✅ Zod | ✅ class-validator | ✅ VineJS | ❌ Manual | ✅ Built-in | ✅ Built-in | ✅ DataAnnotations | ✅ Bean Validation |
@@ -60,7 +60,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | Aspect | HyperZ | AdonisJS v6/v7 |
 |---|---|---|
 | **Similarity** | Both Laravel-inspired, TypeScript-first, batteries-included | |
-| **ORM** | Knex.js + optional Mongoose | Lucid (custom, more Laravel-like) |
+| **ORM** | TypeORM + optional Mongoose | Lucid (custom, more Laravel-like) |
 | **CLI** | 16+ make commands | Full Ace CLI (similar count) |
 | **Queue** | ✅ BullMQ driver | ❌ Not built-in yet |
 | **AI** | ✅ Multi-provider AI Gateway | ❌ None |
@@ -80,7 +80,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **Setup Time** | Minutes — clone, install, run | Hours — assemble middleware, ORM, auth, etc. |
 | **Structure** | Opinionated, organized | Unopinionated, DIY |
 | **Out-of-the-Box** | 20+ subsystems | Routing + middleware only |
-| **Database** | Knex + Mongoose, migrations, seeders | Manual setup |
+| **Database** | TypeORM + Mongoose, migrations, seeders | Manual setup |
 | **Auth** | JWT + RBAC + Gates built-in | Manual (passport.js, etc.) |
 | **Built on** | Express 5 (benefits from Express ecosystem) | Express 5 (is the ecosystem) |
 
@@ -96,7 +96,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 |---|---|---|
 | **Language** | TypeScript (Node.js) | PHP 8.2+ |
 | **Inspiration** | Directly inspired by Laravel | The original |
-| **ORM** | Knex.js (query builder) + Mongoose | Eloquent (full Active Record) |
+| **ORM** | TypeORM (SQL Engine) + Mongoose | Eloquent (full Active Record) |
 | **CLI** | 16+ commands (make:*, migrate, seed) | 30+ Artisan commands |
 | **Queue** | BullMQ (Redis) | Horizon, Redis, SQS, database |
 | **Admin** | ✅ Free built-in (Next.js) | Nova (paid $99+), Filament (free) |
@@ -134,7 +134,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **Language** | TypeScript | C# |
 | **Performance** | V8 JIT, async I/O | CLR JIT, AOT compilation — generally faster |
 | **Architecture** | Service Provider | Minimal API / MVC + DI |
-| **ORM** | Knex.js | Entity Framework Core (more powerful) |
+| **ORM** | TypeORM | Entity Framework Core (more powerful) |
 | **Auth** | JWT + RBAC built-in | Identity, OAuth, OIDC — more comprehensive |
 | **AI** | ✅ Built-in Gateway | ✅ Extensions.AI (new in .NET 9) |
 | **Admin Panel** | ✅ Built-in | ❌ 3rd party |
@@ -157,7 +157,7 @@ HyperZ is compared against **8 leading frameworks** across 4 ecosystems. The ana
 | **Startup Time** | ~1 second | 3-10 seconds (GraalVM for faster) |
 | **Memory** | ~50-100 MB | 200-500 MB typical |
 | **Architecture** | Service Provider | Auto-configuration + annotations |
-| **ORM** | Knex.js | JPA/Hibernate (most powerful) |
+| **ORM** | TypeORM | JPA/Hibernate (most powerful) |
 | **Microservices** | API-focused single service | Spring Cloud full suite |
 | **AI** | ✅ Built-in Gateway | Spring AI (early stage) |
 | **Admin** | ✅ Built-in Next.js | Spring Boot Admin (monitoring) |

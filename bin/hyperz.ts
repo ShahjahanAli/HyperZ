@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "reflect-metadata";
 import 'dotenv/config';
 import { Command } from 'commander';
 import chalk from 'chalk';

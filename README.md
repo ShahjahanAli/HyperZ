@@ -45,7 +45,7 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 | 🏗️ **Core** | IoC Service Container, Service Providers, Config Manager, Application Kernel |
 | 🌐 **HTTP** | Laravel-style Router (groups, named routes, resource CRUD), Controller base class |
 | 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS Protection** — all built-in |
-| 🗄️ **Database**| **Knex.js** (Query Builder) **+ TypeORM** (Models) **+ Mongoose** (MongoDB) — triple engine support |
+| 🗄️ **Database**| **TypeORM** (SQL Engine) **+ Mongoose** (MongoDB) — Unified database support |
 | 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, **Laravel-style proxies: `where`, `first`, `create`**) |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
@@ -148,8 +148,8 @@ npx tsx bin/hyperz.ts make:model Post -m
 ```
 
 This generates:
-- `app/models/Post.ts` — Active Record model (TypeORM-based with Laravel compatibility)
-- `database/migrations/YYYYMMDDHHMMSS_create_posts_table.ts` — Migration file
+- `app/models/Post.ts` — Active Record model (TypeORM-based)
+- `database/migrations/YYYYMMDDHHMMSS_create_posts_table.ts` — Native TypeORM migration
 
 ### 3. Register Routes
 
@@ -592,7 +592,7 @@ HyperZ uses a service-provider pattern inspired by Laravel:
 ```
 Boot Order:
   1. AppServiceProvider      → Kernel, global middleware
-  2. DatabaseServiceProvider  → SQL (Knex) + MongoDB (Mongoose) connections
+  2. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
   3. EventServiceProvider     → Event dispatcher
   4. CacheServiceProvider     → Cache manager
   5. RouteServiceProvider     → Auto-discovers & loads app/routes/*.ts
@@ -612,7 +612,7 @@ Copy `.env.example` to `.env` and configure:
 | `APP_ENV` | Environment (`development`, `production`) | `development` |
 | `APP_PORT` | Server port | `7700` |
 | `APP_KEY` | Encryption key (run `key:generate`) | — |
-| `DB_DRIVER` | SQL driver (`sqlite`, `mysql`, `postgresql`) | `sqlite` |
+| `DB_DRIVER` | SQL driver (`sqlite`, `mysql`, `postgres`) | `sqlite` |
 | `MONGO_ENABLED` | Enable MongoDB | `false` |
 | `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/hyperz` |
 | `JWT_SECRET` | JWT signing secret | — |
@@ -643,7 +643,7 @@ DB_PASSWORD=secret
 
 **PostgreSQL**:
 ```env
-DB_DRIVER=postgresql
+DB_DRIVER=postgres
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=hyperz

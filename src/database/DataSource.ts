@@ -38,7 +38,7 @@ export const initializeDataSource = async () => {
         synchronize: (databaseConfig as any).typeorm?.synchronize || false,
         logging: (databaseConfig as any).typeorm?.logging || false,
         entities: [path.join(ROOT, 'app/models/**/*.{ts,js}')],
-        migrations: [path.join(ROOT, 'database/migrations/typeorm/**/*.{ts,js}')],
+        migrations: [path.join(ROOT, 'database/migrations/**/*.{ts,js}')],
         subscribers: [],
     });
 

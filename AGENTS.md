@@ -31,7 +31,7 @@ HyperZ/
 │
 ├── config/                 # Configuration files (ai, app, auth, cache, database, mail, queue, storage)
 ├── database/
-│   ├── migrations/         # Knex migration files (timestamped)
+│   ├── migrations/         # TypeORM migration classes (timestamped)
 │   ├── seeders/            # Database seeders
 │   └── factories/          # Data factories (Faker-ready)
 │
@@ -123,8 +123,8 @@ HyperZ/
 - Apply as route middleware: `router.post('/path', validate(schema), handler)`
 
 ### Database
-- Migrations use Knex.js — export `up(knex)` and `down(knex)` functions
-- Use `knex.schema.createTable()` in `up()`, `knex.schema.dropTableIfExists()` in `down()`
+- Migrations use TypeORM — export a class implementing `MigrationInterface`
+- Use `queryRunner.createTable()` in `up()`, `queryRunner.dropTable()` in `down()`
 
 ### AI-native Features
 - **PromptManager:** Load templates from `app/prompts/` (e.g., `await prompts.load('email/welcome@v2', { user: 'name' })`).
@@ -134,7 +134,7 @@ HyperZ/
 
 ### Enterprise SaaS Patterns
 - **Multi-tenancy:** Access `req.tenant` to get context-isolated configuration.
-- **Database:** Use `Database.getTenantKnex(tenantId, config)` for isolated DB pools.
+- **Database:** Use `Database.getDataSource()` for the primary connection.
 - **Billing:** Record usage via `billing.recordUsage(tenantId, 'tokens', count)`.
 - **Monitoring:** Track AI cost and latency via the built-in system gauges.
 

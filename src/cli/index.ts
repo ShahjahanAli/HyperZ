@@ -10,6 +10,7 @@ import { Table } from 'cli-table3';
 import pluralize from 'pluralize';
 import { config as loadEnv } from 'dotenv';
 import { randomString } from '../support/helpers.js';
+import { initializeDataSource } from '../database/DataSource.js';
 
 const ROOT = process.cwd();
 
@@ -34,6 +35,10 @@ function toTableName(name: string): string {
 
 function toCamelCase(name: string): string {
     return name.charAt(0).toLowerCase() + name.slice(1);
+}
+
+function toPascalCase(name: string): string {
+    return name.split(/[-_]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
 }
 
 function timestamp(): string {
@@ -77,7 +82,10 @@ export function registerCommands(program: Command): void {
             console.log(chalk.green(`✓ Model created: app/models/${name}.ts`));
 
             if (opts.migration) {
-                const migStub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
+                const className = toPascalCase(`create_${tableName}_table`);
+                const migStub = readStub('migration')
+                    .replace(/\{\{tableName\}\}/g, tableName)
+                    .replace(/\{\{className\}\}/g, className);
                 const migName = `${timestamp()}_create_${tableName}_table.ts`;
                 const migPath = path.join(ROOT, 'database', 'migrations', migName);
                 writeFile(migPath, migStub);
@@ -96,7 +104,10 @@ export function registerCommands(program: Command): void {
                 tableName = name.replace('create_', '').replace('_table', '');
             }
 
-            const stub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
+            const className = toPascalCase(name);
+            const stub = readStub('migration')
+                .replace(/\{\{tableName\}\}/g, tableName)
+                .replace(/\{\{className\}\}/g, className);
             const fileName = `${timestamp()}_${name}.ts`;
             const filePath = path.join(ROOT, 'database', 'migrations', fileName);
             writeFile(filePath, stub);
@@ -149,11 +160,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Migration } = await import('../database/Migration.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const migration = new Migration(path.join(ROOT, 'database', 'migrations'));
             await migration.migrate();
             await Database.disconnect();
@@ -168,11 +177,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Migration } = await import('../database/Migration.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const migration = new Migration(path.join(ROOT, 'database', 'migrations'));
             await migration.rollback();
             await Database.disconnect();
@@ -188,11 +195,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Seeder } = await import('../database/Seeder.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const seeder = new Seeder(path.join(ROOT, 'database', 'seeders'));
 
             if (opts.class) {

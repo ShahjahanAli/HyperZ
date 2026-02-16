@@ -81,10 +81,10 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 
 ## 4. Database Layer
 
-### 4.1 SQL Database (Knex.js)
+### 4.1 SQL Database (TypeORM)
 - **SQLite** (default — zero config)
 - **MySQL** and **PostgreSQL** drivers
-- Query builder with fluent API
+- Advanced ORM with Data Mapper & Active Record support
 - Connection pooling
 
 ### 4.2 MongoDB (Mongoose)
@@ -585,7 +585,7 @@ Pre-built workflows in `.agent/workflows/`:
 - Generates full SDL: types, Query, Mutation, Input types
 
 ### 27.2 Runtime Behavior
-- **With graphql-yoga**: Full CRUD resolvers connected to Knex database
+- **With graphql-yoga**: Full CRUD resolvers connected to TypeORM database
 - **Without graphql-yoga**: Built-in lightweight handler with GraphiQL IDE + health query
 
 ### 27.3 Endpoints

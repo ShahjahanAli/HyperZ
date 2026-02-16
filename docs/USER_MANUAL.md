@@ -146,7 +146,7 @@ DB_PASSWORD=your_password
 
 **PostgreSQL**:
 ```env
-DB_DRIVER=postgresql
+DB_DRIVER=postgres
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=hyperz
@@ -263,21 +263,30 @@ npx tsx bin/hyperz.ts make:model Product -m
 Edit the generated migration file to define your schema:
 
 ```typescript
-import type { Knex } from 'knex';
+import { MigrationInterface, QueryRunner, Table } from "typeorm";
 
-export async function up(knex: Knex): Promise<void> {
-  await knex.schema.createTable('products', (table) => {
-    table.increments('id').primary();
-    table.string('name').notNullable();
-    table.text('description');
-    table.decimal('price', 10, 2).notNullable();
-    table.integer('stock').defaultTo(0);
-    table.timestamps(true, true);
-  });
-}
+export class CreateProductsTable20260216170613 implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(
+            new Table({
+                name: "products",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isNullable: false },
+                    { name: "description", type: "text", isNullable: true },
+                    { name: "price", type: "decimal", precision: 10, scale: 2, isNullable: false },
+                    { name: "stock", type: "int", default: 0 },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                ],
+            }),
+            true
+        );
+    }
 
-export async function down(knex: Knex): Promise<void> {
-  await knex.schema.dropTableIfExists('products');
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable("products");
+    }
 }
 ```
 
@@ -369,15 +378,16 @@ const newProduct = await Product.create({
   stock: 100,
 });
 
-// Update
-await Product.update(1, { price: 12.99 });
+// Update (via ActiveRecord or Entity save)
+product.price = 12.99;
+await product.save();
 
 // Delete
-await Product.delete(1);
+await product.remove();
 
-// Soft delete (if model supports it)
-await Product.softDelete(1);
-await Product.restore(1);
+// Soft delete (if model has @DeleteDateColumn)
+await product.softRemove();
+await Product.restore(product.id);
 ```
 
 ### 5.4 Database Factories

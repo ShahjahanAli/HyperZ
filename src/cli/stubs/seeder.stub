@@ -1,10 +1,10 @@
 import { Database } from '../../src/database/Database.js';
 
 export async function run(): Promise<void> {
-  const knex = Database.getKnex();
+  const manager = Database.getEntityManager();
 
-  await knex('{{tableName}}').insert([
-    // Add your seed data here
-    // { name: 'Example', email: 'example@hyperz.dev' },
+  // Add your seed data here
+  await manager.insert('{{tableName}}', [
+    // { name: 'Example', created_at: new Date(), updated_at: new Date() },
   ]);
 }
