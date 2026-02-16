@@ -25,6 +25,6 @@ Please include the following in your report:
 HyperZ implements several default security measures:
 - **JWT Authentication**: Secure, stateless session management.
 - **Bcrypt Hashing**: Industry-standard password hashing.
-- **SQL Injection Protection**: Prepared statements via Knex/TypeORM.
+- **SQL Injection Protection**: Prepared statements via TypeORM.
 - **XSS Protection**: HTML sanitization helpers and secure templating defaults.
 - **Rate Limiting**: Built-in protection against brute-force attacks.

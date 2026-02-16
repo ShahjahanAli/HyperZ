@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────────────────
-// HyperZ Framework — Database Manager (Knex + Mongoose)
+// HyperZ Framework — Database Manager (TypeORM + Mongoose)
 // ──────────────────────────────────────────────────────────────
 
 import knex, { type Knex } from 'knex';
@@ -9,52 +9,10 @@ import { Logger } from '../logging/Logger.js';
 import { env, envBool, envNumber } from '../support/helpers.js';
 
 export class Database {
-    private static knexInstance: Knex | null = null;
-    private static tenantPool = new Map<string, Knex>();
     private static mongoConnected = false;
     private static typeormDataSource: DataSource | null = null;
 
     // ── SQL (Knex) ────────────────────────────────────────────
-
-    /**
-     * Initialize Knex SQL connection.
-     */
-    static async connectSQL(config: Knex.Config): Promise<Knex> {
-        if (this.knexInstance) return this.knexInstance;
-
-        this.knexInstance = knex(config);
-
-        // Slow Query Logging
-        const queries = new Map<string, number>();
-        this.knexInstance.on('query', (data: any) => {
-            queries.set(data.__knexUid, Date.now());
-        });
-        this.knexInstance.on('query-response', (response: any, data: any) => {
-            const start = queries.get(data.__knexUid);
-            if (start) {
-                const duration = Date.now() - start;
-                queries.delete(data.__knexUid);
-                const threshold = envNumber('DB_SLOW_QUERY_THRESHOLD', 1000);
-                if (duration > threshold) {
-                    Logger.warn(`[Database] Slow query detected (${duration}ms): ${data.sql}`, {
-                        duration,
-                        sql: data.sql,
-                    });
-                }
-            }
-        });
-
-        // Test connection
-        try {
-            await this.knexInstance.raw('SELECT 1');
-            Logger.info('✦ SQL database connected successfully');
-        } catch (err: any) {
-            Logger.error('✖ SQL database connection failed', { error: err.message });
-            throw err;
-        }
-
-        return this.knexInstance;
-    }
 
     /**
      * Perform a health check on all connected databases.
@@ -67,9 +25,10 @@ export class Database {
             timestamp: new Date().toISOString(),
         };
 
-        if (this.knexInstance) {
+        if (this.typeormDataSource?.isInitialized) {
+            status.typeorm = 'connected';
             try {
-                await this.knexInstance.raw('SELECT 1');
+                await this.typeormDataSource.query('SELECT 1');
                 status.sql = 'connected';
             } catch (err) {
                 status.sql = 'error';
@@ -85,36 +44,16 @@ export class Database {
             }
         }
 
-        if (this.typeormDataSource?.isInitialized) {
-            status.typeorm = 'connected';
-        }
-
         return status;
     }
 
-    /**
-     * Get a tenant-specific Knex instance.
-     */
-    static async getTenantKnex(tenantId: string, config: Knex.Config): Promise<Knex> {
-        let instance = this.tenantPool.get(tenantId);
-
-        if (!instance) {
-            Logger.info(`[Database] Initializing connection for tenant: ${tenantId}`);
-            instance = knex(config);
-            this.tenantPool.set(tenantId, instance);
-        }
-
-        return instance;
-    }
 
     /**
      * Get the Knex instance.
+     * @deprecated Use TypeORM DataSource instead.
      */
     static getKnex(): Knex {
-        if (!this.knexInstance) {
-            throw new Error('[HyperZ] SQL database not initialized. Call Database.connectSQL() first.');
-        }
-        return this.knexInstance;
+        throw new Error('[HyperZ] Knex has been deprecated in favor of TypeORM.');
     }
 
     // ── TypeORM ───────────────────────────────────────────────
@@ -182,48 +121,30 @@ export class Database {
     /**
      * Run a callback within a database transaction.
      * Automatically commits on success, rolls back on error.
-     *
-     * @example
-     * await Database.transaction(async (trx) => {
-     *     await trx('users').insert({ name: 'John' });
-     *     await trx('orders').insert({ user_id: 1, total: 99.99 });
-     * });
      */
-    static async transaction<T>(callback: (trx: Knex.Transaction) => Promise<T>): Promise<T> {
-        const knex = this.getKnex();
-        return knex.transaction(async (trx) => {
-            return callback(trx);
-        });
+    static async transaction<T>(callback: (manager: EntityManager) => Promise<T>): Promise<T> {
+        return this.getDataSource().transaction(callback);
     }
 
     /**
      * Execute a raw SQL query.
-     *
-     * @example
-     * const result = await Database.raw('SELECT COUNT(*) FROM users WHERE active = ?', [true]);
      */
     static async raw(sql: string, bindings: any[] = []): Promise<any> {
-        return this.getKnex().raw(sql, bindings);
+        return this.getDataSource().query(sql, bindings);
     }
 
     /**
      * Get the configured database driver name.
      */
     static getDriverName(): string | null {
-        if (!this.knexInstance) return null;
-        return (this.knexInstance.client as any)?.config?.client ?? null;
+        if (!this.typeormDataSource) return null;
+        return this.typeormDataSource.options.type as string;
     }
 
     /**
      * Disconnect all database connections.
      */
     static async disconnect(): Promise<void> {
-        if (this.knexInstance) {
-            await this.knexInstance.destroy();
-            this.knexInstance = null;
-            Logger.info('SQL database disconnected');
-        }
-
         if (this.mongoConnected) {
             await mongoose.disconnect();
             this.mongoConnected = false;
@@ -241,7 +162,7 @@ export class Database {
      * Check if SQL is connected.
      */
     static isSQLConnected(): boolean {
-        return this.knexInstance !== null;
+        return this.typeormDataSource?.isInitialized ?? false;
     }
 
     /**

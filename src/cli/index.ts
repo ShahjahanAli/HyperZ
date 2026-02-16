@@ -10,6 +10,7 @@ import { Table } from 'cli-table3';
 import pluralize from 'pluralize';
 import { config as loadEnv } from 'dotenv';
 import { randomString } from '../support/helpers.js';
+import { initializeDataSource } from '../database/DataSource.js';
 
 const ROOT = process.cwd();
 
@@ -159,11 +160,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Migration } = await import('../database/Migration.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const migration = new Migration(path.join(ROOT, 'database', 'migrations'));
             await migration.migrate();
             await Database.disconnect();
@@ -178,11 +177,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Migration } = await import('../database/Migration.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const migration = new Migration(path.join(ROOT, 'database', 'migrations'));
             await migration.rollback();
             await Database.disconnect();
@@ -198,11 +195,9 @@ export function registerCommands(program: Command): void {
             const { Database } = await import('../database/Database.js');
             const { Seeder } = await import('../database/Seeder.js');
 
-            const dbConfig = (await import(`file://${path.join(ROOT, 'config', 'database.ts').replace(/\\/g, '/')}`)).default;
-            const driver = dbConfig.driver ?? 'sqlite';
-            const connConfig = dbConfig.connections[driver];
+            const ds = await initializeDataSource();
+            Database.setDataSource(ds);
 
-            await Database.connectSQL(connConfig);
             const seeder = new Seeder(path.join(ROOT, 'database', 'seeders'));
 
             if (opts.class) {

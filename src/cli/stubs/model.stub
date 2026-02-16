@@ -3,7 +3,7 @@ import { Model } from '../../src/database/Model.js';
 
 @Entity('{{tableName}}')
 export class {{name}} extends Model {
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   /** Fields hidden from JSON serialization */
