@@ -36,6 +36,10 @@ function toCamelCase(name: string): string {
     return name.charAt(0).toLowerCase() + name.slice(1);
 }
 
+function toPascalCase(name: string): string {
+    return name.split(/[-_]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+}
+
 function timestamp(): string {
     const now = new Date();
     const y = now.getFullYear();
@@ -77,7 +81,10 @@ export function registerCommands(program: Command): void {
             console.log(chalk.green(`✓ Model created: app/models/${name}.ts`));
 
             if (opts.migration) {
-                const migStub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
+                const className = toPascalCase(`create_${tableName}_table`);
+                const migStub = readStub('migration')
+                    .replace(/\{\{tableName\}\}/g, tableName)
+                    .replace(/\{\{className\}\}/g, className);
                 const migName = `${timestamp()}_create_${tableName}_table.ts`;
                 const migPath = path.join(ROOT, 'database', 'migrations', migName);
                 writeFile(migPath, migStub);
@@ -96,7 +103,10 @@ export function registerCommands(program: Command): void {
                 tableName = name.replace('create_', '').replace('_table', '');
             }
 
-            const stub = readStub('migration').replace(/\{\{tableName\}\}/g, tableName);
+            const className = toPascalCase(name);
+            const stub = readStub('migration')
+                .replace(/\{\{tableName\}\}/g, tableName)
+                .replace(/\{\{className\}\}/g, className);
             const fileName = `${timestamp()}_${name}.ts`;
             const filePath = path.join(ROOT, 'database', 'migrations', fileName);
             writeFile(filePath, stub);
