@@ -111,6 +111,18 @@ body::after {
   border-radius: 10px;
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
 @layer components {
   .topbar {
     @apply px-10 py-5 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)] sticky top-0 z-50 backdrop-blur-3xl;

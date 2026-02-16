@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [isCollapsed, setCollapsed] = useState(false);
 
     // Show loading spinner while checking auth
     if (isLoading) {
@@ -28,25 +29,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Authenticated — show full admin panel
     return (
-        <div className="flex min-h-screen relative z-10">
+        <div className="flex min-h-screen relative z-10 bg-[var(--bg)]">
             {/* Mobile Sidebar Toggle */}
             <button
-                className="lg:hidden fixed top-4 left-4 z-[1001] p-2 bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)] rounded-sm"
+                className="lg:hidden fixed top-4 right-4 z-[1001] p-2.5 bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)] rounded-sm shadow-xl active:scale-95 transition-all"
                 onClick={() => setSidebarOpen(!isSidebarOpen)}
                 aria-label="Toggle Menu"
             >
-                {isSidebarOpen ? '✕' : '☰'}
+                {isSidebarOpen ? (
+                    <span className="block w-5 h-5 flex items-center justify-center font-bold text-lg">✕</span>
+                ) : (
+                    <span className="block w-5 h-5 flex items-center justify-center font-bold text-lg">☰</span>
+                )}
             </button>
 
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-            {/* Overlay for mobile sidebar */}
-            <div
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden fixed inset-0 bg-slate-900/40 z-[99] backdrop-blur-sm"
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+                isCollapsed={isCollapsed}
+                onToggleCollapse={() => setCollapsed(!isCollapsed)}
             />
 
-            <main className="flex-1 min-h-screen lg:ml-[260px] transition-[margin] duration-300">
+            {/* Overlay for mobile sidebar */}
+            {isSidebarOpen && (
+                <div
+                    onClick={() => setSidebarOpen(false)}
+                    className="lg:hidden fixed inset-0 bg-slate-900/60 z-[99] backdrop-blur-sm animate-in fade-in duration-300"
+                />
+            )}
+
+            <main className={`flex-1 min-h-screen transition-all duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-[260px]'
+                }`}>
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {children}
                 </div>

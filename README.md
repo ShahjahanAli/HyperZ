@@ -948,6 +948,10 @@ npm run dev
 
 ---
 
+## Acknowledgments
+
+This framework was built using the **Antigravity IDE** with **Claude Opus 4.6**. It is based on **Express.js** and **Next.js**, with core architectural inspiration from **Laravel**.
+
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
