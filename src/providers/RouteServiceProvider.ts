@@ -34,7 +34,7 @@ export class RouteServiceProvider extends ServiceProvider {
                 if (router && typeof router.mount === 'function') {
                     const prefix = file.replace(/\.(ts|js)$/, '') === 'web' ? '' : '/api';
                     router.mount(this.app.express, prefix);
-                    Logger.debug(`  → Loaded routes: ${file} (prefix: ${prefix || '/'})`);
+                    Logger.debug(`  -> Loaded routes: ${file} (prefix: ${prefix || '/'})`);
                 }
             } catch (err: any) {
                 Logger.error(`Failed to load route file: ${file}`, { error: err.message });

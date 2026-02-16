@@ -5,7 +5,7 @@
 import { HyperZRouter } from '../../src/http/Router.js';
 import { HomeController } from '../controllers/HomeController.js';
 
-const router = new HyperZRouter();
+const router = new HyperZRouter({ source: 'web' });
 const home = new HomeController();
 
 /**

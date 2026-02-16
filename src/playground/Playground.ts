@@ -6,70 +6,108 @@ import type { Express, Request, Response } from 'express';
 import { Logger } from '../logging/Logger.js';
 
 interface RouteInfo {
-    method: string;
-    path: string;
-    name?: string;
-    middleware?: string[];
+  method: string;
+  path: string;
+  name?: string;
+  middleware?: string[];
+  source?: string;
+  controller?: string;
 }
 
 /**
  * Extract all registered routes from the Express app.
  */
 function extractRoutes(app: Express): RouteInfo[] {
-    const routes: RouteInfo[] = [];
+  const routes: RouteInfo[] = [];
 
-    function walkStack(stack: any[], prefix = '') {
-        for (const layer of stack) {
-            if (layer.route) {
-                // Direct route
-                const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase());
-                for (const method of methods) {
-                    routes.push({
-                        method,
-                        path: prefix + (layer.route.path || ''),
-                    });
-                }
-            } else if (layer.name === 'router' && layer.handle?.stack) {
-                // Sub-router
-                const routerPrefix = layer.regexp?.source
-                    ?.replace('\\/?(?=\\/|$)', '')
-                    ?.replace(/\\\//g, '/')
-                    ?.replace(/^\^/, '')
-                    ?.replace(/\$.*$/, '') || '';
-                walkStack(layer.handle.stack, prefix + routerPrefix);
-            }
+  function walkStack(stack: any[], prefix = '') {
+    if (!stack || !Array.isArray(stack)) return;
+
+    for (const layer of stack) {
+      try {
+        if (layer.route) {
+          // Direct route details
+          const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase());
+          const path = (prefix + (layer.route.path || '')).replace(/\/+/g, '/');
+          const metadata = (layer.route as any)._hyperz || {};
+
+          for (const method of methods) {
+            routes.push({
+              method,
+              path: path === '' ? '/' : path,
+              source: metadata.source,
+              controller: metadata.controller,
+            });
+          }
+        } else if (layer.name === 'router' || layer.handle?.stack || (layer.handle && typeof layer.handle === 'function' && (layer.handle as any).stack)) {
+          // Sub-router or middleware that acts as a router
+          let routerPrefix = '';
+
+          // Check for explicit HyperZ mount prefix first
+          if ((layer.handle as any)?._hyperzPrefix !== undefined) {
+            routerPrefix = (layer.handle as any)._hyperzPrefix;
+          } else if (layer.regexp) {
+            routerPrefix = layer.regexp.source
+              .replace('\\/?(?=\\/|$)', '')
+              .replace(/\\\//g, '/')
+              .replace(/^\^/, '')
+              .replace(/\$.*$/, '') || '';
+          }
+
+          const subStack = layer.handle?.stack || (layer.handle as any)?.stack;
+          if (subStack) {
+            walkStack(subStack, prefix + routerPrefix);
+          }
         }
+      } catch (err) {
+        Logger.error('[Playground] Error walking route stack layer', { error: (err as any).message });
+      }
     }
+  }
 
-    if ((app as any)._router?.stack) {
-        walkStack((app as any)._router.stack);
-    }
+  // Try multiple ways to find the router stack
+  const router = (app as any)._router || (app as any).router;
+  const stack = router?.stack || (app as any).stack;
 
-    return routes.sort((a, b) => a.path.localeCompare(b.path));
+  if (stack) {
+    walkStack(stack);
+  } else {
+    Logger.warn('[Playground] Could not find Express router stack');
+  }
+
+  // Filter duplicates and sort
+  return routes
+    .filter((v, i, a) => a.findIndex(t => t.method === v.method && t.path === v.path) === i)
+    .sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /**
  * Register the HyperZ Playground routes on an Express app.
  */
 export function registerPlayground(app: Express): void {
-    // JSON API for route list
-    app.get('/api/playground/routes', (_req: Request, res: Response) => {
-        const routes = extractRoutes(app);
-        res.json({ routes });
-    });
+  // JSON API for route list
+  app.get('/api/playground/routes', (_req: Request, res: Response) => {
+    const routes = extractRoutes(app);
 
-    // Serve the Playground UI
-    app.get('/api/playground', (_req: Request, res: Response) => {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(getPlaygroundHTML());
-    });
+    // Filter by allowed sources
+    const allowed = ['api', 'web', 'auth'];
+    const filtered = routes.filter(r => r.source && allowed.includes(r.source));
 
-    Logger.info('  🎮 API Playground available at /api/playground');
+    res.json({ routes: filtered });
+  });
+
+  // Serve the Playground UI
+  app.get('/api/playground', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(getPlaygroundHTML());
+  });
+
+  Logger.info('  [+] API Playground available at /api/playground');
 }
 
 
 function getPlaygroundHTML(): string {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -170,7 +208,7 @@ body{
 /* ── Layout ──────────────────────────────────────────── */
 .layout{
   display:grid;
-  grid-template-columns:280px 1fr;
+  grid-template-columns:300px 1fr;
   height:calc(100vh - 49px);
 }
 
@@ -212,27 +250,48 @@ body{
   overflow-y:auto;
   padding:8px;
 }
+
+.group-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 12px 8px 4px;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.group-header:first-child { margin-top: 0; }
+.group-header::after { content: ''; flex: 1; height: 1px; background: var(--border); opacity: 0.5; }
+
+.route-group {
+    margin-bottom: 8px;
+}
+
 .route-item{
   display:flex;
   align-items:center;
   gap:8px;
-  padding:8px 12px;
-  border-radius:8px;
+  padding:6px 10px;
+  border-radius:6px;
   cursor:pointer;
   font-size:13px;
   font-family:var(--mono);
   transition:all .15s;
   margin-bottom:2px;
+  border: 1px solid transparent;
 }
 .route-item:hover{background:var(--bg-hover)}
-.route-item.active{background:var(--accent-glow);border:1px solid var(--accent)}
+.route-item.active{background:var(--accent-glow);border-color:var(--accent)}
 
 .method-badge{
-  font-size:10px;
+  font-size:9px;
   font-weight:700;
-  padding:2px 6px;
+  padding:2px 5px;
   border-radius:4px;
-  min-width:44px;
+  min-width:38px;
   text-align:center;
   letter-spacing:.5px;
 }
@@ -242,7 +301,13 @@ body{
 .method-PATCH{background:rgba(249,115,22,.15);color:var(--orange)}
 .method-DELETE{background:rgba(239,68,68,.15);color:var(--red)}
 
-.route-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.route-path{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    flex:1;
+    font-size: 12px;
+}
 
 /* ── Main Content ────────────────────────────────────── */
 .main{
@@ -734,18 +799,56 @@ function renderRoutes(routes) {
     return;
   }
 
-  el.innerHTML = routes.map(r => \`
-    <div class="route-item" onclick="selectRoute('\${r.method}', '\${r.path}')">
-      <span class="method-badge method-\${r.method}">\${r.method}</span>
-      <span class="route-path">\${r.path}</span>
-    </div>
-  \`).join('');
+  // Group by Source -> Controller
+  const groups = {};
+  
+  routes.forEach(r => {
+      // Group by Controller Name if available, check implicit resource patterns
+      let groupName = r.controller || 'Other';
+      
+      // If implicit pattern (e.g. /api/users, /api/users/:id) and no controller, 
+      // try to infer from path if it matches conventions, but we prefer explicit metadata.
+      if (groupName === 'Other') {
+          // Fallback inference: First segment after /api/
+          const parts = r.path.split('/').filter(p => p !== '' && p !== 'api');
+          if (parts.length > 0) {
+              groupName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+          }
+      }
+      
+      const source = r.source ? \`[\${r.source.toUpperCase()}] \` : '';
+      const key = source + groupName;
+      
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+  });
+
+  // Render Groups
+  const html = Object.keys(groups).sort().map(group => {
+      const items = groups[group].map(r => \`
+        <div class="route-item" onclick="selectRoute('\${r.method}', '\${r.path}')">
+          <span class="method-badge method-\${r.method}">\${r.method}</span>
+          <span class="route-path">\${r.path}</span>
+        </div>
+      \`).join('');
+      
+      return \`
+        <div class="route-group">
+            <div class="group-header">\${group}</div>
+            \${items}
+        </div>
+      \`;
+  }).join('');
+
+  el.innerHTML = html;
 }
 
 function filterRoutes() {
   const q = document.getElementById('routeSearch').value.toLowerCase();
   const filtered = allRoutes.filter(r =>
-    r.path.toLowerCase().includes(q) || r.method.toLowerCase().includes(q)
+    r.path.toLowerCase().includes(q) || 
+    r.method.toLowerCase().includes(q) ||
+    (r.controller && r.controller.toLowerCase().includes(q))
   );
   renderRoutes(filtered);
 }
@@ -765,6 +868,7 @@ function switchRequestTab(tab) {
   tabs.forEach(t => {
     document.getElementById(t + 'Tab').style.display = t === tab ? 'block' : 'none';
   });
+  // Update local tabs in request pane
   document.querySelectorAll('.tabs:not(#responseTabs) .tab').forEach((el, i) => {
     el.classList.toggle('active', tabs[i] === tab);
   });

@@ -106,36 +106,44 @@ Visit the built-in API Playground at **http://localhost:7700/api/playground** ðŸ
 
 ## Quick Start
 
-### 1. Create a Controller
+### 1. Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller PostController
+npx tsx bin/hyperz.ts make:controller Post --model Post
 ```
 
-This generates `app/controllers/PostController.ts`:
+This generates a fully functional `app/controllers/PostController.ts` linked to the `Post` model:
 
 ```typescript
 import { Controller } from '../../src/http/Controller.js';
+import { Post } from '../models/Post.js';
 import type { Request, Response } from 'express';
 
 export class PostController extends Controller {
   async index(req: Request, res: Response): Promise<void> {
-    this.success(res, [], 'Posts retrieved');
+    const items = await Post.all();
+    this.success(res, items, 'Post index');
   }
 
   async store(req: Request, res: Response): Promise<void> {
-    this.created(res, req.body, 'Post created');
+    const item = await Post.create(req.body);
+    this.created(res, item, 'Post created');
   }
 
   async show(req: Request, res: Response): Promise<void> {
-    this.success(res, { id: req.params.id }, 'Post found');
+    const item = await Post.findOrFail(req.params.id);
+    this.success(res, item, 'Post found');
   }
 
   async update(req: Request, res: Response): Promise<void> {
-    this.success(res, { id: req.params.id, ...req.body }, 'Post updated');
+    const item = await Post.findOrFail(req.params.id);
+    await Object.assign(item, req.body).save();
+    this.success(res, item, 'Post updated');
   }
 
   async destroy(req: Request, res: Response): Promise<void> {
+    const item = await Post.findOrFail(req.params.id);
+    await item.remove();
     this.noContent(res);
   }
 }
@@ -191,13 +199,13 @@ HyperZ provides an Artisan-style CLI for rapid development:
 
 ```bash
 # Scaffolding
-npx tsx bin/hyperz.ts make:controller <Name>     # Create a controller
+npx tsx bin/hyperz.ts make:controller <Name> [--model <M>] # Create a controller (with CRUD if -m provided)
 npx tsx bin/hyperz.ts make:model <Name> [-m]      # Create a model (-m = with migration)
 npx tsx bin/hyperz.ts make:migration <name>       # Create a migration
 npx tsx bin/hyperz.ts make:seeder <Name>          # Create a seeder
 npx tsx bin/hyperz.ts make:middleware <Name>       # Create a middleware
 npx tsx bin/hyperz.ts make:route <name>           # Create a route file
-npx tsx bin/hyperz.ts make:auth                   # Scaffold full authentication
+npx tsx bin/hyperz.ts make:auth                   # Scaffold persistent authentication (BCrypt, TypeORM)
 npx tsx bin/hyperz.ts make:job <Name>             # Create a queue job
 npx tsx bin/hyperz.ts make:factory <Name>         # Create a database factory
 npx tsx bin/hyperz.ts make:ai-action <Name>       # Create an AI action class

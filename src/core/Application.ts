@@ -67,7 +67,7 @@ export class Application {
             Logger.error('Error during shutdown', { error: err.message });
         } finally {
             clearTimeout(timeout);
-            Logger.info('✦ Shutdown complete');
+            Logger.info('[+] Shutdown complete');
             process.exit(code);
         }
     }
@@ -135,7 +135,7 @@ export class Application {
         }
 
         this.booted = true;
-        Logger.info('✦ HyperZ application booted successfully');
+        Logger.info('[+] HyperZ application booted successfully');
     }
 
     /**
@@ -152,8 +152,8 @@ export class Application {
             const appName = this.config.get<string>('app.name', 'HyperZ');
             const appEnv = this.config.get<string>('app.env', 'development');
 
-            Logger.info(`⚡ ${appName} server running on port ${listenPort} [${appEnv}]`);
-            Logger.info(`   → http://localhost:${listenPort}`);
+            Logger.info(`[+] ${appName} server running on port ${listenPort} [${appEnv}]`);
+            Logger.info(`   -> http://localhost:${listenPort}`);
         });
 
         // Graceful shutdown

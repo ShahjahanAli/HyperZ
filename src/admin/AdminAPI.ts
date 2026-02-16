@@ -402,7 +402,22 @@ export async function createAdminRouter(app?: any): Promise<Router> {
                     created.push(`database/migrations/${migName}`);
 
                     // Create Controller
-                    const ctrlStub = readStub('controller').replace(/\{\{name\}\}/g, name);
+                    let ctrlStub = readStub('controller');
+                    const modelName = name;
+                    ctrlStub = ctrlStub
+                        .replace(/\/\/ import \{ \{\{name\}\} \} from '\.\.\/models\/\{\{name\}\}\.js';/g, `import { ${modelName} } from '../models/${modelName}.js';`)
+                        .replace(/\/\/ const items = await \{\{name\}\}\.all\(\);/g, `const items = await ${modelName}.all();`)
+                        .replace(/this\.success\(res, \[\], '\{\{name\}\} index'\);/g, `this.success(res, items, '${name} index');`)
+                        .replace(/\/\/ const item = await \{\{name\}\}\.findOrFail\(id\);/g, `const item = await ${modelName}.findOrFail(id);`)
+                        .replace(/this\.success\(res, \{ id \}, '\{\{name\}\} show'\);/g, `this.success(res, item, '${name} show');`)
+                        .replace(/\/\/ const item = await \{\{name\}\}\.create\(req\.body\);/g, `const item = await ${modelName}.create(req.body);`)
+                        .replace(/this\.created\(res, req\.body, 'Resource created'\);/g, `this.created(res, item, 'Resource created');`)
+                        .replace(/\/\/ await item\.fill\(req\.body\)\.save\(\);/g, `await Object.assign(item, req.body).save();`)
+                        .replace(/this\.success\(res, \{ id, \.\.\.req\.body \}, 'Resource updated'\);/g, `this.success(res, item, 'Resource updated');`)
+                        .replace(/\/\/ await item\.delete\(\);/g, `await item.remove();`);
+
+                    ctrlStub = ctrlStub.replace(/\{\{name\}\}/g, name);
+
                     writeFileSafe(path.join(ROOT, 'app', 'controllers', `${name}Controller.ts`), ctrlStub);
                     created.push(`app/controllers/${name}Controller.ts`);
 
@@ -770,7 +785,7 @@ export async function createAdminRouter(app?: any): Promise<Router> {
         });
     });
 
-    Logger.info('  🔧 Admin API available at /api/_admin');
+    Logger.info('  [+] Admin API available at /api/_admin');
     return router;
 }
 
@@ -814,25 +829,48 @@ function parseEnvFile(raw: string): any[] {
 
 function extractRoutes(expressApp: any): any[] {
     const routes: any[] = [];
+
     function walkStack(stack: any[], prefix = '') {
+        if (!stack || !Array.isArray(stack)) return;
+
         for (const layer of stack) {
-            if (layer.route) {
-                const methods = Object.keys(layer.route.methods).map((m: string) => m.toUpperCase());
-                for (const method of methods) {
-                    routes.push({ method, path: prefix + (layer.route.path || '') });
+            try {
+                if (layer.route) {
+                    const methods = Object.keys(layer.route.methods).map((m: string) => m.toUpperCase());
+                    const path = (prefix + (layer.route.path || '')).replace(/\/+/g, '/');
+                    for (const method of methods) {
+                        routes.push({ method, path: path === '' ? '/' : path });
+                    }
+                } else if (layer.name === 'router' || layer.handle?.stack || (layer.handle && (layer.handle as any).stack)) {
+                    let rp = '';
+                    if (layer.regexp) {
+                        rp = layer.regexp.source
+                            .replace('\\/?(?=\\/|$)', '')
+                            .replace(/\\\//g, '/')
+                            .replace(/^\^/, '')
+                            .replace(/\$.*$/, '') || '';
+                    }
+                    const substack = layer.handle?.stack || (layer.handle as any)?.stack;
+                    if (substack) {
+                        walkStack(substack, prefix + rp);
+                    }
                 }
-            } else if (layer.name === 'router' && layer.handle?.stack) {
-                const rp = layer.regexp?.source
-                    ?.replace('\\/?(?=\\/|$)', '')
-                    ?.replace(/\\\//g, '/')
-                    ?.replace(/^\^/, '')
-                    ?.replace(/\$.*$/, '') || '';
-                walkStack(layer.handle.stack, prefix + rp);
+            } catch (err) {
+                // Ignore errors during walking
             }
         }
     }
-    if (expressApp._router?.stack) walkStack(expressApp._router.stack);
-    return routes.sort((a: any, b: any) => a.path.localeCompare(b.path));
+
+    const router = expressApp._router || expressApp.router;
+    const stack = router?.stack || expressApp.stack;
+
+    if (stack) {
+        walkStack(stack);
+    }
+
+    return routes
+        .filter((v, i, a) => a.findIndex(t => t.method === v.method && t.path === v.path) === i)
+        .sort((a, b) => a.path.localeCompare(b.path));
 }
 
 async function loadKnexConfig(): Promise<any> {

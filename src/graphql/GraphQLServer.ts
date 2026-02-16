@@ -30,7 +30,7 @@ export function registerGraphQL(app: Express | Router, config: any): void {
         registerBuiltinGraphQL(app, gqlPath, schemaInfo, config);
     });
 
-    Logger.info(`  🔮 GraphQL endpoint at ${gqlPath}`);
+    Logger.info(`  [+] GraphQL endpoint at ${gqlPath}`);
 }
 
 /**

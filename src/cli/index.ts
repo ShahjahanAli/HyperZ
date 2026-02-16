@@ -1,46 +1,49 @@
-// ──────────────────────────────────────────────────────────────
-// HyperZ Framework — CLI Command Registry
-// ──────────────────────────────────────────────────────────────
-
-import type { Command } from 'commander';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import { Command } from 'commander';
 import chalk from 'chalk';
-import { Table } from 'cli-table3';
-import pluralize from 'pluralize';
-import { config as loadEnv } from 'dotenv';
-import { randomString } from '../support/helpers.js';
-import { initializeDataSource } from '../database/DataSource.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.cwd();
 
-// ── Stub Helper ─────────────────────────────────────────────
-
-function readStub(stubName: string): string {
-    const stubPath = path.join(ROOT, 'src', 'cli', 'stubs', `${stubName}.stub`);
-    return fs.readFileSync(stubPath, 'utf-8');
+// Helper: Read stub file
+function readStub(name: string): string {
+    const stubPath = path.join(__dirname, 'stubs', `${name}.stub`);
+    return fs.readFileSync(stubPath, 'utf8');
 }
 
+// Helper: Write file ensuring directory exists
 function writeFile(filePath: string, content: string): void {
     const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, content, 'utf-8');
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, content, 'utf8');
 }
 
+// Helper: Convert to table name (snake_case plural)
 function toTableName(name: string): string {
-    // UserProfile → user_profiles
-    const snake = name.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
-    return pluralize(snake);
+    return name
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .toLowerCase() + 's';
 }
 
-function toCamelCase(name: string): string {
-    return name.charAt(0).toLowerCase() + name.slice(1);
+// Helper: PascalCase
+function toPascalCase(str: string): string {
+    return str
+        .replace(/[-_](.)/g, (_, c) => c.toUpperCase())
+        .replace(/^(.)/, c => c.toUpperCase());
 }
 
-function toPascalCase(name: string): string {
-    return name.split(/[-_]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+// Helper: CamelCase
+function toCamelCase(str: string): string {
+    return str
+        .replace(/[-_](.)/g, (_, c) => c.toUpperCase())
+        .replace(/^(.)/, c => c.toLowerCase());
 }
 
+// Helper: Timestamp for migrations
 function timestamp(): string {
     const now = new Date();
     const y = now.getFullYear();
@@ -52,6 +55,42 @@ function timestamp(): string {
     return `${y}${m}${d}${h}${mi}${s}`;
 }
 
+/**
+ * Load Environment
+ */
+function loadEnv() {
+    const envPath = path.join(ROOT, '.env');
+    if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf-8');
+        content.split('\n').forEach(line => {
+            const [key, value] = line.split('=');
+            if (key && value) {
+                process.env[key.trim()] = value.trim();
+            }
+        });
+    }
+}
+
+/**
+ * Helper: Random String
+ */
+function randomString(length: number): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+/**
+ * Initialize DataSource for CLI
+ */
+async function initializeDataSource() {
+    const { initializeDataSource: init } = await import('../database/DataSource.js');
+    return await init();
+}
+
 // ── Register All Commands ───────────────────────────────────
 
 export function registerCommands(program: Command): void {
@@ -60,11 +99,34 @@ export function registerCommands(program: Command): void {
     program
         .command('make:controller <name>')
         .description('Create a new controller')
-        .action((name: string) => {
-            const stub = readStub('controller').replace(/\{\{name\}\}/g, name);
-            const filePath = path.join(ROOT, 'app', 'controllers', `${name}.ts`);
+        .option('-m, --model <model>', 'Link to a model and generate CRUD')
+        .action((nameInput: string, opts: any) => {
+            // Normalize name: remove "Controller" suffix if user provided it
+            const baseName = nameInput.replace(/Controller$/i, '');
+            const className = `${baseName}Controller`;
+
+            let stub = readStub('controller');
+
+            if (opts.model) {
+                const modelName = opts.model;
+                stub = stub
+                    .replace(/\/\/ import \{ \{\{name\}\} \} from '\.\.\/models\/\{\{name\}\}\.js';/g, `import { ${modelName} } from '../models/${modelName}.js';`)
+                    .replace(/\/\/ const items = await \{\{name\}\}\.all\(\);/g, `const items = await ${modelName}.all();`)
+                    .replace(/this\.success\(res, \[\], '\{\{name\}\} index'\);/g, `this.success(res, items, '${baseName} index');`)
+                    .replace(/\/\/ const item = await \{\{name\}\}\.findOrFail\(id\);/g, `const item = await ${modelName}.findOrFail(id);`)
+                    .replace(/this\.success\(res, \{ id \}, '\{\{name\}\} show'\);/g, `this.success(res, item, '${baseName} show');`)
+                    .replace(/\/\/ const item = await \{\{name\}\}\.create\(req\.body\);/g, `const item = await ${modelName}.create(req.body);`)
+                    .replace(/this\.created\(res, req\.body, 'Resource created'\);/g, `this.created(res, item, 'Resource created');`)
+                    .replace(/\/\/ await item\.fill\(req\.body\)\.save\(\);/g, `await Object.assign(item, req.body).save();`)
+                    .replace(/this\.success\(res, \{ id, \.\.\.req\.body \}, 'Resource updated'\);/g, `this.success(res, item, 'Resource updated');`)
+                    .replace(/\/\/ await item\.delete\(\);/g, `await item.remove();`);
+            }
+
+            stub = stub.replace(/\{\{name\}\}/g, baseName);
+
+            const filePath = path.join(ROOT, 'app', 'controllers', `${className}.ts`);
             writeFile(filePath, stub);
-            console.log(chalk.green(`✓ Controller created: app/controllers/${name}.ts`));
+            console.log(chalk.green(`✓ Controller created: app/controllers/${className}.ts`));
         });
 
     // ── make:model ──────────────────────────────────────────
@@ -284,11 +346,35 @@ export function registerCommands(program: Command): void {
     // ── make:auth ───────────────────────────────────────────
     program
         .command('make:auth')
-        .description('Scaffold authentication (controller, routes, migration)')
+        .description('Scaffold authentication (model, controller, routes, migration)')
         .action(() => {
+            // User Model
+            const userModel = `import { Entity, Column } from 'typeorm';
+import { Model } from '../../src/database/Model.js';
+
+@Entity('users')
+export class User extends Model {
+  @Column({ type: 'varchar' })
+  name: string;
+
+  @Column({ type: 'varchar', unique: true })
+  email: string;
+
+  @Column({ type: 'varchar' })
+  password: string;
+
+  @Column({ type: 'varchar', default: 'user' })
+  role: string;
+
+  /** Fields hidden from JSON serialization */
+  protected static hidden: string[] = ['password'];
+}
+`;
+
             // Auth Controller
             const authController = `import { Controller } from '../../src/http/Controller.js';
 import { AuthManager } from '../../src/auth/AuthManager.js';
+import { User } from '../models/User.js';
 import type { Request, Response } from 'express';
 
 const auth = new AuthManager();
@@ -299,14 +385,22 @@ export class AuthController extends Controller {
    * POST /api/auth/register
    */
   async register(req: Request, res: Response): Promise<void> {
-    const { name, email, password } = req.body;
-    const hashedPassword = await auth.hashPassword(password);
+    try {
+        const { name, email, password } = req.body;
+        const hashedPassword = await auth.hashPassword(password);
 
-    // TODO: Save user to database
-    const user = { id: 1, name, email };
-    const token = auth.generateToken(user);
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword
+        });
 
-    this.created(res, { user, token }, 'Registration successful');
+        const token = auth.generateToken(user);
+
+        this.created(res, { user, token }, 'Registration successful');
+    } catch (err: any) {
+        this.error(res, err.message || 'Registration failed');
+    }
   }
 
   /**
@@ -316,12 +410,10 @@ export class AuthController extends Controller {
   async login(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;
 
-    // TODO: Replace with actual user lookup
     const result = await auth.attempt(
       { email, password },
       async (email) => {
-        // Replace this with: const user = await User.where({ email }).first();
-        return null;
+        return await User.where('email', email).first();
       }
     );
 
@@ -358,7 +450,7 @@ router.post('/auth/login', controller.login.bind(controller));
 
 // Protected routes
 router.group({ prefix: '/auth', middleware: [authMiddleware()] }, (r) => {
-  r.get('/me', controller.me.bind(controller));
+    r.get('/me', controller.me.bind(controller));
 });
 
 export default router;
@@ -487,6 +579,7 @@ export class CreateAuthTables${ts} implements MigrationInterface {
 `;
 
             // Write files
+            writeFile(path.join(ROOT, 'app', 'models', 'User.ts'), userModel);
             writeFile(path.join(ROOT, 'app', 'controllers', 'AuthController.ts'), authController);
             writeFile(path.join(ROOT, 'app', 'routes', 'auth.ts'), authRoutes);
             writeFile(
@@ -495,6 +588,7 @@ export class CreateAuthTables${ts} implements MigrationInterface {
             );
 
             console.log(chalk.green('✓ Auth scaffolded:'));
+            console.log(chalk.gray('  → app/models/User.ts'));
             console.log(chalk.gray('  → app/controllers/AuthController.ts'));
             console.log(chalk.gray('  → app/routes/auth.ts'));
             console.log(chalk.gray('  → database/migrations/*_create_auth_tables.ts'));
@@ -586,4 +680,3 @@ export class ${name} {
             }
         });
 }
-

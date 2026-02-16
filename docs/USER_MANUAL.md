@@ -215,40 +215,44 @@ Configuration files live in `config/` and export default objects:
 
 ## 4. Creating Your First API
 
-### Step 1: Create a Controller
+### Step 1: Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller ProductController
+npx tsx bin/hyperz.ts make:controller Product --model Product
 ```
 
-This creates `app/controllers/ProductController.ts`:
+This generates `app/controllers/ProductController.ts` with full CRUD logic linked to the `Product` model:
 
 ```typescript
 import { Controller } from '../../src/http/Controller.js';
+import { Product } from '../models/Product.js';
 import type { Request, Response } from 'express';
 
 export class ProductController extends Controller {
   async index(req: Request, res: Response): Promise<void> {
-    // Fetch all products
-    this.success(res, [], 'Products retrieved');
+    const items = await Product.all();
+    this.success(res, items, 'Product index');
   }
 
   async store(req: Request, res: Response): Promise<void> {
-    // Create a product
-    this.created(res, req.body, 'Product created');
+    const item = await Product.create(req.body);
+    this.created(res, item, 'Product created');
   }
 
   async show(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    this.success(res, { id }, 'Product found');
+    const item = await Product.findOrFail(req.params.id);
+    this.success(res, item, 'Product found');
   }
 
   async update(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    this.success(res, { id, ...req.body }, 'Product updated');
+    const item = await Product.findOrFail(req.params.id);
+    await Object.assign(item, req.body).save();
+    this.success(res, item, 'Product updated');
   }
 
   async destroy(req: Request, res: Response): Promise<void> {
+    const item = await Product.findOrFail(req.params.id);
+    await item.remove();
     this.noContent(res);
   }
 }
@@ -423,17 +427,18 @@ const products = Factory.createMany('products', 50);
 
 ## 6. Authentication & Authorization
 
-### 6.1 Scaffold Auth
+### 6.1 Scaffold Persistent Auth
 
 ```bash
 npx tsx bin/hyperz.ts make:auth
 npx tsx bin/hyperz.ts migrate   # Run the generated auth migrations
 ```
 
-This creates:
-- `app/controllers/AuthController.ts`
-- `app/routes/auth.ts`
-- Auth migration with users, roles, and permissions tables
+This creates a production-ready authentication system:
+- `app/models/User.ts`: Persistent model with TypeORM and hidden password.
+- `app/controllers/AuthController.ts`: Registration (with hashing) and login (with JWT) logic.
+- `app/routes/auth.ts`: Ready-to-use authentication routes.
+- `database/migrations/*_create_auth_tables.ts`: Tables for users, roles, and permissions.
 
 ### 6.2 Auth Endpoints
 
@@ -1131,13 +1136,13 @@ The admin panel communicates via `/api/_admin/*` endpoints:
 
 | Command | Description |
 |---|---|
-| `make:controller <Name>` | Create an HTTP controller |
+| `make:controller <Name> [-m M]` | Create a controller (link to model with `-m`) |
 | `make:model <Name> [-m]` | Create a model (optionally with migration) |
 | `make:migration <name>` | Create a database migration |
 | `make:seeder <Name>` | Create a database seeder |
 | `make:middleware <Name>` | Create a middleware class |
 | `make:route <name>` | Create a route file |
-| `make:auth` | Scaffold full auth system |
+| `make:auth` | Scaffold persistent authentication (BCrypt, TypeORM) |
 | `make:job <Name>` | Create a queue job class |
 | `make:factory <Name>` | Create a database factory |
 | `make:ai-action <Name>` | Create an AI action class |

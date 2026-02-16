@@ -1,12 +1,14 @@
 import { Controller } from '../../src/http/Controller.js';
 import type { Request, Response } from 'express';
+// import { {{name}} } from '../models/{{name}}.js';
 
-export class {{name}} extends Controller {
+export class {{name}}Controller extends Controller {
   /**
    * List all resources.
    * GET /
    */
   async index(req: Request, res: Response): Promise<void> {
+    // const items = await {{name}}.all();
     this.success(res, [], '{{name}} index');
   }
 
@@ -16,6 +18,7 @@ export class {{name}} extends Controller {
    */
   async show(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
+    // const item = await {{name}}.findOrFail(id);
     this.success(res, { id }, '{{name}} show');
   }
 
@@ -24,6 +27,7 @@ export class {{name}} extends Controller {
    * POST /
    */
   async store(req: Request, res: Response): Promise<void> {
+    // const item = await {{name}}.create(req.body);
     this.created(res, req.body, 'Resource created');
   }
 
@@ -33,6 +37,8 @@ export class {{name}} extends Controller {
    */
   async update(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
+    // const item = await {{name}}.findOrFail(id);
+    // await item.fill(req.body).save();
     this.success(res, { id, ...req.body }, 'Resource updated');
   }
 
@@ -42,6 +48,8 @@ export class {{name}} extends Controller {
    */
   async destroy(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
+    // const item = await {{name}}.findOrFail(id);
+    // await item.delete();
     this.noContent(res);
   }
 }
