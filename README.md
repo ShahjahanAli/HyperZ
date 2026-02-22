@@ -44,9 +44,10 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 |---|---|
 | 🏗️ **Core** | IoC Service Container, Service Providers, Config Manager, Application Kernel |
 | 🌐 **HTTP** | Laravel-style Router (groups, named routes, resource CRUD), Controller base class |
-| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS Protection** — all built-in |
+| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS/CSRF Protection**, **HTTPS Enforcement** — all built-in |
 | 🗄️ **Database**| **TypeORM** (SQL Engine) **+ Mongoose** (MongoDB) — Unified database support |
 | 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, **Laravel-style proxies: `where`, `first`, `create`**) |
+| 🔍 **Query Builder** | Fluent `DB.table().where().get()` facade for raw SQL beyond Active Record |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
 | 🔧 **CLI** | 16+ Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
@@ -61,6 +62,11 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 | 🏢 **SaaS Core** | **Subdomain Multi-tenancy, Tenant-aware DB Pooling**, Stripe Billing, API Keys |
 | 🕵️ **AI Agents** | **Autonomous Agent Factory** with Skill & Memory management system |
 | 🛡️ **Enterprise** | **Audit Logging**, RBAC Policy Engine, Secrets Mgmt, Advanced IoC Decorators |
+| 🔐 **Security** | **AES-256-GCM Encryption**, CSRF Protection, Request Sanitization, **Signed URLs**, Token Blacklisting, API Key Auth |
+| 🎛️ **Feature Flags** | Config/env/custom driver-based feature toggles with per-user/tenant targeting |
+| 🪝 **Lifecycle Hooks** | Global `onRequest`, `onResponse`, `onError`, `onFinish` hooks beyond middleware |
+| 📡 **Webhooks** | HMAC-SHA256 signed dispatch, automatic retry with backoff, delivery logging |
+| 🌊 **AI Streaming** | Server-Sent Events (SSE) helpers for real-time LLM token streaming |
 | 📊 **Observability** | Real-time Metrics, **Slow Query Detection**, **System Health Checks**, AI Analytics |
 | 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers, **SanitizeHtml** |
@@ -209,6 +215,8 @@ npx tsx bin/hyperz.ts make:auth                   # Scaffold persistent authenti
 npx tsx bin/hyperz.ts make:job <Name>             # Create a queue job
 npx tsx bin/hyperz.ts make:factory <Name>         # Create a database factory
 npx tsx bin/hyperz.ts make:ai-action <Name>       # Create an AI action class
+npx tsx bin/hyperz.ts make:test <Name> [-f]        # Create a unit/feature test
+npx tsx bin/hyperz.ts make:module <Name>           # Scaffold full domain module (model+controller+route+migration+test)
 
 # Database
 npx tsx bin/hyperz.ts migrate                     # Run pending migrations
@@ -541,9 +549,12 @@ HyperZ/
 │   ├── auth.ts                   # Authentication config
 │   ├── cache.ts                  # Cache config
 │   ├── database.ts               # Database config
+│   ├── features.ts               # Feature flags config
 │   ├── mail.ts                   # Mail config
 │   ├── queue.ts                  # Queue config
-│   └── storage.ts                # Storage config
+│   ├── security.ts               # Security config (CSRF, sanitization, hashing, encryption)
+│   ├── storage.ts                # Storage config
+│   └── webhooks.ts               # Webhook config
 │
 ├── database/
 │   ├── factories/                # Database factories
@@ -575,9 +586,11 @@ HyperZ/
 │   ├── queue/                    # Queue manager (Sync + BullMQ)
 │   ├── scheduling/               # Task scheduler
 │   ├── storage/                  # Storage manager (Local + S3)
-│   ├── support/                  # Helpers, Str, Collection
+│   ├── security/                  # Security barrel exports
+│   ├── support/                  # Helpers, Str, Collection, Encrypter, SignedUrl, FeatureFlags
 │   ├── testing/                  # HTTP test client
 │   ├── validation/               # Zod validator
+│   ├── webhooks/                 # Webhook manager (HMAC signing, retry, delivery logs)
 │   └── websocket/                # WebSocket manager (Socket.io)
 │
 ├── storage/                      # App storage
@@ -599,11 +612,13 @@ HyperZ uses a service-provider pattern inspired by Laravel:
 
 ```
 Boot Order:
-  1. AppServiceProvider      → Kernel, global middleware
-  2. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
-  3. EventServiceProvider     → Event dispatcher
-  4. CacheServiceProvider     → Cache manager
-  5. RouteServiceProvider     → Auto-discovers & loads app/routes/*.ts
+  1. AppServiceProvider       → Kernel, global middleware
+  2. SecurityServiceProvider  → HTTPS, sanitization, CSRF, hashing, token blacklist
+  3. FeaturesServiceProvider  → Lifecycle hooks, feature flags, audit log
+  4. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
+  5. EventServiceProvider     → Event dispatcher
+  6. CacheServiceProvider     → Cache manager
+  7. RouteServiceProvider     → Auto-discovers & loads app/routes/*.ts
 ```
 
 ---
@@ -629,6 +644,8 @@ Copy `.env.example` to `.env` and configure:
 | `QUEUE_DRIVER` | Queue backend (`sync`, `redis`) | `sync` |
 | `AI_PROVIDER` | AI provider (`openai`, `anthropic`, `google`) | `openai` |
 | `APP_LOCALE` | Default locale | `en` |
+| `WEBHOOK_SECRET` | Default webhook signing secret | — |
+| `WEBHOOK_MAX_RETRIES` | Max webhook delivery retries | `3` |
 
 See [.env.example](.env.example) for all available options.
 
@@ -796,6 +813,17 @@ HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
 - ✅ Native RAG (pgvector/Weaviate)
 - ✅ Tenant-aware DB Pooling
 
+### v2.1.1 (February 2026 — Latest)
+- [x] **Enterprise Security Suite:** AES-256-GCM encryption, CSRF protection, request sanitization, signed URLs, token blacklisting, API key auth middleware
+- [x] **Feature Flags:** Config/env/custom driver-based feature toggles with per-user/tenant gate middleware
+- [x] **Lifecycle Hooks:** Global onRequest/onResponse/onError/onFinish hooks
+- [x] **Audit Logging:** Pluggable-store audit trail with auto-middleware for state-changing requests
+- [x] **Webhook System:** HMAC-SHA256 signed outbound webhooks with retry, backoff, and delivery logging
+- [x] **AI Streaming (SSE):** StreamResponse helper for real-time LLM token streaming
+- [x] **Query Builder:** Fluent `DB.table().where().get()` facade for raw SQL
+- [x] **OpenAPI Enhancement:** Zod-to-JSON-Schema converter for accurate Swagger body/query/param schemas
+- [x] **CLI: `make:test` & `make:module`:** One-command scaffolding for tests and full domain modules
+
 ### v2.2 (Q2 2026)
 - [ ] **HyperZ-UI Starter Kit:** A pre-built SaaS frontend for the HyperZ backend.
 - [ ] **Advanced Agent Memory:** Support for long-term "Graph" memory.
@@ -915,7 +943,7 @@ npm run dev
 - 🎨 API Playground UI enhancements
 - � Additional AI provider drivers
 - 🌍 More language translation files
-- 📊 Swagger/OpenAPI auto-generation
+- 📊 Swagger/OpenAPI auto-generation (with Zod-to-JSON-Schema)
 - 🏗️ Additional database drivers
 
 ---

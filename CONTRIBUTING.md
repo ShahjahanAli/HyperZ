@@ -16,13 +16,40 @@ Thank you for your interest in contributing to HyperZ! We are building the world
 
 1. `npm install`
 2. `cp .env.example .env` (and configure)
-3. `npm run dev`
+3. `npx tsx bin/hyperz.ts key:generate`
+4. `npm run dev`
+
+## Running Tests
+
+```bash
+npm test          # Run all tests (Vitest)
+npm run test:ci   # Run in CI mode
+```
+
+The test suite covers: service container, router, validator, cache, events, models, security (encryption, CSRF, hashing, signed URLs, token blacklist, API keys), feature flags, lifecycle hooks, audit log, webhooks, AI streaming, and OpenAPI generation.
 
 ## Coding Standards
 
-- Use TypeScript for all new code.
-- Follow the framework's existing patterns (Service Providers, DI, etc.).
-- Update documentation in `docs/` for any new features.
+- Use TypeScript strict mode for all new code
+- Follow the framework's existing patterns (Service Providers, DI, etc.)
+- Use `.js` extensions in import paths (ES Module output)
+- Write tests for new features (use `npx tsx bin/hyperz.ts make:test <Name>` to scaffold)
+- Update documentation in `docs/` for any new features
+
+## Contribution Areas
+
+| Area | Directory | Description |
+|---|---|---|
+| Core Framework | `src/` | Service providers, container, lifecycle |
+| Security | `src/security/`, `src/auth/` | Encryption, auth, CSRF, sanitization |
+| Database | `src/database/` | Query builder, models, migrations |
+| AI | `src/ai/` | AI gateway, streaming, agents, RAG |
+| Webhooks | `src/webhooks/` | Webhook dispatch, signing, delivery |
+| Feature System | `src/support/` | Feature flags, helpers, encrypter |
+| HTTP | `src/http/` | Router, controller, middleware, hooks |
+| CLI | `src/cli/` | Commands, scaffolding stubs |
+| Admin Panel | `admin/` | Next.js dashboard |
+| Documentation | `docs/` | User manual, features, comparisons |
 
 ## Roadmap
 

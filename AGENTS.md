@@ -29,7 +29,7 @@ HyperZ/
 │   ├── jobs/               # Queue job classes (extend BaseJob)
 │   └── ai/                 # AI action classes
 │
-├── config/                 # Configuration files (ai, app, auth, cache, database, mail, queue, storage)
+├── config/                 # Configuration files (ai, app, auth, cache, database, features, mail, queue, security, storage, webhooks)
 ├── database/
 │   ├── migrations/         # TypeORM migration classes (timestamped)
 │   ├── seeders/            # Database seeders
@@ -37,25 +37,27 @@ HyperZ/
 │
 ├── src/                    # FRAMEWORK core — avoid direct edits unless extending framework
 │   ├── admin/              # Admin API endpoints
-│   ├── ai/                 # AI Gateway (OpenAI, Anthropic, Google AI)
-│   ├── auth/               # JWT + RBAC (Gate, Policy, RoleMiddleware)
+│   ├── ai/                 # AI Gateway (OpenAI, Anthropic, Google AI) + StreamResponse (SSE)
+│   ├── auth/               # JWT + RBAC (Gate, Policy, RoleMiddleware) + HashService, ApiKeyMiddleware, TokenBlacklist
 │   ├── cache/              # Cache drivers (Memory, Redis)
 │   ├── cli/                # CLI command registry
 │   ├── core/               # Application, Container, PluginManager
-│   ├── database/           # Database, Model, Migration, Factory
+│   ├── database/           # Database, Model, Migration, Factory, QueryBuilder (DB facade)
 │   ├── events/             # Event dispatcher
-│   ├── http/               # Router, Controller, Request, Response, middleware
+│   ├── http/               # Router, Controller, Request, Response, middleware, LifecycleHooks
 │   ├── i18n/               # Internationalization
-│   ├── logging/            # Pino logger
+│   ├── logging/            # Pino logger, AuditLog
 │   ├── mail/               # Mailer (Nodemailer)
 │   ├── playground/         # API Playground UI
 │   ├── providers/          # Service providers (boot order)
 │   ├── queue/              # Queue drivers (Sync, BullMQ)
 │   ├── scheduling/         # Cron scheduler
+│   ├── security/           # Security barrel exports
 │   ├── storage/            # Storage drivers (Local, S3)
-│   ├── support/            # Helpers (Str, Collection, env, sleep)
+│   ├── support/            # Helpers (Str, Collection, env, sleep, Encrypter, SignedUrl, FeatureFlags)
 │   ├── testing/            # HTTP test client
 │   ├── validation/         # Zod validator
+│   ├── webhooks/           # WebhookManager (HMAC signing, retry, delivery logs)
 │   └── websocket/          # Socket.io WebSocket
 │
 ├── admin/                  # Next.js Admin Panel (port 3100)
@@ -132,6 +134,47 @@ HyperZ/
 - **AIGateway:** Unified interface for OpenAI, Anthropic, and Gemini. Use `ai.action(name)` for structured tasks.
 - **Agents:** Use `Agent.create(name, ai)` to build autonomous workflows.
 
+### Security
+- **Encrypter:** Use `Encrypter.encrypt(plaintext)` / `Encrypter.decrypt(payload)` for AES-256-GCM encryption via `APP_KEY`.
+- **SignedUrl:** Use `SignedUrl.create(url, params, expiresInSeconds)` / `SignedUrl.verify(fullUrl)` for tamper-proof links.
+- **HashService:** Use `HashService.make(password)` / `HashService.check(password, hash)` for bcrypt hashing.
+- **CSRF:** Enabled via `SecurityServiceProvider` — double-submit cookie pattern.
+- **Sanitization:** Auto-strips XSS and prototype pollution from request body/query/params.
+- **Token Blacklisting:** Use `TokenBlacklist.revoke(jti)` / `TokenBlacklist.isRevoked(jti)` for JWT revocation.
+- **API Key Auth:** Use `apiKeyMiddleware(resolver, scopes)` for API key-based route protection.
+
+### Feature Flags
+- Define flags in `config/features.ts` or via `FeatureFlags.define(name, resolver)`.
+- Check flags: `await FeatureFlags.enabled('flag-name', context)`.
+- Gate routes: `router.get('/v2', featureMiddleware('new-ui'), handler)`.
+- Supports config, env, and custom drivers.
+
+### Lifecycle Hooks
+- Register hooks with `LifecycleHooks.onRequest()`, `onResponse()`, `onError()`, `onFinish()`.
+- Hooks fire beyond normal middleware — useful for telemetry, audit logging, and request transformation.
+
+### Audit Log
+- Record entries: `AuditLog.record({ action, userId, ip, metadata })`.
+- Track model changes: `AuditLog.recordChange({ model, modelId, action, before, after })`.
+- Auto-middleware logs all state-changing requests (POST/PUT/PATCH/DELETE).
+
+### Webhooks
+- Register endpoints: `WebhookManager.register({ url, events, secret })`.
+- Dispatch: `await WebhookManager.dispatch('user.created', payload)`.
+- Verify incoming: `WebhookManager.verifySignature(payload, signature, secret)`.
+- Automatic retry with exponential backoff + delivery logging.
+
+### Query Builder
+- Raw SQL facade: `DB.table('users').where('role', 'admin').get()`.
+- Supports `select`, `where`, `orWhere`, `whereIn`, `whereNull`, `orderBy`, `limit`, `offset`, `groupBy`.
+- CRUD: `insert()`, `update()`, `delete()`, `count()`, `exists()`, `paginate()`.
+- Transactions: `DB.transaction(async () => { ... })`.
+
+### AI Streaming (SSE)
+- Use `StreamResponse` for Server-Sent Events: `new StreamResponse(res).start().write('token')`.
+- Stream async iterables: `stream.streamIterator(ai.streamChat(messages))`.
+- Middleware: `sseMiddleware()` auto-sets SSE headers.
+
 ### Enterprise SaaS Patterns
 - **Multi-tenancy:** Access `req.tenant` to get context-isolated configuration.
 - **Database:** Use `Database.getDataSource()` for the primary connection.
@@ -152,6 +195,8 @@ npx tsx bin/hyperz.ts make:route <name>              # Create route file
 npx tsx bin/hyperz.ts make:job <Name>                # Create queue job
 npx tsx bin/hyperz.ts make:factory <Name>            # Create database factory
 npx tsx bin/hyperz.ts make:ai-action <Name>          # Create AI action
+npx tsx bin/hyperz.ts make:test <Name> [-f]            # Create unit/feature test
+npx tsx bin/hyperz.ts make:module <Name>               # Scaffold full domain module (model+controller+route+migration+test)
 npx tsx bin/hyperz.ts make:auth                      # Scaffold full auth system
 npx tsx bin/hyperz.ts migrate                        # Run migrations
 npx tsx bin/hyperz.ts migrate:rollback               # Rollback migrations
@@ -205,6 +250,8 @@ Key variables in `.env`:
 | `AI_PROVIDER` | AI provider (openai, anthropic, google) | `openai` |
 | `JWT_SECRET` | JWT signing secret | — |
 | `APP_KEY` | Application encryption key | — |
+| `WEBHOOK_SECRET` | Default webhook signing secret | — |
+| `WEBHOOK_MAX_RETRIES` | Max webhook delivery retries | `3` |
 
 ---
 
@@ -213,6 +260,7 @@ Key variables in `.env`:
 **Start dev:** `npm run dev`
 **Run migration:** `npx tsx bin/hyperz.ts migrate`
 **Create resource:** `npx tsx bin/hyperz.ts make:controller ProductController && npx tsx bin/hyperz.ts make:model Product -m`
+**Scaffold module:** `npx tsx bin/hyperz.ts make:module Product` (creates model+controller+route+migration+test)
 **API base URL:** `http://localhost:7700/api`
 **Playground:** `http://localhost:7700/api/playground`
 **Admin panel:** `http://localhost:3000` (requires `cd admin && npm run dev`)
