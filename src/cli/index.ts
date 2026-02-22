@@ -679,4 +679,98 @@ export class ${name} {
                 // Some modules may not load outside full app boot
             }
         });
+
+    // ── make:test ───────────────────────────────────────────
+    program
+        .command('make:test <name>')
+        .description('Create a new test file')
+        .option('-u, --unit', 'Create a unit test (default)')
+        .option('-f, --feature', 'Create a feature/integration test')
+        .action((nameInput: string, opts: any) => {
+            const baseName = nameInput.replace(/\.test$/i, '');
+            const name = toPascalCase(baseName);
+            const stub = readStub('test').replace(/\{\{name\}\}/g, name);
+
+            const dir = opts.feature ? 'tests/feature' : 'tests/unit';
+            const filePath = path.join(ROOT, dir, `${name}.test.ts`);
+            writeFile(filePath, stub);
+            console.log(chalk.green(`✓ Test created: ${dir}/${name}.test.ts`));
+        });
+
+    // ── make:module ─────────────────────────────────────────
+    program
+        .command('make:module <name>')
+        .description('Scaffold a full domain module (controller, model, migration, route, test)')
+        .option('--no-migration', 'Skip migration creation')
+        .option('--no-test', 'Skip test creation')
+        .action((nameInput: string, opts: any) => {
+            const name = toPascalCase(nameInput);
+            const tableName = toTableName(name);
+            const controllerName = `${name}Controller`;
+
+            console.log(chalk.cyan(`\n⚡ Scaffolding module: ${name}\n`));
+
+            // 1. Model
+            const modelStub = readStub('model')
+                .replace(/\{\{name\}\}/g, name)
+                .replace(/\{\{tableName\}\}/g, tableName);
+            writeFile(path.join(ROOT, 'app', 'models', `${name}.ts`), modelStub);
+            console.log(chalk.green(`  ✓ Model: app/models/${name}.ts`));
+
+            // 2. Controller (with model wired up)
+            let ctrlStub = readStub('controller');
+            ctrlStub = ctrlStub
+                .replace(/\/\/ import \{ \{\{name\}\} \} from '\.\.\/models\/\{\{name\}\}\.js';/g, `import { ${name} } from '../models/${name}.js';`)
+                .replace(/\/\/ const items = await \{\{name\}\}\.all\(\);/g, `const items = await ${name}.all();`)
+                .replace(/this\.success\(res, \[\], '\{\{name\}\} index'\);/g, `this.success(res, items, '${name} index');`)
+                .replace(/\/\/ const item = await \{\{name\}\}\.findOrFail\(id\);/g, `const item = await ${name}.findOrFail(id);`)
+                .replace(/this\.success\(res, \{ id \}, '\{\{name\}\} show'\);/g, `this.success(res, item, '${name} show');`)
+                .replace(/\/\/ const item = await \{\{name\}\}\.create\(req\.body\);/g, `const item = await ${name}.create(req.body);`)
+                .replace(/this\.created\(res, req\.body, 'Resource created'\);/g, `this.created(res, item, 'Resource created');`)
+                .replace(/\/\/ await item\.fill\(req\.body\)\.save\(\);/g, `await Object.assign(item, req.body).save();`)
+                .replace(/this\.success\(res, \{ id, \.\.\.req\.body \}, 'Resource updated'\);/g, `this.success(res, item, 'Resource updated');`)
+                .replace(/\/\/ await item\.delete\(\);/g, `await item.remove();`)
+                .replace(/\{\{name\}\}/g, name);
+            writeFile(path.join(ROOT, 'app', 'controllers', `${controllerName}.ts`), ctrlStub);
+            console.log(chalk.green(`  ✓ Controller: app/controllers/${controllerName}.ts`));
+
+            // 3. Route file
+            const routeContent = `import { HyperZRouter } from '../../src/http/Router.js';
+import { ${controllerName} } from '../controllers/${controllerName}.js';
+
+const router = new HyperZRouter({ source: '${name.toLowerCase()}' });
+const controller = new ${controllerName}();
+
+router.resource('/${tableName}', controller);
+
+export default router;
+`;
+            writeFile(path.join(ROOT, 'app', 'routes', `${name.toLowerCase()}.ts`), routeContent);
+            console.log(chalk.green(`  ✓ Route: app/routes/${name.toLowerCase()}.ts`));
+
+            // 4. Migration (unless --no-migration)
+            if (opts.migration !== false) {
+                const ts = timestamp();
+                const migClassName = toPascalCase(`create_${tableName}_table`) + ts;
+                const migStub = readStub('migration')
+                    .replace(/\{\{tableName\}\}/g, tableName)
+                    .replace(/\{\{className\}\}/g, migClassName);
+                const migName = `${ts}_create_${tableName}_table.ts`;
+                writeFile(path.join(ROOT, 'database', 'migrations', migName), migStub);
+                console.log(chalk.green(`  ✓ Migration: database/migrations/${migName}`));
+            }
+
+            // 5. Test (unless --no-test)
+            if (opts.test !== false) {
+                const testStub = readStub('test').replace(/\{\{name\}\}/g, name);
+                writeFile(path.join(ROOT, 'tests', 'unit', `${name}.test.ts`), testStub);
+                console.log(chalk.green(`  ✓ Test: tests/unit/${name}.test.ts`));
+            }
+
+            console.log(chalk.cyan(`\n✨ Module "${name}" scaffolded successfully!\n`));
+            console.log(chalk.gray('  Next steps:'));
+            console.log(chalk.gray(`  1. Edit the model: app/models/${name}.ts`));
+            console.log(chalk.gray(`  2. Run migration: npx tsx bin/hyperz.ts migrate`));
+            console.log(chalk.gray(`  3. Routes auto-loaded at: /api/${tableName}`));
+        });
 }

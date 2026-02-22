@@ -9,6 +9,7 @@ import { DatabaseServiceProvider } from './src/providers/DatabaseServiceProvider
 import { EventServiceProvider } from './src/providers/EventServiceProvider.js';
 import { CacheServiceProvider } from './src/providers/CacheServiceProvider.js';
 import { SecurityServiceProvider } from './src/providers/SecurityServiceProvider.js';
+import { FeaturesServiceProvider } from './src/providers/FeaturesServiceProvider.js';
 
 /**
  * Create and configure the HyperZ application.
@@ -17,9 +18,10 @@ export function createApp(): Application {
     const app = new Application();
 
     // ── Register Service Providers ──────────────────────────
-    // Order matters: App → Security → Database → Events → Cache → Routes (last)
+    // Order matters: App → Security → Features → Database → Events → Cache → Routes (last)
     app.register(AppServiceProvider);
     app.register(SecurityServiceProvider);    // Security middleware after core, before routes
+    app.register(FeaturesServiceProvider);    // Lifecycle hooks, feature flags, audit log
     app.register(DatabaseServiceProvider);
     app.register(EventServiceProvider);
     app.register(CacheServiceProvider);

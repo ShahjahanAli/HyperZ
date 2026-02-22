@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import 'reflect-metadata';
 import { DOCS_METADATA_KEY } from './Decorators.js';
+import { zodToJsonSchema } from './ZodToOpenAPI.js';
 
 interface RouteInfo {
     method: string;
@@ -100,16 +101,40 @@ export function generateOpenAPISpec(app: Express, config: any): OpenAPISpec {
             const h = layer.handle;
             if (h.zodSchema) {
                 if (h.validationType === 'body') {
+                    const schema = zodToJsonSchema(h.zodSchema);
                     operation.requestBody = {
+                        required: true,
                         content: {
-                            'application/json': {
-                                schema: { type: 'object', description: 'Validated via Zod' },
-                            },
+                            'application/json': { schema },
                         },
                     };
-                } else if (h.validationType === 'query' || h.validationType === 'params') {
-                    operation.parameters = operation.parameters || [];
-                    // We could map Zod fields here
+                } else if (h.validationType === 'query') {
+                    const schema = zodToJsonSchema(h.zodSchema);
+                    if (schema.properties && typeof schema.properties === 'object') {
+                        operation.parameters = operation.parameters || [];
+                        const required = (schema.required as string[]) || [];
+                        for (const [name, prop] of Object.entries(schema.properties)) {
+                            operation.parameters.push({
+                                name,
+                                in: 'query',
+                                required: required.includes(name),
+                                schema: prop,
+                            });
+                        }
+                    }
+                } else if (h.validationType === 'params') {
+                    const schema = zodToJsonSchema(h.zodSchema);
+                    if (schema.properties && typeof schema.properties === 'object') {
+                        operation.parameters = operation.parameters || [];
+                        for (const [name, prop] of Object.entries(schema.properties)) {
+                            operation.parameters.push({
+                                name,
+                                in: 'path',
+                                required: true,
+                                schema: prop,
+                            });
+                        }
+                    }
                 }
             }
         }
