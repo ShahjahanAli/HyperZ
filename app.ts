@@ -8,6 +8,7 @@ import { RouteServiceProvider } from './src/providers/RouteServiceProvider.js';
 import { DatabaseServiceProvider } from './src/providers/DatabaseServiceProvider.js';
 import { EventServiceProvider } from './src/providers/EventServiceProvider.js';
 import { CacheServiceProvider } from './src/providers/CacheServiceProvider.js';
+import { SecurityServiceProvider } from './src/providers/SecurityServiceProvider.js';
 
 /**
  * Create and configure the HyperZ application.
@@ -16,8 +17,9 @@ export function createApp(): Application {
     const app = new Application();
 
     // ── Register Service Providers ──────────────────────────
-    // Order matters: App → Database → Events → Cache → Routes (last)
+    // Order matters: App → Security → Database → Events → Cache → Routes (last)
     app.register(AppServiceProvider);
+    app.register(SecurityServiceProvider);    // Security middleware after core, before routes
     app.register(DatabaseServiceProvider);
     app.register(EventServiceProvider);
     app.register(CacheServiceProvider);
