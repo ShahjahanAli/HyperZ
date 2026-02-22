@@ -1,46 +1,49 @@
-// ──────────────────────────────────────────────────────────────
-// HyperZ Framework — CLI Command Registry
-// ──────────────────────────────────────────────────────────────
-
-import type { Command } from 'commander';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import { Command } from 'commander';
 import chalk from 'chalk';
-import { Table } from 'cli-table3';
-import pluralize from 'pluralize';
-import { config as loadEnv } from 'dotenv';
-import { randomString } from '../support/helpers.js';
-import { initializeDataSource } from '../database/DataSource.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.cwd();
 
-// ── Stub Helper ─────────────────────────────────────────────
-
-function readStub(stubName: string): string {
-    const stubPath = path.join(ROOT, 'src', 'cli', 'stubs', `${stubName}.stub`);
-    return fs.readFileSync(stubPath, 'utf-8');
+// Helper: Read stub file
+function readStub(name: string): string {
+    const stubPath = path.join(__dirname, 'stubs', `${name}.stub`);
+    return fs.readFileSync(stubPath, 'utf8');
 }
 
+// Helper: Write file ensuring directory exists
 function writeFile(filePath: string, content: string): void {
     const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, content, 'utf-8');
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, content, 'utf8');
 }
 
+// Helper: Convert to table name (snake_case plural)
 function toTableName(name: string): string {
-    // UserProfile → user_profiles
-    const snake = name.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
-    return pluralize(snake);
+    return name
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .toLowerCase() + 's';
 }
 
-function toCamelCase(name: string): string {
-    return name.charAt(0).toLowerCase() + name.slice(1);
+// Helper: PascalCase
+function toPascalCase(str: string): string {
+    return str
+        .replace(/[-_](.)/g, (_, c) => c.toUpperCase())
+        .replace(/^(.)/, c => c.toUpperCase());
 }
 
-function toPascalCase(name: string): string {
-    return name.split(/[-_]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+// Helper: CamelCase
+function toCamelCase(str: string): string {
+    return str
+        .replace(/[-_](.)/g, (_, c) => c.toUpperCase())
+        .replace(/^(.)/, c => c.toLowerCase());
 }
 
+// Helper: Timestamp for migrations
 function timestamp(): string {
     const now = new Date();
     const y = now.getFullYear();
@@ -52,6 +55,42 @@ function timestamp(): string {
     return `${y}${m}${d}${h}${mi}${s}`;
 }
 
+/**
+ * Load Environment
+ */
+function loadEnv() {
+    const envPath = path.join(ROOT, '.env');
+    if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf-8');
+        content.split('\n').forEach(line => {
+            const [key, value] = line.split('=');
+            if (key && value) {
+                process.env[key.trim()] = value.trim();
+            }
+        });
+    }
+}
+
+/**
+ * Helper: Random String
+ */
+function randomString(length: number): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+/**
+ * Initialize DataSource for CLI
+ */
+async function initializeDataSource() {
+    const { initializeDataSource: init } = await import('../database/DataSource.js');
+    return await init();
+}
+
 // ── Register All Commands ───────────────────────────────────
 
 export function registerCommands(program: Command): void {
@@ -60,11 +99,34 @@ export function registerCommands(program: Command): void {
     program
         .command('make:controller <name>')
         .description('Create a new controller')
-        .action((name: string) => {
-            const stub = readStub('controller').replace(/\{\{name\}\}/g, name);
-            const filePath = path.join(ROOT, 'app', 'controllers', `${name}.ts`);
+        .option('-m, --model <model>', 'Link to a model and generate CRUD')
+        .action((nameInput: string, opts: any) => {
+            // Normalize name: remove "Controller" suffix if user provided it
+            const baseName = nameInput.replace(/Controller$/i, '');
+            const className = `${baseName}Controller`;
+
+            let stub = readStub('controller');
+
+            if (opts.model) {
+                const modelName = opts.model;
+                stub = stub
+                    .replace(/\/\/ import \{ \{\{name\}\} \} from '\.\.\/models\/\{\{name\}\}\.js';/g, `import { ${modelName} } from '../models/${modelName}.js';`)
+                    .replace(/\/\/ const items = await \{\{name\}\}\.all\(\);/g, `const items = await ${modelName}.all();`)
+                    .replace(/this\.success\(res, \[\], '\{\{name\}\} index'\);/g, `this.success(res, items, '${baseName} index');`)
+                    .replace(/\/\/ const item = await \{\{name\}\}\.findOrFail\(id\);/g, `const item = await ${modelName}.findOrFail(id);`)
+                    .replace(/this\.success\(res, \{ id \}, '\{\{name\}\} show'\);/g, `this.success(res, item, '${baseName} show');`)
+                    .replace(/\/\/ const item = await \{\{name\}\}\.create\(req\.body\);/g, `const item = await ${modelName}.create(req.body);`)
+                    .replace(/this\.created\(res, req\.body, 'Resource created'\);/g, `this.created(res, item, 'Resource created');`)
+                    .replace(/\/\/ await item\.fill\(req\.body\)\.save\(\);/g, `await Object.assign(item, req.body).save();`)
+                    .replace(/this\.success\(res, \{ id, \.\.\.req\.body \}, 'Resource updated'\);/g, `this.success(res, item, 'Resource updated');`)
+                    .replace(/\/\/ await item\.delete\(\);/g, `await item.remove();`);
+            }
+
+            stub = stub.replace(/\{\{name\}\}/g, baseName);
+
+            const filePath = path.join(ROOT, 'app', 'controllers', `${className}.ts`);
             writeFile(filePath, stub);
-            console.log(chalk.green(`✓ Controller created: app/controllers/${name}.ts`));
+            console.log(chalk.green(`✓ Controller created: app/controllers/${className}.ts`));
         });
 
     // ── make:model ──────────────────────────────────────────
@@ -82,11 +144,12 @@ export function registerCommands(program: Command): void {
             console.log(chalk.green(`✓ Model created: app/models/${name}.ts`));
 
             if (opts.migration) {
-                const className = toPascalCase(`create_${tableName}_table`);
+                const ts = timestamp();
+                const className = toPascalCase(`create_${tableName}_table`) + ts;
                 const migStub = readStub('migration')
                     .replace(/\{\{tableName\}\}/g, tableName)
                     .replace(/\{\{className\}\}/g, className);
-                const migName = `${timestamp()}_create_${tableName}_table.ts`;
+                const migName = `${ts}_create_${tableName}_table.ts`;
                 const migPath = path.join(ROOT, 'database', 'migrations', migName);
                 writeFile(migPath, migStub);
                 console.log(chalk.green(`✓ Migration created: database/migrations/${migName}`));
@@ -104,11 +167,12 @@ export function registerCommands(program: Command): void {
                 tableName = name.replace('create_', '').replace('_table', '');
             }
 
-            const className = toPascalCase(name);
+            const ts = timestamp();
+            const className = toPascalCase(name) + ts;
             const stub = readStub('migration')
                 .replace(/\{\{tableName\}\}/g, tableName)
                 .replace(/\{\{className\}\}/g, className);
-            const fileName = `${timestamp()}_${name}.ts`;
+            const fileName = `${ts}_${name}.ts`;
             const filePath = path.join(ROOT, 'database', 'migrations', fileName);
             writeFile(filePath, stub);
             console.log(chalk.green(`✓ Migration created: database/migrations/${fileName}`));
@@ -282,11 +346,35 @@ export function registerCommands(program: Command): void {
     // ── make:auth ───────────────────────────────────────────
     program
         .command('make:auth')
-        .description('Scaffold authentication (controller, routes, migration)')
+        .description('Scaffold authentication (model, controller, routes, migration)')
         .action(() => {
+            // User Model
+            const userModel = `import { Entity, Column } from 'typeorm';
+import { Model } from '../../src/database/Model.js';
+
+@Entity('users')
+export class User extends Model {
+  @Column({ type: 'varchar' })
+  name: string;
+
+  @Column({ type: 'varchar', unique: true })
+  email: string;
+
+  @Column({ type: 'varchar' })
+  password: string;
+
+  @Column({ type: 'varchar', default: 'user' })
+  role: string;
+
+  /** Fields hidden from JSON serialization */
+  protected static hidden: string[] = ['password'];
+}
+`;
+
             // Auth Controller
             const authController = `import { Controller } from '../../src/http/Controller.js';
 import { AuthManager } from '../../src/auth/AuthManager.js';
+import { User } from '../models/User.js';
 import type { Request, Response } from 'express';
 
 const auth = new AuthManager();
@@ -297,14 +385,22 @@ export class AuthController extends Controller {
    * POST /api/auth/register
    */
   async register(req: Request, res: Response): Promise<void> {
-    const { name, email, password } = req.body;
-    const hashedPassword = await auth.hashPassword(password);
+    try {
+        const { name, email, password } = req.body;
+        const hashedPassword = await auth.hashPassword(password);
 
-    // TODO: Save user to database
-    const user = { id: 1, name, email };
-    const token = auth.generateToken(user);
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword
+        });
 
-    this.created(res, { user, token }, 'Registration successful');
+        const token = auth.generateToken(user);
+
+        this.created(res, { user, token }, 'Registration successful');
+    } catch (err: any) {
+        this.error(res, err.message || 'Registration failed');
+    }
   }
 
   /**
@@ -314,12 +410,10 @@ export class AuthController extends Controller {
   async login(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;
 
-    // TODO: Replace with actual user lookup
     const result = await auth.attempt(
       { email, password },
       async (email) => {
-        // Replace this with: const user = await User.where({ email }).first();
-        return null;
+        return await User.where('email', email).first();
       }
     );
 
@@ -356,78 +450,145 @@ router.post('/auth/login', controller.login.bind(controller));
 
 // Protected routes
 router.group({ prefix: '/auth', middleware: [authMiddleware()] }, (r) => {
-  r.get('/me', controller.me.bind(controller));
+    r.get('/me', controller.me.bind(controller));
 });
 
 export default router;
 `;
 
             // Auth Migration
-            const authMigration = `import type { Knex } from 'knex';
+            const ts = timestamp();
+            const authMigration = `import { MigrationInterface, QueryRunner, Table, TableForeignKey } from "typeorm";
 
-export async function up(knex: Knex): Promise<void> {
-  await knex.schema.createTable('users', (table) => {
-    table.increments('id').primary();
-    table.string('name').notNullable();
-    table.string('email').unique().notNullable();
-    table.string('password').notNullable();
-    table.string('role').defaultTo('user');
-    table.timestamp('email_verified_at').nullable();
-    table.timestamps(true, true);
-    table.timestamp('deleted_at').nullable();
-  });
+export class CreateAuthTables${ts} implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // Users table
+        await queryRunner.createTable(
+            new Table({
+                name: "users",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isNullable: false },
+                    { name: "email", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "password", type: "varchar", isNullable: false },
+                    { name: "role", type: "varchar", default: "'user'" },
+                    { name: "email_verified_at", type: "timestamp", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "deleted_at", type: "timestamp", isNullable: true },
+                ],
+            }),
+            true
+        );
 
-  // Roles table
-  await knex.schema.createTable('roles', (table) => {
-    table.increments('id').primary();
-    table.string('name').unique().notNullable();
-    table.string('description').nullable();
-    table.timestamps(true, true);
-  });
+        // Roles table
+        await queryRunner.createTable(
+            new Table({
+                name: "roles",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "description", type: "varchar", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                ],
+            }),
+            true
+        );
 
-  // Permissions table
-  await knex.schema.createTable('permissions', (table) => {
-    table.increments('id').primary();
-    table.string('name').unique().notNullable();
-    table.string('description').nullable();
-    table.timestamps(true, true);
-  });
+        // Permissions table
+        await queryRunner.createTable(
+            new Table({
+                name: "permissions",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "name", type: "varchar", isUnique: true, isNullable: false },
+                    { name: "description", type: "varchar", isNullable: true },
+                    { name: "created_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                    { name: "updated_at", type: "timestamp", default: "CURRENT_TIMESTAMP" },
+                ],
+            }),
+            true
+        );
 
-  // Role-Permission pivot
-  await knex.schema.createTable('role_permissions', (table) => {
-    table.increments('id').primary();
-    table.integer('role_id').unsigned().references('id').inTable('roles').onDelete('CASCADE');
-    table.integer('permission_id').unsigned().references('id').inTable('permissions').onDelete('CASCADE');
-    table.unique(['role_id', 'permission_id']);
-  });
+        // Role-Permission pivot
+        await queryRunner.createTable(
+            new Table({
+                name: "role_permissions",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "role_id", type: "int" },
+                    { name: "permission_id", type: "int" },
+                ],
+                indices: [{ columnNames: ["role_id", "permission_id"], isUnique: true }]
+            }),
+            true
+        );
 
-  // User-Role pivot
-  await knex.schema.createTable('user_roles', (table) => {
-    table.increments('id').primary();
-    table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
-    table.integer('role_id').unsigned().references('id').inTable('roles').onDelete('CASCADE');
-    table.unique(['user_id', 'role_id']);
-  });
-}
+        await queryRunner.createForeignKey("role_permissions", new TableForeignKey({
+            columnNames: ["role_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "roles",
+            onDelete: "CASCADE"
+        }));
 
-export async function down(knex: Knex): Promise<void> {
-  await knex.schema.dropTableIfExists('user_roles');
-  await knex.schema.dropTableIfExists('role_permissions');
-  await knex.schema.dropTableIfExists('permissions');
-  await knex.schema.dropTableIfExists('roles');
-  await knex.schema.dropTableIfExists('users');
+        await queryRunner.createForeignKey("role_permissions", new TableForeignKey({
+            columnNames: ["permission_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "permissions",
+            onDelete: "CASCADE"
+        }));
+
+        // User-Role pivot
+        await queryRunner.createTable(
+            new Table({
+                name: "user_roles",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "user_id", type: "int" },
+                    { name: "role_id", type: "int" },
+                ],
+                indices: [{ columnNames: ["user_id", "role_id"], isUnique: true }]
+            }),
+            true
+        );
+
+        await queryRunner.createForeignKey("user_roles", new TableForeignKey({
+            columnNames: ["user_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "users",
+            onDelete: "CASCADE"
+        }));
+
+        await queryRunner.createForeignKey("user_roles", new TableForeignKey({
+            columnNames: ["role_id"],
+            referencedColumnNames: ["id"],
+            referencedTableName: "roles",
+            onDelete: "CASCADE"
+        }));
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable("user_roles");
+        await queryRunner.dropTable("role_permissions");
+        await queryRunner.dropTable("permissions");
+        await queryRunner.dropTable("roles");
+        await queryRunner.dropTable("users");
+    }
 }
 `;
 
             // Write files
+            writeFile(path.join(ROOT, 'app', 'models', 'User.ts'), userModel);
             writeFile(path.join(ROOT, 'app', 'controllers', 'AuthController.ts'), authController);
             writeFile(path.join(ROOT, 'app', 'routes', 'auth.ts'), authRoutes);
             writeFile(
-                path.join(ROOT, 'database', 'migrations', `${timestamp()}_create_auth_tables.ts`),
+                path.join(ROOT, 'database', 'migrations', `${ts}_create_auth_tables.ts`),
                 authMigration
             );
 
             console.log(chalk.green('✓ Auth scaffolded:'));
+            console.log(chalk.gray('  → app/models/User.ts'));
             console.log(chalk.gray('  → app/controllers/AuthController.ts'));
             console.log(chalk.gray('  → app/routes/auth.ts'));
             console.log(chalk.gray('  → database/migrations/*_create_auth_tables.ts'));
@@ -518,5 +679,98 @@ export class ${name} {
                 // Some modules may not load outside full app boot
             }
         });
-}
 
+    // ── make:test ───────────────────────────────────────────
+    program
+        .command('make:test <name>')
+        .description('Create a new test file')
+        .option('-u, --unit', 'Create a unit test (default)')
+        .option('-f, --feature', 'Create a feature/integration test')
+        .action((nameInput: string, opts: any) => {
+            const baseName = nameInput.replace(/\.test$/i, '');
+            const name = toPascalCase(baseName);
+            const stub = readStub('test').replace(/\{\{name\}\}/g, name);
+
+            const dir = opts.feature ? 'tests/feature' : 'tests/unit';
+            const filePath = path.join(ROOT, dir, `${name}.test.ts`);
+            writeFile(filePath, stub);
+            console.log(chalk.green(`✓ Test created: ${dir}/${name}.test.ts`));
+        });
+
+    // ── make:module ─────────────────────────────────────────
+    program
+        .command('make:module <name>')
+        .description('Scaffold a full domain module (controller, model, migration, route, test)')
+        .option('--no-migration', 'Skip migration creation')
+        .option('--no-test', 'Skip test creation')
+        .action((nameInput: string, opts: any) => {
+            const name = toPascalCase(nameInput);
+            const tableName = toTableName(name);
+            const controllerName = `${name}Controller`;
+
+            console.log(chalk.cyan(`\n⚡ Scaffolding module: ${name}\n`));
+
+            // 1. Model
+            const modelStub = readStub('model')
+                .replace(/\{\{name\}\}/g, name)
+                .replace(/\{\{tableName\}\}/g, tableName);
+            writeFile(path.join(ROOT, 'app', 'models', `${name}.ts`), modelStub);
+            console.log(chalk.green(`  ✓ Model: app/models/${name}.ts`));
+
+            // 2. Controller (with model wired up)
+            let ctrlStub = readStub('controller');
+            ctrlStub = ctrlStub
+                .replace(/\/\/ import \{ \{\{name\}\} \} from '\.\.\/models\/\{\{name\}\}\.js';/g, `import { ${name} } from '../models/${name}.js';`)
+                .replace(/\/\/ const items = await \{\{name\}\}\.all\(\);/g, `const items = await ${name}.all();`)
+                .replace(/this\.success\(res, \[\], '\{\{name\}\} index'\);/g, `this.success(res, items, '${name} index');`)
+                .replace(/\/\/ const item = await \{\{name\}\}\.findOrFail\(id\);/g, `const item = await ${name}.findOrFail(id);`)
+                .replace(/this\.success\(res, \{ id \}, '\{\{name\}\} show'\);/g, `this.success(res, item, '${name} show');`)
+                .replace(/\/\/ const item = await \{\{name\}\}\.create\(req\.body\);/g, `const item = await ${name}.create(req.body);`)
+                .replace(/this\.created\(res, req\.body, 'Resource created'\);/g, `this.created(res, item, 'Resource created');`)
+                .replace(/\/\/ await item\.fill\(req\.body\)\.save\(\);/g, `await Object.assign(item, req.body).save();`)
+                .replace(/this\.success\(res, \{ id, \.\.\.req\.body \}, 'Resource updated'\);/g, `this.success(res, item, 'Resource updated');`)
+                .replace(/\/\/ await item\.delete\(\);/g, `await item.remove();`)
+                .replace(/\{\{name\}\}/g, name);
+            writeFile(path.join(ROOT, 'app', 'controllers', `${controllerName}.ts`), ctrlStub);
+            console.log(chalk.green(`  ✓ Controller: app/controllers/${controllerName}.ts`));
+
+            // 3. Route file
+            const routeContent = `import { HyperZRouter } from '../../src/http/Router.js';
+import { ${controllerName} } from '../controllers/${controllerName}.js';
+
+const router = new HyperZRouter({ source: '${name.toLowerCase()}' });
+const controller = new ${controllerName}();
+
+router.resource('/${tableName}', controller);
+
+export default router;
+`;
+            writeFile(path.join(ROOT, 'app', 'routes', `${name.toLowerCase()}.ts`), routeContent);
+            console.log(chalk.green(`  ✓ Route: app/routes/${name.toLowerCase()}.ts`));
+
+            // 4. Migration (unless --no-migration)
+            if (opts.migration !== false) {
+                const ts = timestamp();
+                const migClassName = toPascalCase(`create_${tableName}_table`) + ts;
+                const migStub = readStub('migration')
+                    .replace(/\{\{tableName\}\}/g, tableName)
+                    .replace(/\{\{className\}\}/g, migClassName);
+                const migName = `${ts}_create_${tableName}_table.ts`;
+                writeFile(path.join(ROOT, 'database', 'migrations', migName), migStub);
+                console.log(chalk.green(`  ✓ Migration: database/migrations/${migName}`));
+            }
+
+            // 5. Test (unless --no-test)
+            if (opts.test !== false) {
+                const testStub = readStub('test').replace(/\{\{name\}\}/g, name);
+                writeFile(path.join(ROOT, 'tests', 'unit', `${name}.test.ts`), testStub);
+                console.log(chalk.green(`  ✓ Test: tests/unit/${name}.test.ts`));
+            }
+
+            console.log(chalk.cyan(`\n✨ Module "${name}" scaffolded successfully!\n`));
+            console.log(chalk.gray('  Next steps:'));
+            console.log(chalk.gray(`  1. Edit the model: app/models/${name}.ts`));
+            console.log(chalk.gray(`  2. Run migration: npx tsx bin/hyperz.ts migrate`));
+            console.log(chalk.gray(`  3. Routes auto-loaded at: /api/${tableName}`));
+        });
+}

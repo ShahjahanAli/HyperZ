@@ -17,23 +17,27 @@
               │              Service Provider Boot Order             │
               │                                                      │
               │  1. AppServiceProvider     → core bindings           │
-              │  2. DatabaseProvider       → TypeORM + Mongoose      │
-              │  3. EventServiceProvider   → event dispatcher        │
-              │  4. CacheServiceProvider   → memory/redis driver     │
-              │  5. RouteServiceProvider   → auto-load app/routes/*  │
-              │  6. SchedulingProvider     → cron scheduler          │
-              │  7. QueueProvider          → sync/BullMQ driver      │
-              │  8. StorageProvider        → local/S3 driver         │
-              │  9. MailProvider           → SMTP mailer             │
-              │ 10. WebSocketProvider      → Socket.io               │
-              │ 11. AIServiceProvider      → AI Gateway              │
+              │  2. SecurityProvider       → HTTPS, sanitize, CSRF   │
+              │  3. FeaturesProvider       → lifecycle hooks, flags  │
+              │  4. DatabaseProvider       → TypeORM + Mongoose      │
+              │  5. EventServiceProvider   → event dispatcher        │
+              │  6. CacheServiceProvider   → memory/redis driver     │
+              │  7. RouteServiceProvider   → auto-load app/routes/*  │
+              │  8. SchedulingProvider     → cron scheduler          │
+              │  9. QueueProvider          → sync/BullMQ driver      │
+              │ 10. StorageProvider        → local/S3 driver         │
+              │ 11. MailProvider           → SMTP mailer             │
+              │ 12. WebSocketProvider      → Socket.io               │
+              │ 13. AIServiceProvider      → AI Gateway              │
               └──────────────────────────┬──────────────────────────┘
                                          │
          ┌───────────────────────────────▼───────────────────────────────┐
          │                    Express.js 5 Application                   │
          │                                                               │
          │  Middleware Stack:                                            │
-         │    CORS → Helmet → Body Parser → Request Logger → Routes     │
+         │    CORS → Helmet → Body Parser → HTTPS Redirect →          │
+         │    Sanitize → CSRF → Lifecycle Hooks → Audit Log →        │
+         │    Request Logger → Rate Limiter → Routes                  │
          │                                                               │
          │  Route Groups:                                                │
          │    /api/*           ← app/routes/*.ts (auto-loaded)          │
@@ -54,6 +58,11 @@ Express Middleware Stack
      │  ├── CORS
      │  ├── Helmet (Security Headers)
      │  ├── Body Parser (JSON)
+     │  ├── HTTPS Redirect (production)
+     │  ├── Request Sanitization (XSS + prototype pollution)
+     │  ├── CSRF Protection (double-submit cookie)
+     │  ├── Lifecycle Hooks (onRequest)
+     │  ├── Audit Log (POST/PUT/PATCH/DELETE)
      │  ├── Request Logger (Pino)
      │  └── Rate Limiter
      │
@@ -94,14 +103,26 @@ Response → Client
 │ • JWT        │    │ • Fallback   │    │ • Tenancy    │
 │ • RBAC       │    │ • Cost Track │    │ • Billing    │
 │ • API Keys   │    │ • Actions    │    │ • DB Pooling │
+│ • Encrypter  │    │ • Streaming  │    │ • Metering   │
+│ • SignedUrl  │    │ • Agents     │    │ • Webhooks   │
+│ • Hash       │    │              │    │              │
+│ • Blacklist  │    │              │    │              │
 └──────────────┘    └──────────────┘    └──────────────┘
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │  RAG System  │    │   Tooling    │    │   DevTools   │
 │              │    │              │    │              │
-│ • Ingestion  │    │ • CLI (16+)  │    │ • Admin Panel│
+│ • Ingestion  │    │ • CLI (18+)  │    │ • Admin Panel│
 │ • Vector DB  │    │ • MCP Server │    │ • Playground │
 │ • Semantic   │    │ • Agents     │    │ • Monitoring │
 └──────────────┘    └──────────────┘    └──────────────┘
+┌──────────────┐    ┌──────────────┐
+│ Feature Flags│    │ Audit & Hook│
+│              │    │              │
+│ • Config     │    │ • AuditLog   │
+│ • Env        │    │ • Lifecycle  │
+│ • Custom     │    │ • onRequest  │
+│ • Middleware │    │ • onResponse │
+└──────────────┘    └──────────────┘
 ```
 
 ---
@@ -141,6 +162,11 @@ const auth = app.make(AuthService); // Nested dependencies auto-resolved
 - `prompts` — PromptManager
 - `vector` — VectorDB
 - `monitor` — MetricsCollector
+- `hash` — HashService
+- `tokenBlacklist` — TokenBlacklist
+- `lifecycle` — LifecycleHooks
+- `features` — FeatureFlags
+- `audit` — AuditLog
 
 ---
 
@@ -193,7 +219,7 @@ Register/Login Request
      ▼
 AuthController
      │  ├── Validate credentials (Zod)
-     │  ├── Hash password (bcrypt)
+     │  ├── Hash password (HashService / bcrypt)
      │  └── Generate JWT token
      │
      ▼
@@ -202,12 +228,14 @@ Protected Route Request
      ▼
 authMiddleware()
      │  ├── Extract Bearer token
+     │  ├── Check TokenBlacklist (revoked?)
      │  ├── Verify JWT signature
      │  └── Inject req.user
      │
      ▼
-roleMiddleware('admin')  /  permissionMiddleware('delete-users')
-     │  ├── Check user roles/permissions from DB
+apiKeyMiddleware(resolver, scopes)  OR  roleMiddleware('admin')
+     │  ├── Resolve API key → SHA-256 lookup
+     │  ├── Check scopes / roles / permissions
      │  └── Allow or 403
      │
      ▼

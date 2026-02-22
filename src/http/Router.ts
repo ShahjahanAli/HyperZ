@@ -40,9 +40,11 @@ export class HyperZRouter {
     private currentPrefix = '';
     private currentMiddleware: RequestHandler[] = [];
     private paramConstraints = new Map<string, RegExp>();
+    private source?: string;
 
-    constructor() {
+    constructor(options: { source?: string } = {}) {
         this.expressRouter = ExpressRouter();
+        this.source = options.source;
     }
 
     // ── HTTP Methods ──────────────────────────────────────────
@@ -80,7 +82,7 @@ export class HyperZRouter {
                 next();
             },
             ...handlers
-        ]);
+        ], { isAi: true });
     }
 
     options(path: string, ...handlers: RequestHandler[]): this {
@@ -135,12 +137,13 @@ export class HyperZRouter {
 
     resource(path: string, controller: any): this {
         const basePath = this.currentPrefix + path;
+        const metadata = { controller: controller.constructor.name };
 
-        if (controller.index) this.addRoute('GET', path, [controller.index.bind(controller)]);
-        if (controller.show) this.addRoute('GET', `${path}/:id`, [controller.show.bind(controller)]);
-        if (controller.store) this.addRoute('POST', path, [controller.store.bind(controller)]);
-        if (controller.update) this.addRoute('PUT', `${path}/:id`, [controller.update.bind(controller)]);
-        if (controller.destroy) this.addRoute('DELETE', `${path}/:id`, [controller.destroy.bind(controller)]);
+        if (controller.index) this.addRoute('GET', path, [controller.index.bind(controller)], metadata);
+        if (controller.show) this.addRoute('GET', `${path}/:id`, [controller.show.bind(controller)], metadata);
+        if (controller.store) this.addRoute('POST', path, [controller.store.bind(controller)], metadata);
+        if (controller.update) this.addRoute('PUT', `${path}/:id`, [controller.update.bind(controller)], metadata);
+        if (controller.destroy) this.addRoute('DELETE', `${path}/:id`, [controller.destroy.bind(controller)], metadata);
 
         return this;
     }
@@ -210,7 +213,7 @@ export class HyperZRouter {
 
     // ── Internals ─────────────────────────────────────────────
 
-    private addRoute(method: string, path: string, handlers: RequestHandler[]): this {
+    private addRoute(method: string, path: string, handlers: RequestHandler[], metadata: any = {}): this {
         const fullPath = this.currentPrefix + path;
         const allMiddleware = [...this.currentMiddleware];
 
@@ -231,6 +234,16 @@ export class HyperZRouter {
         const expressMethod = method.toLowerCase() as keyof ExpressRouter;
         (this.expressRouter as any)[expressMethod](fullPath, ...allMiddleware, ...wrappedHandlers);
 
+        // Attach metadata to the underlying Express route layer for introspection
+        const stack = (this.expressRouter as any).stack;
+        const lastLayer = stack[stack.length - 1];
+        if (lastLayer && lastLayer.route) {
+            (lastLayer.route as any)._hyperz = {
+                source: this.source,
+                ...metadata
+            };
+        }
+
         return this;
     }
 
@@ -245,6 +258,7 @@ export class HyperZRouter {
      * Mount onto an Express app.
      */
     mount(app: Express, prefix = ''): void {
+        (this.expressRouter as any)._hyperzPrefix = prefix;
         app.use(prefix, this.expressRouter);
     }
 

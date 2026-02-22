@@ -5,13 +5,15 @@
 import { HyperZRouter } from '../../src/http/Router.js';
 import { HomeController } from '../controllers/HomeController.js';
 
-const router = new HyperZRouter();
+
+const router = new HyperZRouter({ source: 'api' });
 const home = new HomeController();
 
 // ── Public Routes ───────────────────────────────────────────
 
 router.get('/', home.index.bind(home));
 router.get('/health', home.health.bind(home));
+
 
 // ── Add your API routes below ───────────────────────────────
 // Example:

@@ -18,9 +18,9 @@ export class DatabaseServiceProvider extends ServiceProvider {
         try {
             const dataSource = await initializeDataSource();
             Database.setDataSource(dataSource);
-            Logger.info('✦ TypeORM DataSource initialized');
+            Logger.info('[+] TypeORM DataSource initialized');
         } catch (err: any) {
-            Logger.error('✖ TypeORM initialization failed', { error: err.message, stack: err.stack });
+            Logger.error('[x] TypeORM initialization failed', { error: err.message, stack: err.stack });
         }
 
         const dbConfig = this.app.config.get<any>('database');

@@ -30,7 +30,7 @@ export function registerSwaggerUI(app: Express | Router, docsConfig: any): void 
         res.send(buildSwaggerHTML(docsConfig.title || 'HyperZ API', specUrl));
     });
 
-    Logger.info(`  📖 API Docs available at ${basePath}`);
+    Logger.info(`  [+] API Docs available at ${basePath}`);
 }
 
 /**

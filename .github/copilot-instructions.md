@@ -44,11 +44,25 @@ npx tsx bin/hyperz.ts make:route <name>
 npx tsx bin/hyperz.ts make:job <Name>
 npx tsx bin/hyperz.ts make:factory <Name>Factory
 npx tsx bin/hyperz.ts make:ai-action <Name>Action
+npx tsx bin/hyperz.ts make:test <Name> [-f]
+npx tsx bin/hyperz.ts make:module <Name>
 npx tsx bin/hyperz.ts migrate
 ```
+
+## Key Patterns
+- Security: `Encrypter.encrypt()/.decrypt()`, `HashService.make()/.check()`, `SignedUrl.create()/.verify()`
+- Feature Flags: `FeatureFlags.enabled('flag')`, `featureMiddleware('flag')` for route gating
+- Query Builder: `DB.table('x').where('col', 'val').get()` for raw SQL queries
+- Lifecycle Hooks: `LifecycleHooks.onRequest()/.onResponse()/.onError()/.onFinish()`
+- Audit Log: `AuditLog.record()`, `AuditLog.recordChange()` for tracking
+- Webhooks: `WebhookManager.register()`, `WebhookManager.dispatch()`
+- AI Streaming: `new StreamResponse(res).start().write('token').end()`
 
 ## Key Files
 - `server.ts` — Server entry point
 - `app.ts` — Application bootstrap
+- `config/security.ts` — Security configuration
+- `config/features.ts` — Feature flag definitions
+- `config/webhooks.ts` — Webhook configuration
 - `AGENTS.md` — Full AI agent guide
 - `ARCHITECTURE.md` — System architecture diagrams
