@@ -1,0 +1,47 @@
+---
+title: Introduction
+description: What is HyperZ and why was it built?
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+**HyperZ** is a **Laravel-inspired**, **AI-native**, **enterprise-grade** API framework built on **Express.js 5** and **TypeScript**. It follows convention-over-configuration principles with a modular service-provider architecture.
+
+## Why HyperZ?
+
+Building production-ready Node.js APIs requires assembling dozens of packages, writing boilerplate, and maintaining complex configurations. HyperZ provides all of this out of the box:
+
+<CardGrid>
+  <Card title="Laravel-like DX" icon="rocket">
+    Familiar patterns: Service providers, IoC container, Eloquent-style models, Artisan-like CLI, resource routing.
+  </Card>
+  <Card title="AI-Native" icon="star">
+    Built-in AI Gateway (OpenAI, Anthropic, Google), Prompt Manager, Vector DB (RAG), Agent framework, SSE streaming.
+  </Card>
+  <Card title="Enterprise Security" icon="approve-check-circle">
+    JWT auth, RBAC, API keys, CSRF, XSS sanitization, rate limiting, audit logging, token blacklisting, encryption.
+  </Card>
+  <Card title="Batteries Included" icon="setting">
+    Caching, queues, events, mail, storage, WebSockets, scheduling, webhooks, feature flags, i18n — all built in.
+  </Card>
+</CardGrid>
+
+## Key Features
+
+- **TypeScript-first** — strict mode, full type safety
+- **Express.js 5** — latest stable with async middleware support
+- **Pluggable HTTP adapters** — swap to Fastify or Hono without changing your code
+- **Dual ORM support** — TypeORM (default) + Drizzle ORM
+- **Scalar + Swagger** — modern OpenAPI documentation out of the box
+- **Plugin ecosystem** — extend via first-class plugin contracts
+- **Admin panel** — built-in Next.js admin UI
+- **CLI scaffolding** — generate controllers, models, routes, and more
+
+## Quick Links
+
+<CardGrid>
+  <LinkCard title="Installation" href="/getting-started/installation/" description="Get HyperZ set up in under 5 minutes" />
+  <LinkCard title="Quick Start" href="/getting-started/quick-start/" description="Build your first API endpoint" />
+  <LinkCard title="Architecture" href="/core/architecture/" description="Understand the framework's design" />
+  <LinkCard title="CLI Commands" href="/cli/commands/" description="Scaffold code with the CLI" />
+</CardGrid>

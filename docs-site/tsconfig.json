@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "astro",
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.astro", "src/**/*.mdx", "astro.config.mjs", "env.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

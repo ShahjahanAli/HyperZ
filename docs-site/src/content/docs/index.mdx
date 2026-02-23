@@ -1,0 +1,34 @@
+---
+title: HyperZ Framework
+description: Laravel-inspired, AI-native, Enterprise-grade API Framework for Node.js
+template: splash
+hero:
+  tagline: Build production-ready APIs with TypeScript — batteries included, AI-native, enterprise-grade.
+  actions:
+    - text: Get Started
+      link: /getting-started/introduction/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/hyperz-framework/hyperz
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why HyperZ?
+
+<CardGrid stagger>
+  <Card title="Laravel-like DX" icon="rocket">
+    Service providers, IoC container, Eloquent-style ORM, Artisan-like CLI, resource routing — everything you love about Laravel, in Node.js.
+  </Card>
+  <Card title="AI-Native" icon="star">
+    Built-in AI Gateway supporting OpenAI, Anthropic, and Google AI. Prompt management, vector databases, agent framework, and SSE streaming.
+  </Card>
+  <Card title="Enterprise Security" icon="approve-check-circle">
+    JWT authentication, RBAC, API key management, CSRF protection, XSS sanitization, rate limiting, audit logging, and encryption.
+  </Card>
+  <Card title="Pluggable Architecture" icon="puzzle">
+    Swap HTTP frameworks (Express ↔ Fastify ↔ Hono), switch ORMs (TypeORM ↔ Drizzle), and extend via the plugin ecosystem.
+  </Card>
+</CardGrid>
