@@ -23,8 +23,12 @@
     "start": "node dist/server.js",
     "hyperz": "tsx bin/hyperz.ts",
     "test": "vitest run",
+    "test:watch": "vitest",
     "mcp": "tsx bin/hyperz-mcp.ts",
-    "mcp:http": "tsx bin/hyperz-mcp.ts --http"
+    "mcp:http": "tsx bin/hyperz-mcp.ts --http",
+    "docs:dev": "cd docs-site && npm run dev",
+    "docs:build": "cd docs-site && npm run build",
+    "docs:preview": "cd docs-site && npm run preview"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",

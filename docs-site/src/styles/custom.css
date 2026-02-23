@@ -1,0 +1,36 @@
+/* HyperZ Docs — Custom Styles */
+
+:root {
+    --sl-color-accent-low: #1e1b4b;
+    --sl-color-accent: #6366f1;
+    --sl-color-accent-high: #a5b4fc;
+    --sl-color-white: #ffffff;
+    --sl-color-gray-1: #eceef2;
+    --sl-color-gray-2: #c0c2c7;
+    --sl-color-gray-3: #888b96;
+    --sl-color-gray-4: #545861;
+    --sl-color-gray-5: #353841;
+    --sl-color-gray-6: #24272f;
+    --sl-color-black: #17191e;
+    --sl-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --sl-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* Code blocks */
+.expressive-code pre {
+    border-radius: 8px !important;
+}
+
+/* Sidebar accent */
+.sidebar-content a[aria-current='page'] {
+    border-left-color: var(--sl-color-accent) !important;
+    color: var(--sl-color-accent-high) !important;
+}
+
+/* Page title */
+.content-panel h1 {
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}

@@ -51,7 +51,7 @@ describe('zodToJsonSchema', () => {
 
         expect(result.type).toBe('object');
         expect(result.properties).toBeDefined();
-        expect(result.properties!['name']).toEqual({ type: 'string' });
+        expect((result.properties as Record<string, unknown>)['name']).toEqual({ type: 'string' });
         expect(result.required).toContain('name');
         expect(result.required).toContain('age');
         expect(result.required).not.toContain('email');
@@ -108,8 +108,11 @@ describe('zodToJsonSchema', () => {
         const result = zodToJsonSchema(schema);
 
         expect(result.type).toBe('object');
-        expect(result.properties!['user'].type).toBe('object');
-        expect(result.properties!['user'].properties!['address'].type).toBe('object');
-        expect(result.properties!['user'].properties!['address'].properties!['city'].type).toBe('string');
+        const props = result.properties as Record<string, Record<string, unknown>>;
+        expect(props['user'].type).toBe('object');
+        const userProps = props['user'].properties as Record<string, Record<string, unknown>>;
+        expect(userProps['address'].type).toBe('object');
+        const addressProps = userProps['address'].properties as Record<string, Record<string, unknown>>;
+        expect(addressProps['city'].type).toBe('string');
     });
 });

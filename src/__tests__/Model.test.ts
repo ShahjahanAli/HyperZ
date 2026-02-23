@@ -51,13 +51,6 @@ describe('Model (Active Record)', () => {
         });
         await dataSource.initialize();
         Database.setDataSource(dataSource);
-
-        // Also connect Knex for completeness (though models use TypeORM)
-        await Database.connectSQL({
-            client: 'sqlite3',
-            connection: { filename: ':memory:' },
-            useNullAsDefault: true,
-        });
     });
 
     afterEach(async () => {
