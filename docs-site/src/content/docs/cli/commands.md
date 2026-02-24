@@ -3,7 +3,7 @@ title: "CLI Commands"
 description: "Reference for all HyperZ CLI commands — migrations, seeding, key generation, route listing, REPL, and more."
 ---
 
-HyperZ includes a powerful CLI for managing your application. All commands are run via `npx tsx bin/hyperz.ts`.
+HyperZ includes a powerful CLI for managing your application. All commands are run via `npx hyperz`.
 
 ## Available Commands
 
@@ -11,34 +11,34 @@ HyperZ includes a powerful CLI for managing your application. All commands are r
 
 ```bash
 # Run all pending migrations
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # Rollback the last batch of migrations
-npx tsx bin/hyperz.ts migrate:rollback
+npx hyperz migrate:rollback
 
 # Run database seeders
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 ### Security
 
 ```bash
 # Generate APP_KEY and JWT_SECRET
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 ```
 
 ### Routes
 
 ```bash
 # List all registered routes
-npx tsx bin/hyperz.ts route:list
+npx hyperz route:list
 ```
 
 ### Interactive REPL
 
 ```bash
 # Start an interactive TypeScript REPL with access to your app
-npx tsx bin/hyperz.ts tinker
+npx hyperz tinker
 ```
 
 ### Scaffolding
@@ -50,7 +50,7 @@ All `make:*` commands are covered in the [CLI Scaffolding](scaffolding) guide.
 Commands provide colored, structured output:
 
 ```bash
-$ npx tsx bin/hyperz.ts migrate
+$ npx hyperz migrate
 
   ✓ 20260215170000_create_hyperz_admins_table ... migrated (12ms)
   ✓ 20260216100000_create_products_table ........ migrated (8ms)
@@ -63,5 +63,5 @@ $ npx tsx bin/hyperz.ts migrate
 Commands respect your `.env` configuration. Set `APP_ENV` to control behavior:
 
 ```bash
-APP_ENV=production npx tsx bin/hyperz.ts migrate
+APP_ENV=production npx hyperz migrate
 ```

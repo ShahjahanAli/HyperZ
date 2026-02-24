@@ -28,6 +28,7 @@ export interface PaginationResult<T> {
     };
 }
 
+// @ts-ignore — static side of Model intentionally overrides BaseEntity.create with an async variant
 export abstract class Model extends BaseEntity {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -88,7 +89,9 @@ export abstract class Model extends BaseEntity {
 
     /**
      * ActiveRecord: Create and Save a new record.
+     * @ts-ignore intentionally overrides TypeORM's synchronous create() factory
      */
+    // @ts-ignore — our async create(attributes) supersedes BaseEntity's sync factory overloads
     static async create<T extends Model>(
         this: typeof Model & (new () => T),
         attributes: any
@@ -117,7 +120,7 @@ export abstract class Model extends BaseEntity {
         operator: any,
         value?: any
     ) {
-        const query = this.createQueryBuilder(this.name.toLowerCase());
+        const query = (this as any).createQueryBuilder(this.name.toLowerCase());
         if (value === undefined) {
             query.where(`${this.name.toLowerCase()}.${column} = :val`, { val: operator });
         } else {
@@ -141,7 +144,7 @@ export abstract class Model extends BaseEntity {
         column: string,
         direction: 'ASC' | 'DESC' | 'asc' | 'desc' = 'ASC'
     ) {
-        const query = this.createQueryBuilder(this.name.toLowerCase());
+        const query = (this as any).createQueryBuilder(this.name.toLowerCase());
         query.orderBy(`${this.name.toLowerCase()}.${column}`, direction.toUpperCase() as any);
         return new ModelQueryWrapper<T>(query);
     }
@@ -205,18 +208,8 @@ export abstract class Model extends BaseEntity {
         return result;
     }
 
-    // ── Compatibility Layer (Knex) ────────────────────────────
-
-    /**
-     * Get Knex query builder for this model's table.
-     * Note: This is maintained for backward compatibility.
-     */
-    static knex() {
-        // We assume the table name matches pluralized class name or is specified
-        const tableName = (this as any).tableName || this.name.toLowerCase() + 's';
-        return Database.getKnex()(tableName);
-    }
 }
+
 
 /**
  * A lightweight wrapper around TypeORM's SelectQueryBuilder to provide Laravel-style chainable API.

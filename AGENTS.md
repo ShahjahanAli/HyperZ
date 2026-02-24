@@ -13,7 +13,7 @@
 - **Entry point:** `server.ts` → `app.ts` → boot lifecycle
 - **API base:** `http://localhost:7700/api`
 - **Admin panel:** `admin/` (Next.js on port 3000, JWT-secured)
-- **CLI entry:** `npx tsx bin/hyperz.ts <command>`
+- **CLI entry:** `npx hyperz <command>`
 
 ---
 
@@ -186,24 +186,25 @@ HyperZ/
 ## CLI Commands (Use for Scaffolding)
 
 ```bash
-npx tsx bin/hyperz.ts make:controller <Name>        # Create controller
-npx tsx bin/hyperz.ts make:model <Name> [-m]         # Create model (with migration)
-npx tsx bin/hyperz.ts make:migration <name>          # Create migration
-npx tsx bin/hyperz.ts make:seeder <Name>             # Create seeder
-npx tsx bin/hyperz.ts make:middleware <Name>          # Create middleware
-npx tsx bin/hyperz.ts make:route <name>              # Create route file
-npx tsx bin/hyperz.ts make:job <Name>                # Create queue job
-npx tsx bin/hyperz.ts make:factory <Name>            # Create database factory
-npx tsx bin/hyperz.ts make:ai-action <Name>          # Create AI action
-npx tsx bin/hyperz.ts make:test <Name> [-f]            # Create unit/feature test
-npx tsx bin/hyperz.ts make:module <Name>               # Scaffold full domain module (model+controller+route+migration+test)
-npx tsx bin/hyperz.ts make:auth                      # Scaffold full auth system
-npx tsx bin/hyperz.ts migrate                        # Run migrations
-npx tsx bin/hyperz.ts migrate:rollback               # Rollback migrations
-npx tsx bin/hyperz.ts db:seed                        # Run seeders
-npx tsx bin/hyperz.ts key:generate                   # Generate APP_KEY + JWT_SECRET
-npx tsx bin/hyperz.ts route:list                     # List routes
-npx tsx bin/hyperz.ts tinker                         # Interactive REPL
+npx hyperz make:controller <Name> [--model <M>]  # Create controller (with CRUD if --model provided)
+npx hyperz make:model <Name> [-m]         # Create model (with migration)
+npx hyperz make:migration <name>          # Create migration
+npx hyperz make:seeder <Name>             # Create seeder
+npx hyperz make:middleware <Name>          # Create middleware
+npx hyperz make:route <name>              # Create route file
+npx hyperz make:job <Name>                # Create queue job
+npx hyperz make:factory <Name>            # Create database factory
+npx hyperz make:ai-action <Name>          # Create AI action
+npx hyperz make:test <Name> [-f]            # Create unit/feature test
+npx hyperz make:module <Name>               # Scaffold full domain module (model+controller+route+migration+test)
+npx hyperz make:auth                      # Scaffold full auth system
+npx hyperz migrate                        # Run migrations
+npx hyperz migrate:rollback               # Rollback migrations
+npx hyperz db:seed                        # Run seeders
+npx hyperz key:generate                   # Generate APP_KEY + JWT_SECRET
+npx hyperz serve                          # Start dev server
+npx hyperz route:list                     # List routes
+npx hyperz tinker                         # Interactive REPL
 ```
 
 > **Prefer using CLI commands** over writing boilerplate manually. They generate correctly structured files.
@@ -218,7 +219,7 @@ npx tsx bin/hyperz.ts tinker                         # Interactive REPL
 4. **Route files auto-load** from `app/routes/` — just create the file, no manual registration needed
 5. **Config values** should be read via `env('KEY', 'default')` helper, not `process.env` directly
 6. **Bind controller methods** in routes: `controller.method.bind(controller)` (required for `this` context)
-7. **Run `npx tsx bin/hyperz.ts migrate`** after creating migrations
+7. **Run `npx hyperz migrate`** after creating migrations
 8. **The dev server** runs on port 7700 — start with `npm run dev`
 9. **Admin panel** runs separately: `cd admin && npm run dev` (port 3000, requires DB + `key:generate`)
 10. **`.env` file** holds all environment config — see `.env.example` for available variables
@@ -258,9 +259,9 @@ Key variables in `.env`:
 ## Quick Reference
 
 **Start dev:** `npm run dev`
-**Run migration:** `npx tsx bin/hyperz.ts migrate`
-**Create resource:** `npx tsx bin/hyperz.ts make:controller ProductController && npx tsx bin/hyperz.ts make:model Product -m`
-**Scaffold module:** `npx tsx bin/hyperz.ts make:module Product` (creates model+controller+route+migration+test)
+**Run migration:** `npx hyperz migrate`
+**Create resource:** `npx hyperz make:controller ProductController && npx hyperz make:model Product -m`
+**Scaffold module:** `npx hyperz make:module Product` (creates model+controller+route+migration+test)
 **API base URL:** `http://localhost:7700/api`
 **Playground:** `http://localhost:7700/api/playground`
 **Admin panel:** `http://localhost:3000` (requires `cd admin && npm run dev`)

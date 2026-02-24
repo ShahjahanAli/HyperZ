@@ -10,7 +10,7 @@ description: "Populate your database with test data using HyperZ seeders and Fak
 Use the CLI to scaffold a seeder:
 
 ```bash
-npx tsx bin/hyperz.ts make:seeder ProductSeeder
+npx hyperz make:seeder ProductSeeder
 ```
 
 Define the seeder in `database/seeders/`:
@@ -32,7 +32,7 @@ export class ProductSeeder {
 ## Running Seeders
 
 ```bash
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 ## Creating a Factory
@@ -40,7 +40,7 @@ npx tsx bin/hyperz.ts db:seed
 Use the CLI to scaffold a factory:
 
 ```bash
-npx tsx bin/hyperz.ts make:factory ProductFactory
+npx hyperz make:factory ProductFactory
 ```
 
 Define the factory in `database/factories/`:

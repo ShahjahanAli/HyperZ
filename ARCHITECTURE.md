@@ -16,19 +16,13 @@
               ┌──────────────────────────▼──────────────────────────┐
               │              Service Provider Boot Order             │
               │                                                      │
-              │  1. AppServiceProvider     → core bindings           │
-              │  2. SecurityProvider       → HTTPS, sanitize, CSRF   │
-              │  3. FeaturesProvider       → lifecycle hooks, flags  │
-              │  4. DatabaseProvider       → TypeORM + Mongoose      │
-              │  5. EventServiceProvider   → event dispatcher        │
-              │  6. CacheServiceProvider   → memory/redis driver     │
-              │  7. RouteServiceProvider   → auto-load app/routes/*  │
-              │  8. SchedulingProvider     → cron scheduler          │
-              │  9. QueueProvider          → sync/BullMQ driver      │
-              │ 10. StorageProvider        → local/S3 driver         │
-              │ 11. MailProvider           → SMTP mailer             │
-              │ 12. WebSocketProvider      → Socket.io               │
-              │ 13. AIServiceProvider      → AI Gateway              │
+              │  1. AppServiceProvider       → core bindings, DI      │
+              │  2. SecurityServiceProvider  → HTTPS, sanitize, CSRF  │
+              │  3. FeaturesServiceProvider  → lifecycle, flags, audit │
+              │  4. DatabaseServiceProvider  → TypeORM + Mongoose      │
+              │  5. EventServiceProvider     → event dispatcher        │
+              │  6. CacheServiceProvider     → memory/redis driver     │
+              │  7. RouteServiceProvider     → auto-load app/routes/*  │
               └──────────────────────────┬──────────────────────────┘
                                          │
          ┌───────────────────────────────▼───────────────────────────────┐
@@ -111,7 +105,7 @@ Response → Client
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │  RAG System  │    │   Tooling    │    │   DevTools   │
 │              │    │              │    │              │
-│ • Ingestion  │    │ • CLI (18+)  │    │ • Admin Panel│
+│ • Ingestion  │    │ • CLI (19+)  │    │ • Admin Panel│
 │ • Vector DB  │    │ • MCP Server │    │ • Playground │
 │ • Semantic   │    │ • Agents     │    │ • Monitoring │
 └──────────────┘    └──────────────┘    └──────────────┘
@@ -151,22 +145,18 @@ const auth = app.make(AuthService); // Nested dependencies auto-resolved
 ```
 
 **Key bindings registered during boot:**
-- `db` — TypeORM DataSource instance
-- `cache` — Cache driver (Memory or Redis)
-- `queue` — Queue driver (Sync or BullMQ)
-- `storage` — Storage driver (Local or S3)
-- `mailer` — Mailer instance
-- `events` — EventDispatcher
-- `scheduler` — Task Scheduler
-- `ai` — AI Gateway
-- `prompts` — PromptManager
-- `vector` — VectorDB
-- `monitor` — MetricsCollector
-- `hash` — HashService
-- `tokenBlacklist` — TokenBlacklist
-- `lifecycle` — LifecycleHooks
-- `features` — FeatureFlags
-- `audit` — AuditLog
+- `db` — TypeORM DataSource instance (`DatabaseServiceProvider`)
+- `cache` — Cache driver, Memory or Redis (`CacheServiceProvider`)
+
+> **Note:** Services like Queue, Storage, Mail, WebSocket, AI Gateway, and Scheduling are available as standalone imports but are **not** auto-registered as IoC bindings in the default boot sequence. Import them directly from `src/` as needed, or register them inside `AppServiceProvider` using `app.container.singleton()`.
+
+**Example — registering optional services:**
+```typescript
+// app/providers/AppServiceProvider.ts
+import { QueueManager } from '../../src/queue/QueueManager.js';
+
+app.container.singleton('queue', () => new QueueManager(config));
+```
 
 ---
 

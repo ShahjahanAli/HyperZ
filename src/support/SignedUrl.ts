@@ -25,7 +25,7 @@ export class SignedUrl {
         const key = env('APP_KEY', '');
         if (!key) {
             throw new Error(
-                'APP_KEY is required for signed URLs. Run: npx tsx bin/hyperz.ts key:generate'
+                'APP_KEY is required for signed URLs. Run: npx hyperz key:generate'
             );
         }
         return key;

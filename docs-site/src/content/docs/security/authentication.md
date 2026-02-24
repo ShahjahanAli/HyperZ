@@ -10,7 +10,7 @@ description: "Implement JWT-based authentication in HyperZ — login, registrati
 Generate a full authentication system with a single command:
 
 ```bash
-npx tsx bin/hyperz.ts make:auth
+npx hyperz make:auth
 ```
 
 This creates login, register, and token refresh routes along with the necessary controllers and middleware.

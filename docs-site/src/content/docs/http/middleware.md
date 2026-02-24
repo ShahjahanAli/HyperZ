@@ -10,7 +10,7 @@ description: "Create and register middleware in HyperZ — global middleware, ro
 Use the CLI to scaffold middleware:
 
 ```bash
-npx tsx bin/hyperz.ts make:middleware ThrottleMiddleware
+npx hyperz make:middleware ThrottleMiddleware
 ```
 
 Or create one manually in `app/middleware/`:

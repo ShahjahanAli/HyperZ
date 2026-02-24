@@ -11,10 +11,10 @@ Use the CLI to scaffold tests:
 
 ```bash
 # Unit test
-npx tsx bin/hyperz.ts make:test Product
+npx hyperz make:test Product
 
 # Feature test (HTTP integration)
-npx tsx bin/hyperz.ts make:test Product -f
+npx hyperz make:test Product -f
 ```
 
 ## Writing Unit Tests

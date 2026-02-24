@@ -71,7 +71,7 @@ export default {
     | Encryption
     |--------------------------------------------------------------------------
     | Uses APP_KEY from .env for AES-256-GCM encryption.
-    | Run `npx tsx bin/hyperz.ts key:generate` to create a key.
+    | Run `npx hyperz key:generate` to create a key.
     */
     encryption: {
         algorithm: 'aes-256-gcm' as const,

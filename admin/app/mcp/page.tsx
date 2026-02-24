@@ -242,8 +242,8 @@ export default function MCPPage() {
                                     <div className="card-header">// AI_AUTOMATION_UPLINK</div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {[
-                                            { label: 'CLAUDE DESKTOP', cmd: 'npx tsx bin/hyperz-mcp.ts', detail: 'Local bridge for Anthropic Claude' },
-                                            { label: 'CURSOR AI', cmd: 'npx tsx bin/hyperz-mcp.ts', detail: 'IDE context injection' },
+                                            { label: 'CLAUDE DESKTOP', cmd: 'npx hyperz-mcp', detail: 'Local bridge for Anthropic Claude' },
+                                            { label: 'CURSOR AI', cmd: 'npx hyperz-mcp', detail: 'IDE context injection' },
                                             { label: 'WEB AGENTS', cmd: 'HTTP/SSE Endpoint', detail: 'Remote execution via SSE' },
                                         ].map(bridge => (
                                             <div key={bridge.label} className="stat-card !bg-slate-500/5 hover:!border-[var(--accent)] hover:shadow-2xl transition-all">

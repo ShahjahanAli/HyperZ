@@ -10,7 +10,7 @@ HyperZ's CLI scaffolding commands generate correctly structured files following 
 ### Controllers
 
 ```bash
-npx tsx bin/hyperz.ts make:controller ProductController
+npx hyperz make:controller ProductController
 ```
 
 Creates `app/controllers/ProductController.ts` with the `Controller` base class extended and response helpers ready.
@@ -19,10 +19,10 @@ Creates `app/controllers/ProductController.ts` with the `Controller` base class 
 
 ```bash
 # Model only
-npx tsx bin/hyperz.ts make:model Product
+npx hyperz make:model Product
 
 # Model with migration
-npx tsx bin/hyperz.ts make:model Product -m
+npx hyperz make:model Product -m
 ```
 
 Creates `app/models/Product.ts` with `table`, `fillable`, and `hidden` properties. The `-m` flag also creates a timestamped migration in `database/migrations/`.
@@ -30,7 +30,7 @@ Creates `app/models/Product.ts` with `table`, `fillable`, and `hidden` propertie
 ### Migrations
 
 ```bash
-npx tsx bin/hyperz.ts make:migration create_products_table
+npx hyperz make:migration create_products_table
 ```
 
 Creates a timestamped migration file in `database/migrations/` with `up()` and `down()` methods.
@@ -39,31 +39,31 @@ Creates a timestamped migration file in `database/migrations/` with `up()` and `
 
 ```bash
 # Middleware
-npx tsx bin/hyperz.ts make:middleware ThrottleMiddleware
+npx hyperz make:middleware ThrottleMiddleware
 
 # Route file
-npx tsx bin/hyperz.ts make:route products
+npx hyperz make:route products
 
 # Queue job
-npx tsx bin/hyperz.ts make:job SendWelcomeEmail
+npx hyperz make:job SendWelcomeEmail
 
 # Seeder
-npx tsx bin/hyperz.ts make:seeder ProductSeeder
+npx hyperz make:seeder ProductSeeder
 
 # Factory
-npx tsx bin/hyperz.ts make:factory ProductFactory
+npx hyperz make:factory ProductFactory
 
 # AI Action
-npx tsx bin/hyperz.ts make:ai-action SummarizeAction
+npx hyperz make:ai-action SummarizeAction
 
 # Test (unit or feature with -f)
-npx tsx bin/hyperz.ts make:test ProductTest -f
+npx hyperz make:test ProductTest -f
 
 # Full module (model + controller + route + migration + test)
-npx tsx bin/hyperz.ts make:module Product
+npx hyperz make:module Product
 
 # Full auth system
-npx tsx bin/hyperz.ts make:auth
+npx hyperz make:auth
 ```
 
 ## Module Scaffolding
@@ -71,7 +71,7 @@ npx tsx bin/hyperz.ts make:auth
 The `make:module` command is the fastest way to scaffold a complete domain:
 
 ```bash
-npx tsx bin/hyperz.ts make:module Product
+npx hyperz make:module Product
 ```
 
 This creates:

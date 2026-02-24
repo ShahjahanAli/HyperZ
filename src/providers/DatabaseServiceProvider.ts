@@ -26,17 +26,6 @@ export class DatabaseServiceProvider extends ServiceProvider {
         const dbConfig = this.app.config.get<any>('database');
         if (!dbConfig) return;
 
-        // Connect SQL
-        const driver = dbConfig.driver ?? 'sqlite';
-        const connConfig = dbConfig.connections?.[driver];
-        if (connConfig) {
-            try {
-                await Database.connectSQL(connConfig);
-            } catch {
-                // Connection failed — logged by Database class
-            }
-        }
-
         // Connect MongoDB if enabled
         if (dbConfig.mongodb?.enabled) {
             try {

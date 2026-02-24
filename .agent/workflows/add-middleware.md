@@ -10,7 +10,7 @@ description: How to create and register custom middleware
 
 1. Create the middleware:
 ```bash
-npx tsx bin/hyperz.ts make:middleware <Name>Middleware
+npx hyperz make:middleware <Name>Middleware
 ```
 
 2. Edit the generated file in `app/middleware/<Name>Middleware.ts` to add your logic:

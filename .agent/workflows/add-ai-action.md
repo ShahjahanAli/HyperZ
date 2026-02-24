@@ -16,7 +16,7 @@ OPENAI_API_KEY=sk-your-key-here
 
 2. Create the AI action:
 ```bash
-npx tsx bin/hyperz.ts make:ai-action <Name>Action
+npx hyperz make:ai-action <Name>Action
 ```
 
 3. Edit `app/ai/<Name>Action.ts` — customize the system prompt and messages.
