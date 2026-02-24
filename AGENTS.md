@@ -41,7 +41,7 @@ HyperZ/
 │   ├── auth/               # JWT + RBAC (Gate, Policy, RoleMiddleware) + HashService, ApiKeyMiddleware, TokenBlacklist
 │   ├── cache/              # Cache drivers (Memory, Redis)
 │   ├── cli/                # CLI command registry
-│   ├── core/               # Application, Container, PluginManager
+│   ├── core/               # Application, Container, PluginManager, PublishManager
 │   ├── database/           # Database, Model, Migration, Factory, QueryBuilder (DB facade)
 │   ├── events/             # Event dispatcher
 │   ├── http/               # Router, Controller, Request, Response, middleware, LifecycleHooks
@@ -175,6 +175,22 @@ HyperZ/
 - Stream async iterables: `stream.streamIterator(ai.streamChat(messages))`.
 - Middleware: `sseMiddleware()` auto-sets SSE headers.
 
+### Plugin Ecosystem
+- **Discovery:** Plugins are auto-discovered from `node_modules/` (packages with `hyperz-plugin` keyword) and `plugins/` (local plugins).
+- **Define a plugin:** Use `definePlugin({ meta, hooks, config, resources, publishable, routeMiddleware })`.
+- **Plugin Contract:** `meta` (name, version, description), `hooks` (register, boot, shutdown, routes, commands, schedule), `config` (default config), `resources` (migrations, seeders, config, lang, views, models paths), `publishable` (explicit source→destination mappings), `routeMiddleware` (named middleware).
+- **Lifecycle:** `discover()` → `bootAll()` → `shutdown()` — managed by `PluginServiceProvider`.
+- **Resource Publishing:** `PublishManager.publish(pluginName, { tag, force })` copies plugin resources into application directories. Use `vendor:publish` CLI or programmatic API.
+- **Plugin Config:** `config/plugins.ts` — `autoDiscover`, `paths`, `disabled`, `priority`, `healthCheck`.
+- **CLI Commands:** Plugins can register CLI commands via `hooks.commands(program, app)` — called during CLI setup via `registerCommands(program)`.
+- **Route Middleware:** Plugins can contribute named route middleware via `routeMiddleware` — merged into the application middleware registry.
+- **Database Integration:** Plugin migrations and entities auto-registered via `DataSource.registerMigrationPaths()` / `registerEntityPaths()`. Plugin seeders added via `Seeder.addSeederPaths()`.
+- **Health Checks:** `app.plugins.healthCheck()` returns per-plugin health status. Exposed at `GET /health/plugins`.
+- **Route Registry:** `routeRegistry` tracks all routes globally and detects collisions (same method+path from different sources). Auto-integrated with `HyperZRouter` and warned after `bootAll()`.
+- **Metrics:** `app.plugins.getMetrics(name)` returns registration/boot times and error counts. `app.plugins.getAllMetrics()` for batch. `plugin:metrics` CLI.
+- **Testing:** `src/testing/PluginTestUtils.ts` — `createTestApp()`, `testPlugin(plugin, opts)`, assertion helpers (`assertPluginRegistered`, `assertPluginBooted`, `assertPluginHealthy`, `assertConfigSet`, `assertBound`).
+- **Dev Watcher:** `PluginDevWatcher` watches `plugins/` in dev mode for rapid iteration.
+
 ### Enterprise SaaS Patterns
 - **Multi-tenancy:** Access `req.tenant` to get context-isolated configuration.
 - **Database:** Use `Database.getDataSource()` for the primary connection.
@@ -197,6 +213,7 @@ npx hyperz make:factory <Name>            # Create database factory
 npx hyperz make:ai-action <Name>          # Create AI action
 npx hyperz make:test <Name> [-f]            # Create unit/feature test
 npx hyperz make:module <Name>               # Scaffold full domain module (model+controller+route+migration+test)
+npx hyperz make:plugin <Name>               # Scaffold local plugin in plugins/
 npx hyperz make:auth                      # Scaffold full auth system
 npx hyperz migrate                        # Run migrations
 npx hyperz migrate:rollback               # Rollback migrations
@@ -205,6 +222,16 @@ npx hyperz key:generate                   # Generate APP_KEY + JWT_SECRET
 npx hyperz serve                          # Start dev server
 npx hyperz route:list                     # List routes
 npx hyperz tinker                         # Interactive REPL
+npx hyperz plugin:list                    # List all discovered plugins
+npx hyperz plugin:install <package>       # Install a plugin package from npm
+npx hyperz plugin:remove <package>        # Remove a plugin package
+npx hyperz plugin:enable <name>           # Enable a plugin
+npx hyperz plugin:disable <name>          # Disable a plugin
+npx hyperz plugin:health                  # Run health checks on all plugins
+npx hyperz plugin:update [package] [--latest]  # Update plugin package(s)
+npx hyperz plugin:graph [--json]           # Display plugin dependency graph
+npx hyperz plugin:metrics                  # Show plugin boot performance metrics
+npx hyperz vendor:publish [--plugin=<name>] [--tag=<tag>] [--force]  # Publish plugin resources
 ```
 
 > **Prefer using CLI commands** over writing boilerplate manually. They generate correctly structured files.

@@ -199,7 +199,7 @@ describe('PluginManager', () => {
             expect(plugin.hooks!.boot).toHaveBeenCalledWith(app);
         });
 
-        it('should call routes and commands hooks during boot', async () => {
+        it('should call routes hooks during boot and commands via registerCommands', async () => {
             const routesFn = vi.fn();
             const commandsFn = vi.fn();
             const plugin = createTestPlugin({
@@ -214,7 +214,13 @@ describe('PluginManager', () => {
             await manager.bootAll();
 
             expect(routesFn).toHaveBeenCalledWith(app);
-            expect(commandsFn).toHaveBeenCalledWith(app);
+            // Commands are no longer called during bootAll — they use registerCommands(program)
+            expect(commandsFn).not.toHaveBeenCalled();
+
+            // Commands are registered separately with program instance
+            const mockProgram = { command: vi.fn() };
+            await manager.registerCommands(mockProgram);
+            expect(commandsFn).toHaveBeenCalledWith(mockProgram, app);
         });
 
         it('should handle boot failure gracefully', async () => {

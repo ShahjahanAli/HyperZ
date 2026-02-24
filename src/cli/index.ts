@@ -773,4 +773,685 @@ export default router;
             console.log(chalk.gray(`  2. Run migration: npx hyperz migrate`));
             console.log(chalk.gray(`  3. Routes auto-loaded at: /api/${tableName}`));
         });
+
+    // ═══════════════════════════════════════════════════════════
+    // Plugin / Package Ecosystem Commands
+    // ═══════════════════════════════════════════════════════════
+
+    // ── make:plugin ─────────────────────────────────────────
+    program
+        .command('make:plugin <name>')
+        .description('Scaffold a new local plugin in plugins/')
+        .action((nameInput: string) => {
+            const name = nameInput.toLowerCase().replace(/\s+/g, '-');
+            const pascalName = toPascalCase(name);
+            const pluginDir = path.join(ROOT, 'plugins', name);
+
+            if (fs.existsSync(pluginDir)) {
+                console.log(chalk.red(`✗ Plugin "${name}" already exists at plugins/${name}/`));
+                return;
+            }
+
+            // index.ts — main plugin entry
+            const indexContent = `import { definePlugin } from '../../src/core/PluginContract.js';
+import type { Application } from '../../src/core/Application.js';
+
+export default definePlugin({
+    meta: {
+        name: '${name}',
+        version: '1.0.0',
+        description: '${pascalName} plugin for HyperZ',
+        author: '',
+        license: 'MIT',
+    },
+
+    config: {
+        key: '${toCamelCase(name)}',
+        defaults: {
+            enabled: true,
+        },
+    },
+
+    resources: {
+        // migrations: './database/migrations',
+        // seeders: './database/seeders',
+        // config: './config',
+        // lang: './lang',
+    },
+
+    hooks: {
+        register(app: Application) {
+            // Register bindings into the container
+            // app.container.singleton('${toCamelCase(name)}', () => new ${pascalName}Service());
+        },
+
+        async boot(app: Application) {
+            // Runs after all providers + plugins are registered
+            console.log('🔌 ${pascalName} plugin booted');
+        },
+
+        async routes(app: Application) {
+            // Register routes for this plugin
+            // app.express.get('/api/${name}', (req, res) => res.json({ plugin: '${name}' }));
+        },
+
+        async shutdown(app: Application) {
+            // Clean up resources
+        },
+
+        healthCheck(app: Application) {
+            return true;
+        },
+    },
+
+    tags: ['custom'],
+});
+`;
+
+            // README.md
+            const readmeContent = `# ${pascalName} Plugin
+
+A HyperZ plugin.
+
+## Installation
+
+This is a local plugin. It is auto-discovered from the \`plugins/\` directory.
+
+## Configuration
+
+Configuration is available under the \`${toCamelCase(name)}\` key:
+
+\`\`\`typescript
+// config/plugins.ts or via app.config
+{
+    ${toCamelCase(name)}: {
+        enabled: true,
+    }
+}
+\`\`\`
+
+## Usage
+
+TODO: Document plugin usage.
+`;
+
+            writeFile(path.join(pluginDir, 'index.ts'), indexContent);
+            writeFile(path.join(pluginDir, 'README.md'), readmeContent);
+
+            // Create placeholder directories
+            const subDirs = ['config', 'database/migrations', 'database/seeders'];
+            for (const dir of subDirs) {
+                const dirPath = path.join(pluginDir, dir);
+                if (!fs.existsSync(dirPath)) {
+                    fs.mkdirSync(dirPath, { recursive: true });
+                }
+                writeFile(path.join(dirPath, '.gitkeep'), '');
+            }
+
+            console.log(chalk.green(`\n✓ Plugin scaffolded: plugins/${name}/`));
+            console.log(chalk.gray(`  → plugins/${name}/index.ts`));
+            console.log(chalk.gray(`  → plugins/${name}/README.md`));
+            console.log(chalk.gray(`  → plugins/${name}/config/`));
+            console.log(chalk.gray(`  → plugins/${name}/database/migrations/`));
+            console.log(chalk.gray(`  → plugins/${name}/database/seeders/`));
+            console.log(chalk.cyan(`\n  Plugin will be auto-discovered on next boot.\n`));
+        });
+
+    // ── plugin:list ─────────────────────────────────────────
+    program
+        .command('plugin:list')
+        .description('List all discovered plugins')
+        .action(async () => {
+            console.log(chalk.cyan('\n⚡ Discovering plugins...\n'));
+
+            try {
+                const { createApp } = await import('../../app.js');
+                const app = createApp();
+                app.config.loadEnv();
+                await app.config.loadConfigFiles();
+                await app.plugins.discover();
+
+                const plugins = app.plugins.all();
+
+                if (plugins.size === 0) {
+                    console.log(chalk.yellow('  No plugins discovered.'));
+                    console.log(chalk.gray('\n  Plugins are auto-discovered from:'));
+                    console.log(chalk.gray('    → node_modules/ (packages with "hyperz-plugin" key)'));
+                    console.log(chalk.gray('    → plugins/ (local plugins with index.ts)'));
+                    return;
+                }
+
+                console.log(chalk.bold(`  Found ${plugins.size} plugin(s):\n`));
+
+                const Table = (await import('cli-table3')).default;
+                const table = new Table({
+                    head: [
+                        chalk.white('Name'),
+                        chalk.white('Version'),
+                        chalk.white('Status'),
+                        chalk.white('Source'),
+                        chalk.white('Tags'),
+                    ],
+                    style: { head: [], border: [] },
+                });
+
+                for (const [name, entry] of plugins) {
+                    const statusColor = entry.status === 'booted' ? chalk.green
+                        : entry.status === 'registered' ? chalk.blue
+                        : entry.status === 'disabled' ? chalk.yellow
+                        : chalk.red;
+                    table.push([
+                        name,
+                        entry.plugin.meta.version,
+                        statusColor(entry.status),
+                        entry.source,
+                        (entry.plugin.tags ?? []).join(', ') || '-',
+                    ]);
+                }
+
+                console.log(table.toString());
+
+                const failed = app.plugins.failed();
+                if (failed.length > 0) {
+                    console.log(chalk.red(`\n  ⚠ ${failed.length} plugin(s) failed:`));
+                    for (const f of failed) {
+                        console.log(chalk.red(`    → ${f.plugin.meta.name}: ${f.error}`));
+                    }
+                }
+            } catch (err: any) {
+                console.log(chalk.red(`  Failed to discover plugins: ${err.message}`));
+            }
+
+            console.log('');
+        });
+
+    // ── plugin:install ──────────────────────────────────────
+    program
+        .command('plugin:install <package>')
+        .alias('install')
+        .description('Install a HyperZ plugin package via npm')
+        .option('--no-publish', 'Skip auto-publishing config files')
+        .action(async (packageName: string, opts: any) => {
+            console.log(chalk.cyan(`\n⚡ Installing plugin: ${packageName}\n`));
+
+            const { execSync } = await import('node:child_process');
+
+            try {
+                // Step 1: npm install
+                console.log(chalk.gray(`  → Running: npm install ${packageName}`));
+                execSync(`npm install ${packageName}`, { cwd: ROOT, stdio: 'inherit' });
+                console.log(chalk.green(`  ✓ Package installed`));
+
+                // Step 2: Discover the newly installed plugin
+                if (opts.publish !== false) {
+                    console.log(chalk.gray(`  → Discovering plugin...`));
+                    try {
+                        const { createApp } = await import('../../app.js');
+                        const app = createApp();
+                        app.config.loadEnv();
+                        await app.config.loadConfigFiles();
+                        await app.plugins.discover();
+
+                        // Check if the package is a HyperZ plugin
+                        const pkgJsonPath = path.join(ROOT, 'node_modules', packageName, 'package.json');
+                        if (fs.existsSync(pkgJsonPath)) {
+                            const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+                            if (pkgJson['hyperz-plugin']) {
+                                console.log(chalk.green(`  ✓ HyperZ plugin detected`));
+
+                                // Auto-publish config
+                                const { PublishManager } = await import('../core/PublishManager.js');
+                                const publisher = new PublishManager(app);
+                                const pluginName = pkgJson['hyperz-plugin']?.name || pkgJson.name;
+
+                                const results = await publisher.publish(pluginName, { tag: 'config' });
+                                const published = results.filter(r => r.status === 'published');
+                                if (published.length > 0) {
+                                    console.log(chalk.green(`  ✓ Published ${published.length} config file(s)`));
+                                }
+                            }
+                        }
+                    } catch {
+                        // Plugin discovery is best-effort during install
+                    }
+                }
+
+                console.log(chalk.cyan(`\n✨ Plugin "${packageName}" installed successfully!\n`));
+                console.log(chalk.gray('  Next steps:'));
+                console.log(chalk.gray('  1. Check config: npx hyperz plugin:list'));
+                console.log(chalk.gray('  2. Publish resources: npx hyperz vendor:publish --plugin=<name>'));
+                console.log(chalk.gray('  3. Run migrations: npx hyperz migrate'));
+            } catch (err: any) {
+                console.log(chalk.red(`\n✗ Failed to install plugin: ${err.message}`));
+            }
+        });
+
+    // ── plugin:remove ───────────────────────────────────────
+    program
+        .command('plugin:remove <package>')
+        .alias('remove')
+        .description('Uninstall a HyperZ plugin package')
+        .option('--keep-config', 'Do not remove published config files')
+        .action(async (packageName: string) => {
+            console.log(chalk.cyan(`\n⚡ Removing plugin: ${packageName}\n`));
+
+            const { execSync } = await import('node:child_process');
+
+            try {
+                console.log(chalk.gray(`  → Running: npm uninstall ${packageName}`));
+                execSync(`npm uninstall ${packageName}`, { cwd: ROOT, stdio: 'inherit' });
+                console.log(chalk.green(`  ✓ Package uninstalled`));
+                console.log(chalk.cyan(`\n✨ Plugin "${packageName}" removed.\n`));
+            } catch (err: any) {
+                console.log(chalk.red(`\n✗ Failed to remove plugin: ${err.message}`));
+            }
+        });
+
+    // ── vendor:publish ──────────────────────────────────────
+    program
+        .command('vendor:publish')
+        .description('Publish plugin resources (config, migrations, lang, views)')
+        .option('-p, --plugin <name>', 'Publish from a specific plugin')
+        .option('-t, --tag <tag>', 'Publish only resources with this tag (config, migrations, seeders, lang, views)')
+        .option('-f, --force', 'Overwrite existing files')
+        .option('--list', 'List all publishable resources without publishing')
+        .action(async (opts: any) => {
+            console.log(chalk.cyan('\n⚡ Vendor Publish\n'));
+
+            try {
+                const { createApp } = await import('../../app.js');
+                const app = createApp();
+                app.config.loadEnv();
+                await app.config.loadConfigFiles();
+                await app.plugins.discover();
+
+                const { PublishManager } = await import('../core/PublishManager.js');
+                const publisher = new PublishManager(app);
+
+                // List mode
+                if (opts.list) {
+                    const items = publisher.listPublishable(opts.tag);
+                    if (items.length === 0) {
+                        console.log(chalk.yellow('  No publishable resources found.'));
+                        return;
+                    }
+
+                    const Table = (await import('cli-table3')).default;
+                    const table = new Table({
+                        head: [
+                            chalk.white('Plugin'),
+                            chalk.white('Tag'),
+                            chalk.white('Source'),
+                            chalk.white('Destination'),
+                        ],
+                        style: { head: [], border: [] },
+                    });
+
+                    for (const item of items) {
+                        table.push([
+                            item.plugin,
+                            item.tag,
+                            path.relative(ROOT, item.source),
+                            path.relative(ROOT, item.destination),
+                        ]);
+                    }
+
+                    console.log(table.toString());
+                    return;
+                }
+
+                // Publish mode
+                if (opts.plugin) {
+                    const results = await publisher.publish(opts.plugin, {
+                        tag: opts.tag,
+                        force: opts.force,
+                    });
+
+                    for (const result of results) {
+                        const icon = result.status === 'published' ? chalk.green('✓')
+                            : result.status === 'skipped' ? chalk.yellow('○')
+                            : chalk.red('✗');
+                        const dest = path.relative(ROOT, result.destination);
+                        console.log(`  ${icon} ${dest}${result.reason ? chalk.gray(` — ${result.reason}`) : ''}`);
+                    }
+                } else {
+                    const allResults = await publisher.publishAll({
+                        tag: opts.tag,
+                        force: opts.force,
+                    });
+
+                    if (allResults.size === 0) {
+                        console.log(chalk.yellow('  No publishable resources found.'));
+                        return;
+                    }
+
+                    for (const [pluginName, results] of allResults) {
+                        console.log(chalk.bold(`  ${pluginName}:`));
+                        for (const result of results) {
+                            const icon = result.status === 'published' ? chalk.green('✓')
+                                : result.status === 'skipped' ? chalk.yellow('○')
+                                : chalk.red('✗');
+                            const dest = path.relative(ROOT, result.destination);
+                            console.log(`    ${icon} ${dest}${result.reason ? chalk.gray(` — ${result.reason}`) : ''}`);
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.log(chalk.red(`\n✗ Failed to publish: ${err.message}`));
+            }
+
+            console.log('');
+        });
+
+    // ── plugin:enable ───────────────────────────────────────
+    program
+        .command('plugin:enable <name>')
+        .description('Enable a disabled plugin')
+        .action(async (pluginName: string) => {
+            const configPath = path.join(ROOT, 'config', 'plugins.ts');
+            if (!fs.existsSync(configPath)) {
+                console.log(chalk.yellow('  config/plugins.ts not found. Creating...'));
+            }
+
+            console.log(chalk.green(`  ✓ To enable "${pluginName}", remove it from the "disabled" array in config/plugins.ts`));
+            console.log(chalk.gray(`\n  // config/plugins.ts`));
+            console.log(chalk.gray(`  disabled: [], // remove '${pluginName}' from this list`));
+        });
+
+    // ── plugin:disable ──────────────────────────────────────
+    program
+        .command('plugin:disable <name>')
+        .description('Disable a plugin without uninstalling')
+        .action(async (pluginName: string) => {
+            console.log(chalk.yellow(`  ✓ To disable "${pluginName}", add it to the "disabled" array in config/plugins.ts`));
+            console.log(chalk.gray(`\n  // config/plugins.ts`));
+            console.log(chalk.gray(`  disabled: ['${pluginName}'],`));
+        });
+
+    // ── plugin:health ───────────────────────────────────────
+    program
+        .command('plugin:health')
+        .description('Run health checks on all plugins')
+        .action(async () => {
+            console.log(chalk.cyan('\n⚡ Running plugin health checks...\n'));
+
+            try {
+                const { createApp } = await import('../../app.js');
+                const app = createApp();
+                app.config.loadEnv();
+                await app.config.loadConfigFiles();
+                await app.plugins.discover();
+                await app.plugins.bootAll();
+
+                const results = await app.plugins.healthCheck();
+
+                if (results.size === 0) {
+                    console.log(chalk.yellow('  No plugins to check.'));
+                    return;
+                }
+
+                for (const [name, healthy] of results) {
+                    const icon = healthy ? chalk.green('✓') : chalk.red('✗');
+                    const status = healthy ? chalk.green('healthy') : chalk.red('unhealthy');
+                    console.log(`  ${icon} ${name}: ${status}`);
+                }
+
+                const unhealthy = [...results.values()].filter(h => !h).length;
+                if (unhealthy > 0) {
+                    console.log(chalk.red(`\n  ⚠ ${unhealthy} plugin(s) unhealthy`));
+                } else {
+                    console.log(chalk.green('\n  All plugins healthy ✓'));
+                }
+            } catch (err: any) {
+                console.log(chalk.red(`  Failed to run health checks: ${err.message}`));
+            }
+
+            console.log('');
+        });
+
+    // ── plugin:update ───────────────────────────────────────
+    program
+        .command('plugin:update [package]')
+        .description('Update a plugin package (or all plugin packages)')
+        .option('--latest', 'Update to the latest version (ignore semver range)')
+        .action(async (packageName: string | undefined, opts: { latest?: boolean }) => {
+            console.log(chalk.cyan('\n⚡ Updating plugin package(s)...\n'));
+
+            try {
+                const { execSync } = await import('node:child_process');
+
+                if (packageName) {
+                    // Update specific package
+                    const flag = opts.latest ? '@latest' : '';
+                    console.log(chalk.gray(`  Updating ${packageName}${flag}...`));
+                    execSync(`npm update ${packageName}${flag}`, { stdio: 'inherit', cwd: ROOT });
+                    console.log(chalk.green(`\n  ✓ Updated ${packageName}`));
+                } else {
+                    // Update all hyperz-plugin packages
+                    console.log(chalk.gray('  Discovering plugin packages...'));
+
+                    const nodeModules = path.join(ROOT, 'node_modules');
+                    const pkgJsonPath = path.join(ROOT, 'package.json');
+                    if (!fs.existsSync(pkgJsonPath)) {
+                        console.log(chalk.red('  No package.json found'));
+                        return;
+                    }
+
+                    const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+                    const allDeps = {
+                        ...(pkgJson.dependencies ?? {}),
+                        ...(pkgJson.devDependencies ?? {}),
+                    };
+
+                    const pluginPackages: string[] = [];
+                    for (const depName of Object.keys(allDeps)) {
+                        const depPkgJson = path.join(nodeModules, depName, 'package.json');
+                        if (!fs.existsSync(depPkgJson)) continue;
+                        try {
+                            const depPkg = JSON.parse(fs.readFileSync(depPkgJson, 'utf-8'));
+                            if (depPkg['hyperz-plugin'] || depPkg.keywords?.includes('hyperz-plugin')) {
+                                pluginPackages.push(depName);
+                            }
+                        } catch {
+                            // Skip unreadable packages
+                        }
+                    }
+
+                    if (pluginPackages.length === 0) {
+                        console.log(chalk.yellow('  No plugin packages found to update.'));
+                        return;
+                    }
+
+                    console.log(chalk.gray(`  Found ${pluginPackages.length} plugin package(s): ${pluginPackages.join(', ')}`));
+                    const flag = opts.latest ? '@latest' : '';
+
+                    for (const pkg of pluginPackages) {
+                        console.log(chalk.gray(`  Updating ${pkg}${flag}...`));
+                        try {
+                            execSync(`npm update ${pkg}${flag}`, { stdio: 'pipe', cwd: ROOT });
+                            console.log(chalk.green(`    ✓ ${pkg} updated`));
+                        } catch (err: unknown) {
+                            const msg = err instanceof Error ? err.message : String(err);
+                            console.log(chalk.red(`    ✗ ${pkg} failed: ${msg}`));
+                        }
+                    }
+
+                    console.log(chalk.green(`\n  ✓ Plugin update complete`));
+                }
+
+                // Suggest next steps
+                console.log(chalk.gray('\n  Next steps:'));
+                console.log(chalk.gray('  1. Review changes: npx hyperz plugin:list'));
+                console.log(chalk.gray('  2. Re-publish resources: npx hyperz vendor:publish --force'));
+            } catch (err: any) {
+                console.log(chalk.red(`  Update failed: ${err.message}`));
+            }
+
+            console.log('');
+        });
+
+    // ── plugin:graph ────────────────────────────────────────
+    program
+        .command('plugin:graph')
+        .description('Display the plugin dependency graph')
+        .option('--json', 'Output as JSON')
+        .action(async (opts: { json?: boolean }) => {
+            console.log(chalk.cyan('\n⚡ Plugin Dependency Graph\n'));
+
+            try {
+                const { createApp } = await import('../../app.js');
+                const app = createApp();
+                app.config.loadEnv();
+                await app.config.loadConfigFiles();
+                await app.plugins.discover();
+
+                const all = app.plugins.all();
+
+                if (all.size === 0) {
+                    console.log(chalk.yellow('  No plugins discovered.'));
+                    return;
+                }
+
+                // Build graph data
+                const graph: Record<string, { version: string; status: string; dependencies: string[]; dependents: string[] }> = {};
+
+                for (const [name, entry] of all) {
+                    graph[name] = {
+                        version: entry.plugin.meta.version,
+                        status: entry.status,
+                        dependencies: (entry.plugin.dependencies ?? []).map(d => d.name),
+                        dependents: [],
+                    };
+                }
+
+                // Fill in dependents (reverse lookup)
+                for (const [name, data] of Object.entries(graph)) {
+                    for (const depName of data.dependencies) {
+                        if (graph[depName]) {
+                            graph[depName].dependents.push(name);
+                        }
+                    }
+                }
+
+                if (opts.json) {
+                    console.log(JSON.stringify(graph, null, 2));
+                    return;
+                }
+
+                // ASCII tree display
+                // First show root plugins (no dependencies)
+                const roots = Object.entries(graph).filter(([, d]) => d.dependencies.length === 0);
+                const dependents = Object.entries(graph).filter(([, d]) => d.dependencies.length > 0);
+
+                if (roots.length > 0) {
+                    console.log(chalk.white('  Root plugins (no dependencies):'));
+                    for (const [name, data] of roots) {
+                        const statusIcon = data.status === 'booted' ? chalk.green('●') :
+                            data.status === 'registered' ? chalk.yellow('●') : chalk.red('●');
+                        console.log(`  ${statusIcon} ${chalk.bold(name)} v${data.version}`);
+
+                        if (data.dependents.length > 0) {
+                            for (let i = 0; i < data.dependents.length; i++) {
+                                const isLast = i === data.dependents.length - 1;
+                                const prefix = isLast ? '  └── ' : '  ├── ';
+                                const dep = data.dependents[i];
+                                const depData = graph[dep];
+                                const depIcon = depData?.status === 'booted' ? chalk.green('●') :
+                                    depData?.status === 'registered' ? chalk.yellow('●') : chalk.red('●');
+                                console.log(`    ${prefix}${depIcon} ${dep} v${depData?.version ?? '?'}`);
+                            }
+                        }
+                    }
+                }
+
+                if (dependents.length > 0) {
+                    console.log('');
+                    console.log(chalk.white('  Plugins with dependencies:'));
+                    for (const [name, data] of dependents) {
+                        const statusIcon = data.status === 'booted' ? chalk.green('●') :
+                            data.status === 'registered' ? chalk.yellow('●') : chalk.red('●');
+                        console.log(`  ${statusIcon} ${chalk.bold(name)} v${data.version}`);
+                        console.log(chalk.gray(`      depends on: ${data.dependencies.join(', ')}`));
+                    }
+                }
+
+                // Summary
+                console.log('');
+                console.log(chalk.gray(`  Legend: ${chalk.green('●')} booted  ${chalk.yellow('●')} registered  ${chalk.red('●')} failed`));
+                console.log(chalk.gray(`  Total: ${all.size} plugin(s)`));
+            } catch (err: any) {
+                console.log(chalk.red(`  Failed to build graph: ${err.message}`));
+            }
+
+            console.log('');
+        });
+
+    // ── plugin:metrics ──────────────────────────────────────
+    program
+        .command('plugin:metrics')
+        .description('Show plugin performance metrics (boot time, registration time)')
+        .action(async () => {
+            console.log(chalk.cyan('\n⚡ Plugin Performance Metrics\n'));
+
+            try {
+                const { createApp } = await import('../../app.js');
+                const app = createApp();
+                app.config.loadEnv();
+                await app.config.loadConfigFiles();
+                await app.plugins.discover();
+                await app.plugins.bootAll();
+
+                const metrics = app.plugins.getAllMetrics();
+
+                if (metrics.size === 0) {
+                    console.log(chalk.yellow('  No plugins to report on.'));
+                    return;
+                }
+
+                // Table header
+                const nameWidth = 30;
+                const colWidth = 14;
+                console.log(
+                    chalk.white('  ' +
+                        'Plugin'.padEnd(nameWidth) +
+                        'Register'.padEnd(colWidth) +
+                        'Boot'.padEnd(colWidth) +
+                        'Errors'.padEnd(colWidth)
+                    )
+                );
+                console.log(chalk.gray('  ' + '─'.repeat(nameWidth + colWidth * 3)));
+
+                for (const [name, m] of metrics) {
+                    const regTime = `${m.registerTime.toFixed(1)}ms`;
+                    const bootTime = `${m.bootTime.toFixed(1)}ms`;
+                    const errors = m.errorCount > 0 ? chalk.red(String(m.errorCount)) : chalk.green('0');
+
+                    // Color code by performance
+                    const regColor = m.registerTime > 100 ? chalk.red : m.registerTime > 50 ? chalk.yellow : chalk.green;
+                    const bootColor = m.bootTime > 500 ? chalk.red : m.bootTime > 100 ? chalk.yellow : chalk.green;
+
+                    console.log(
+                        '  ' +
+                        name.padEnd(nameWidth) +
+                        regColor(regTime.padEnd(colWidth)) +
+                        bootColor(bootTime.padEnd(colWidth)) +
+                        errors.padEnd(colWidth)
+                    );
+                }
+
+                console.log(chalk.gray('  ' + '─'.repeat(nameWidth + colWidth * 3)));
+                console.log(
+                    chalk.white(
+                        '  ' +
+                        'Total'.padEnd(nameWidth) +
+                        `${app.plugins.getDiscoveryTime().toFixed(1)}ms disc`.padEnd(colWidth) +
+                        `${app.plugins.getBootTime().toFixed(1)}ms boot`.padEnd(colWidth)
+                    )
+                );
+            } catch (err: any) {
+                console.log(chalk.red(`  Failed to gather metrics: ${err.message}`));
+            }
+
+            console.log('');
+        });
 }

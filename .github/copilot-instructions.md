@@ -46,6 +46,7 @@ npx hyperz make:factory <Name>Factory
 npx hyperz make:ai-action <Name>Action
 npx hyperz make:test <Name> [-f]
 npx hyperz make:module <Name>
+npx hyperz make:plugin <Name>
 npx hyperz make:auth
 npx hyperz migrate
 npx hyperz migrate:rollback
@@ -54,6 +55,16 @@ npx hyperz key:generate
 npx hyperz serve
 npx hyperz route:list
 npx hyperz tinker
+npx hyperz plugin:list
+npx hyperz plugin:install <package>
+npx hyperz plugin:remove <package>
+npx hyperz plugin:enable <name>
+npx hyperz plugin:disable <name>
+npx hyperz plugin:health
+npx hyperz plugin:update [package] [--latest]
+npx hyperz plugin:graph [--json]
+npx hyperz plugin:metrics
+npx hyperz vendor:publish [--plugin=<name>] [--tag=<tag>] [--force]
 ```
 
 ## Key Patterns
@@ -64,12 +75,28 @@ npx hyperz tinker
 - Audit Log: `AuditLog.record()`, `AuditLog.recordChange()` for tracking
 - Webhooks: `WebhookManager.register()`, `WebhookManager.dispatch()`
 - AI Streaming: `new StreamResponse(res).start().write('token').end()`
+- Plugins: `app.plugins.discover()`, `app.plugins.bootAll()`, `app.plugins.healthCheck()`
+- Plugin Definition: `definePlugin({ meta, hooks, config, resources, publishable })`
+- PublishManager: `new PublishManager(app).publish(pluginName, { tag, force })`
+- Route Registry: `routeRegistry.register(method, path, source)` for collision detection
+- Plugin Testing: `testPlugin(plugin, options)`, `createTestApp()`, `assertPluginBooted()`
+- Plugin Metrics: `app.plugins.getMetrics(name)`, `app.plugins.getAllMetrics()`
+- Plugin Dev Watcher: `new PluginDevWatcher(app).start()` — watches plugins/ for changes
 
 ## Key Files
 - `server.ts` — Server entry point
 - `app.ts` — Application bootstrap
 - `config/security.ts` — Security configuration
 - `config/features.ts` — Feature flag definitions
+- `config/plugins.ts` — Plugin ecosystem configuration
 - `config/webhooks.ts` — Webhook configuration
+- `src/core/PluginContract.ts` — Plugin interface & `definePlugin()` helper
+- `src/core/PluginManagerV2.ts` — Plugin lifecycle manager
+- `src/core/PublishManager.ts` — Plugin resource publisher
+- `src/core/PluginDevWatcher.ts` — Plugin hot-reload watcher (dev mode)
+- `src/http/RouteRegistry.ts` — Route collision detection registry
+- `src/testing/PluginTestUtils.ts` — Plugin test harness & assertion helpers
+- `src/providers/PluginServiceProvider.ts` — Plugin service provider
+- `plugins/` — Local plugin directory (auto-discovered)
 - `AGENTS.md` — Full AI agent guide
 - `ARCHITECTURE.md` — System architecture diagrams

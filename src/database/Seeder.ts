@@ -12,34 +12,50 @@ export interface SeederFile {
 
 export class Seeder {
     private seedersDir: string;
+    private additionalDirs: string[] = [];
 
     constructor(seedersDir: string) {
         this.seedersDir = seedersDir;
     }
 
     /**
-     * Run all seeders.
+     * Add additional seeder directories (e.g., from plugins).
+     */
+    addSeederPaths(dirs: string[]): void {
+        this.additionalDirs.push(...dirs);
+    }
+
+    /**
+     * Run all seeders from the primary directory and all additional directories.
      */
     async seed(): Promise<string[]> {
-        const files = this.getSeederFiles();
-
-        if (files.length === 0) {
-            Logger.info('No seeders found.');
-            return [];
-        }
-
         const seeded: string[] = [];
 
-        for (const file of files) {
+        // Run primary seeders
+        const primaryFiles = this.getSeederFilesFromDir(this.seedersDir);
+        for (const file of primaryFiles) {
             const filePath = path.join(this.seedersDir, file);
-            const seeder: SeederFile = await import(`file://${filePath.replace(/\\/g, '/')}`);
-
-            await seeder.run();
-            Logger.info(`  ✓ Seeded: ${file}`);
+            await this.runSeeder(filePath, file);
             seeded.push(file);
         }
 
-        Logger.info(`✦ Ran ${seeded.length} seeder(s)`);
+        // Run plugin seeders
+        for (const dir of this.additionalDirs) {
+            const files = this.getSeederFilesFromDir(dir);
+            for (const file of files) {
+                const filePath = path.join(dir, file);
+                const label = `[plugin] ${path.basename(dir)}/${file}`;
+                await this.runSeeder(filePath, label);
+                seeded.push(label);
+            }
+        }
+
+        if (seeded.length === 0) {
+            Logger.info('No seeders found.');
+        } else {
+            Logger.info(`✦ Ran ${seeded.length} seeder(s)`);
+        }
+
         return seeded;
     }
 
@@ -53,19 +69,33 @@ export class Seeder {
             throw new Error(`Seeder file not found: ${fileName}`);
         }
 
-        const seeder: SeederFile = await import(`file://${filePath.replace(/\\/g, '/')}`);
-        await seeder.run();
-        Logger.info(`✓ Seeded: ${fileName}`);
+        await this.runSeeder(filePath, fileName);
     }
 
     /**
-     * Get all seeder files.
+     * Run a single seeder file.
      */
-    private getSeederFiles(): string[] {
-        if (!fs.existsSync(this.seedersDir)) return [];
+    private async runSeeder(filePath: string, label: string): Promise<void> {
+        const seeder: SeederFile = await import(`file://${filePath.replace(/\\/g, '/')}`);
+        await seeder.run();
+        Logger.info(`  ✓ Seeded: ${label}`);
+    }
+
+    /**
+     * Get all seeder files from a directory.
+     */
+    private getSeederFilesFromDir(dir: string): string[] {
+        if (!fs.existsSync(dir)) return [];
         return fs
-            .readdirSync(this.seedersDir)
+            .readdirSync(dir)
             .filter(f => f.endsWith('.ts') || f.endsWith('.js'))
             .sort();
+    }
+
+    /**
+     * @deprecated Use getSeederFilesFromDir instead
+     */
+    private getSeederFiles(): string[] {
+        return this.getSeederFilesFromDir(this.seedersDir);
     }
 }

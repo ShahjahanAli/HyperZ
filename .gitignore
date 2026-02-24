@@ -3,6 +3,7 @@ node_modules/
 package-lock.json
 hyperz-analysis.md
 hyperz-critical-improvements.md
+HyperZ-Ecosystem-&-Package-Management.md
 
 # Build output
 dist/

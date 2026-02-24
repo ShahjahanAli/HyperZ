@@ -6,6 +6,7 @@ import express, { type Express } from 'express';
 import * as path from 'node:path';
 import { ServiceContainer } from './ServiceContainer.js';
 import { ServiceProvider } from './ServiceProvider.js';
+import { PluginManager } from './PluginManagerV2.js';
 import { ConfigManager } from '../config/index.js';
 import { Logger } from '../logging/Logger.js';
 
@@ -18,6 +19,9 @@ export class Application {
 
     /** Config manager */
     public readonly config: ConfigManager;
+
+    /** Plugin manager — manages the full plugin lifecycle */
+    public readonly plugins: PluginManager;
 
     /** Root path of the application */
     public readonly basePath: string;
@@ -84,11 +88,13 @@ export class Application {
         this.container = new ServiceContainer();
         this.express = express();
         this.config = new ConfigManager(this.basePath);
+        this.plugins = new PluginManager(this);
 
         // Register core instances
         this.container.instance('app', this);
         this.container.instance('express', this.express);
         this.container.instance('config', this.config);
+        this.container.instance('plugins', this.plugins);
 
         // Bind path helpers
         this.container.instance('path.base', this.basePath);
@@ -96,6 +102,7 @@ export class Application {
         this.container.instance('path.config', path.join(this.basePath, 'config'));
         this.container.instance('path.database', path.join(this.basePath, 'database'));
         this.container.instance('path.storage', path.join(this.basePath, 'storage'));
+        this.container.instance('path.plugins', path.join(this.basePath, 'plugins'));
         this.container.instance('path.src', path.join(this.basePath, 'src'));
     }
 
@@ -112,7 +119,7 @@ export class Application {
     }
 
     /**
-     * Boot all registered service providers.
+     * Boot all registered service providers and plugins.
      */
     async boot(): Promise<void> {
         if (this.booted) return;
@@ -120,6 +127,9 @@ export class Application {
         // Load environment + config files
         this.config.loadEnv();
         await this.config.loadConfigFiles();
+
+        // Discover plugins (from node_modules + plugins/ directory)
+        await this.plugins.discover();
 
         // Boot all providers
         for (const provider of this.providers) {
@@ -133,6 +143,14 @@ export class Application {
                 throw err;
             }
         }
+
+        // Boot all discovered plugins (after providers, respecting dependency order)
+        await this.plugins.bootAll();
+
+        // Register plugin shutdown as a terminating callback
+        this.terminating(async () => {
+            await this.plugins.shutdown();
+        });
 
         this.booted = true;
         Logger.info('[+] HyperZ application booted successfully');
@@ -196,5 +214,12 @@ export class Application {
      */
     configPath(...segments: string[]): string {
         return path.join(this.basePath, 'config', ...segments);
+    }
+
+    /**
+     * Get the plugins path.
+     */
+    pluginsPath(...segments: string[]): string {
+        return path.join(this.basePath, 'plugins', ...segments);
     }
 }

@@ -5,6 +5,7 @@
 
 import { Router as ExpressRouter, type RequestHandler, type Express, type Request, type Response, type NextFunction } from 'express';
 import { Logger } from '../logging/Logger.js';
+import { routeRegistry } from './RouteRegistry.js';
 
 /**
  * Wrap an async route handler so rejected promises are forwarded
@@ -229,6 +230,9 @@ export class HyperZRouter {
         };
 
         this.routes.push(def);
+
+        // Track route in the global registry for collision detection
+        routeRegistry.register(method, fullPath, this.source ?? 'unknown');
 
         // Register on the Express router
         const expressMethod = method.toLowerCase() as keyof ExpressRouter;
