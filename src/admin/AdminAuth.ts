@@ -52,6 +52,14 @@ async function rawQuery(ds: DataSource, query: string, params: any[] = []): Prom
     return ds.query(query, params);
 }
 
+/** Quote a SQL identifier with the correct character for the current driver. */
+function qi(ds: DataSource, name: string): string {
+    if (ds.options.type === 'mysql' || (ds.options.type as string) === 'mariadb') {
+        return `\`${name}\``;
+    }
+    return `"${name}"`;
+}
+
 async function dbTableExists(ds: DataSource, table: string): Promise<boolean> {
     try {
         const driver = ds.options.type;
@@ -79,19 +87,19 @@ async function dbTableExists(ds: DataSource, table: string): Promise<boolean> {
 async function dbInsert(ds: DataSource, table: string, data: Record<string, any>): Promise<number> {
     const keys = Object.keys(data);
     const vals = Object.values(data);
-    const cols = keys.map(k => `"${k}"`).join(', ');
+    const cols = keys.map(k => qi(ds, k)).join(', ');
 
     if (ds.options.type === 'postgres') {
         const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
         const rows = await ds.query(
-            `INSERT INTO "${table}" (${cols}) VALUES (${placeholders}) RETURNING id`, vals
+            `INSERT INTO ${qi(ds, table)} (${cols}) VALUES (${placeholders}) RETURNING id`, vals
         );
         return rows[0]?.id ?? 0;
     }
 
     const placeholders = keys.map(() => '?').join(', ');
     const result = await ds.query(
-        `INSERT INTO "${table}" (${cols}) VALUES (${placeholders})`, vals
+        `INSERT INTO ${qi(ds, table)} (${cols}) VALUES (${placeholders})`, vals
     );
     return result?.insertId ?? 0;
 }
@@ -103,15 +111,15 @@ async function dbUpdate(ds: DataSource, table: string, where: Record<string, any
 
     if (ds.options.type === 'postgres') {
         let i = 0;
-        const setClause = Object.keys(data).map(k => `"${k}" = $${++i}`).join(', ');
-        const whereClause = Object.keys(where).map(k => `"${k}" = $${++i}`).join(' AND ');
-        await ds.query(`UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`, allVals);
+        const setClause = Object.keys(data).map(k => `${qi(ds, k)} = $${++i}`).join(', ');
+        const whereClause = Object.keys(where).map(k => `${qi(ds, k)} = $${++i}`).join(' AND ');
+        await ds.query(`UPDATE ${qi(ds, table)} SET ${setClause} WHERE ${whereClause}`, allVals);
         return;
     }
 
-    const setClause = Object.keys(data).map(k => `"${k}" = ?`).join(', ');
-    const whereClause = Object.keys(where).map(k => `"${k}" = ?`).join(' AND ');
-    await ds.query(`UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`, allVals);
+    const setClause = Object.keys(data).map(k => `${qi(ds, k)} = ?`).join(', ');
+    const whereClause = Object.keys(where).map(k => `${qi(ds, k)} = ?`).join(' AND ');
+    await ds.query(`UPDATE ${qi(ds, table)} SET ${setClause} WHERE ${whereClause}`, allVals);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -149,10 +157,16 @@ export async function getAdminStatus(): Promise<AdminStatus> {
             return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
         }
 
-        const rows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM "${TABLE}"`);
-        const adminCount = parseInt(rows[0]?.cnt ?? rows[0]?.['COUNT(*)'] ?? 0, 10);
-
-        return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
+        // Table confirmed to exist — count admins separately so a query failure
+        // doesn't mask the fact that the table is already there.
+        try {
+            const rows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM ${qi(ds, TABLE)}`);
+            const adminCount = parseInt(rows[0]?.cnt ?? rows[0]?.['COUNT(*)'] ?? 0, 10);
+            return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
+        } catch {
+            // Table exists but COUNT failed — still advance past the migrate step
+            return { dbConnected: true, tableExists: true, hasAdmin: false, adminCount: 0, driver, connectionInfo };
+        }
     } catch {
         return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
@@ -193,7 +207,7 @@ export async function registerAdmin(input: RegisterInput, callerIsAdmin = false)
     }
 
     // Check if registration is allowed
-    const countRows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM "${TABLE}"`);
+    const countRows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM ${qi(ds, TABLE)}`);
     const count = parseInt(countRows[0]?.cnt ?? countRows[0]?.['COUNT(*)'] ?? 0, 10);
 
     if (count > 0 && !callerIsAdmin) {
@@ -201,7 +215,7 @@ export async function registerAdmin(input: RegisterInput, callerIsAdmin = false)
     }
 
     // Check duplicate email
-    const existing = await rawQuery(ds, `SELECT id FROM "${TABLE}" WHERE email = ?`, [input.email.toLowerCase()]);
+    const existing = await rawQuery(ds, `SELECT id FROM ${qi(ds, TABLE)} WHERE email = ?`, [input.email.toLowerCase()]);
     if (existing.length > 0) {
         return { success: false, error: 'An admin with this email already exists.' };
     }
@@ -248,7 +262,7 @@ export async function loginAdmin(
     const ds = await getDS();
     if (!ds) return { success: false, error: 'Database not connected.' };
 
-    const rows = await rawQuery(ds, `SELECT * FROM "${TABLE}" WHERE email = ?`, [email.toLowerCase()]);
+    const rows = await rawQuery(ds, `SELECT * FROM ${qi(ds, TABLE)} WHERE email = ?`, [email.toLowerCase()]);
     const admin = rows[0] ?? null;
     if (!admin) {
         trackFailedAttempt(ipKey);
@@ -322,7 +336,7 @@ export async function verifyAdminToken(token: string): Promise<{ valid: boolean;
         const ds = await getDS();
         if (!ds) return { valid: false, error: 'Database not connected.' };
 
-        const rows = await rawQuery(ds, `SELECT id, email, name, role FROM "${TABLE}" WHERE id = ?`, [decoded.id]);
+        const rows = await rawQuery(ds, `SELECT id, email, name, role FROM ${qi(ds, TABLE)} WHERE id = ?`, [decoded.id]);
         const admin = rows[0] ?? null;
 
         if (!admin) return { valid: false, error: 'Admin account no longer exists.' };
