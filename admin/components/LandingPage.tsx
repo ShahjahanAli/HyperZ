@@ -188,12 +188,14 @@ export default function LandingPage() {
                                     fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text)',
                                     lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0,
                                 }}>
-                                    {`DB_DRIVER=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=your_database
-DB_USER=root
-DB_PASSWORD=secret`}
+                                    {
+                                        `DB_DRIVER=mysql
+                                        DB_HOST=127.0.0.1
+                                        DB_PORT=3306
+                                        DB_NAME=your_database
+                                        DB_USER=root
+                                        DB_PASSWORD=secret`
+                                    }
                                 </pre>
                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                                     Supported: <strong>mysql</strong>, <strong>postgresql</strong>, <strong>sqlite</strong>
