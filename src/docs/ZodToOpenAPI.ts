@@ -12,14 +12,16 @@
 
 import { z } from 'zod';
 
+export type JsonSchema = Record<string, any>;
+
 /**
  * Convert a Zod schema to an OpenAPI 3.1 JSON Schema object.
  */
-export function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+export function zodToJsonSchema(schema: z.ZodTypeAny): JsonSchema {
     return processZodType(schema);
 }
 
-function processZodType(type: z.ZodTypeAny): Record<string, unknown> {
+function processZodType(type: z.ZodTypeAny): JsonSchema {
     // Unwrap ZodEffects (refine, transform, preprocess)
     if (type instanceof z.ZodEffects) {
         return processZodType(type.innerType());

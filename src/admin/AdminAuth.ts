@@ -9,6 +9,7 @@ import { AuthManager } from '../auth/AuthManager.js';
 import { Logger } from '../logging/Logger.js';
 import { env } from '../support/helpers.js';
 import jwt from 'jsonwebtoken';
+import type { DataSource } from 'typeorm';
 
 const TABLE = 'hyperz_admins';
 const MAX_FAILED_ATTEMPTS = 5;
@@ -24,25 +25,93 @@ function getAuth(): AuthManager {
     return authManager;
 }
 
-// ── Helper: get Knex instance (may not be available) ─────────
+// ── TypeORM DB helpers ─────────────────────────────────────────
 
-async function getKnex() {
+async function getDS(): Promise<DataSource | null> {
     try {
         const { Database } = await import('../database/Database.js');
-        if (Database.isSQLConnected()) return Database.getKnex();
+        if (Database.isTypeORMConnected()) return Database.getDataSource();
 
-        // Attempt to connect if environment is ready
-        const { default: dbConfig } = await import('../../config/database.js');
-        const driver = env('DB_DRIVER', dbConfig.driver || 'sqlite');
-        const connConfig = (dbConfig.connections as any)[driver];
-
-        if (connConfig) {
-            return await Database.connectSQL(connConfig);
-        }
-        return null;
+        // Attempt to initialize from config if not yet ready
+        const { initializeDataSource } = await import('../database/DataSource.js');
+        const ds = await initializeDataSource();
+        Database.setDataSource(ds);
+        return ds;
     } catch {
         return null;
     }
+}
+
+/** Run a parameterized SQL query, normalising ? placeholders for all drivers. */
+async function rawQuery(ds: DataSource, query: string, params: any[] = []): Promise<any[]> {
+    if (ds.options.type === 'postgres') {
+        let i = 0;
+        const pgQuery = query.replace(/\?/g, () => `$${++i}`);
+        return ds.query(pgQuery, params);
+    }
+    return ds.query(query, params);
+}
+
+async function dbTableExists(ds: DataSource, table: string): Promise<boolean> {
+    try {
+        const driver = ds.options.type;
+        if (driver === 'sqlite') {
+            const rows = await ds.query(
+                `SELECT name FROM sqlite_master WHERE type='table' AND name=?`, [table]
+            );
+            return rows.length > 0;
+        }
+        if (driver === 'postgres') {
+            const rows = await ds.query(
+                `SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name=$1`,
+                [table]
+            );
+            return rows.length > 0;
+        }
+        const rows = await ds.query(
+            `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?`,
+            [table]
+        );
+        return rows.length > 0;
+    } catch { return false; }
+}
+
+async function dbInsert(ds: DataSource, table: string, data: Record<string, any>): Promise<number> {
+    const keys = Object.keys(data);
+    const vals = Object.values(data);
+    const cols = keys.map(k => `"${k}"`).join(', ');
+
+    if (ds.options.type === 'postgres') {
+        const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+        const rows = await ds.query(
+            `INSERT INTO "${table}" (${cols}) VALUES (${placeholders}) RETURNING id`, vals
+        );
+        return rows[0]?.id ?? 0;
+    }
+
+    const placeholders = keys.map(() => '?').join(', ');
+    const result = await ds.query(
+        `INSERT INTO "${table}" (${cols}) VALUES (${placeholders})`, vals
+    );
+    return result?.insertId ?? 0;
+}
+
+async function dbUpdate(ds: DataSource, table: string, where: Record<string, any>, data: Record<string, any>): Promise<void> {
+    const setVals = Object.values(data);
+    const whereVals = Object.values(where);
+    const allVals = [...setVals, ...whereVals];
+
+    if (ds.options.type === 'postgres') {
+        let i = 0;
+        const setClause = Object.keys(data).map(k => `"${k}" = $${++i}`).join(', ');
+        const whereClause = Object.keys(where).map(k => `"${k}" = $${++i}`).join(' AND ');
+        await ds.query(`UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`, allVals);
+        return;
+    }
+
+    const setClause = Object.keys(data).map(k => `"${k}" = ?`).join(', ');
+    const whereClause = Object.keys(where).map(k => `"${k}" = ?`).join(' AND ');
+    await ds.query(`UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`, allVals);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -59,30 +128,29 @@ export interface AdminStatus {
 }
 
 export async function getAdminStatus(): Promise<AdminStatus> {
-    const knex = await getKnex();
+    const ds = await getDS();
 
-    // Determine driver and info for debugging
     let driver = 'unknown';
     let connectionInfo = 'none';
 
-    if (knex) {
-        driver = (knex.client as any).config.client;
-        const conn = (knex.client as any).config.connection;
-        connectionInfo = typeof conn === 'string' ? conn : (conn.filename || conn.host || 'unknown');
+    if (ds) {
+        driver = ds.options.type as string;
+        const conn = ds.options as any;
+        connectionInfo = conn.database || conn.host || conn.filename || 'unknown';
     }
 
-    if (!knex) {
+    if (!ds) {
         return { dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
 
     try {
-        const tableExists = await knex.schema.hasTable(TABLE);
-        if (!tableExists) {
+        const exists = await dbTableExists(ds, TABLE);
+        if (!exists) {
             return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
         }
 
-        const result = await knex(TABLE).count('id as count').first();
-        const adminCount = Number(result?.count || 0);
+        const rows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM "${TABLE}"`);
+        const adminCount = parseInt(rows[0]?.cnt ?? rows[0]?.['COUNT(*)'] ?? 0, 10);
 
         return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
     } catch {
@@ -101,11 +169,11 @@ interface RegisterInput {
 }
 
 export async function registerAdmin(input: RegisterInput, callerIsAdmin = false): Promise<{ success: boolean; error?: string; admin?: any }> {
-    const knex = await getKnex();
-    if (!knex) return { success: false, error: 'Database not connected. Configure your database in .env first.' };
+    const ds = await getDS();
+    if (!ds) return { success: false, error: 'Database not connected. Configure your database in .env first.' };
 
-    const tableExists = await knex.schema.hasTable(TABLE);
-    if (!tableExists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx tsx bin/hyperz.ts migrate' };
+    const exists = await dbTableExists(ds, TABLE);
+    if (!exists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx tsx bin/hyperz.ts migrate' };
 
     // Validate input
     if (!input.email || !input.password || !input.name) {
@@ -125,35 +193,36 @@ export async function registerAdmin(input: RegisterInput, callerIsAdmin = false)
     }
 
     // Check if registration is allowed
-    const existingCount = await knex(TABLE).count('id as count').first();
-    const count = Number(existingCount?.count || 0);
+    const countRows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM "${TABLE}"`);
+    const count = parseInt(countRows[0]?.cnt ?? countRows[0]?.['COUNT(*)'] ?? 0, 10);
 
     if (count > 0 && !callerIsAdmin) {
         return { success: false, error: 'Registration is closed. Only existing admins can create new accounts.' };
     }
 
     // Check duplicate email
-    const existing = await knex(TABLE).where('email', input.email.toLowerCase()).first();
-    if (existing) {
+    const existing = await rawQuery(ds, `SELECT id FROM "${TABLE}" WHERE email = ?`, [input.email.toLowerCase()]);
+    if (existing.length > 0) {
         return { success: false, error: 'An admin with this email already exists.' };
     }
 
     // Create admin
     const auth = getAuth();
     const hashedPassword = await auth.hashPassword(input.password);
+    const role = count === 0 ? 'super_admin' : 'admin';
 
-    const [id] = await knex(TABLE).insert({
+    const id = await dbInsert(ds, TABLE, {
         email: input.email.toLowerCase(),
         password: hashedPassword,
         name: input.name.trim(),
-        role: count === 0 ? 'super_admin' : 'admin',
+        role,
     });
 
-    Logger.info(`✦ Admin registered: ${input.email} (${count === 0 ? 'super_admin' : 'admin'})`);
+    Logger.info(`✦ Admin registered: ${input.email} (${role})`);
 
     return {
         success: true,
-        admin: { id, email: input.email.toLowerCase(), name: input.name.trim(), role: count === 0 ? 'super_admin' : 'admin' },
+        admin: { id, email: input.email.toLowerCase(), name: input.name.trim(), role },
     };
 }
 
@@ -176,10 +245,11 @@ export async function loginAdmin(
         return { success: false, error: `Too many login attempts. Try again in ${waitSec} seconds.` };
     }
 
-    const knex = await getKnex();
-    if (!knex) return { success: false, error: 'Database not connected.' };
+    const ds = await getDS();
+    if (!ds) return { success: false, error: 'Database not connected.' };
 
-    const admin = await knex(TABLE).where('email', email.toLowerCase()).first();
+    const rows = await rawQuery(ds, `SELECT * FROM "${TABLE}" WHERE email = ?`, [email.toLowerCase()]);
+    const admin = rows[0] ?? null;
     if (!admin) {
         trackFailedAttempt(ipKey);
         return { success: false, error: 'Invalid email or password.' };
@@ -200,22 +270,22 @@ export async function loginAdmin(
 
         // Update DB failed attempts
         const newAttempts = (admin.failed_attempts || 0) + 1;
-        const updates: any = { failed_attempts: newAttempts };
+        const failUpdates: Record<string, any> = { failed_attempts: newAttempts };
 
         if (newAttempts >= MAX_FAILED_ATTEMPTS) {
-            updates.locked_until = new Date(now + LOCKOUT_MINUTES * 60 * 1000);
+            failUpdates.locked_until = new Date(now + LOCKOUT_MINUTES * 60 * 1000).toISOString();
             Logger.warn(`⚠ Admin account locked: ${email} (${MAX_FAILED_ATTEMPTS} failed attempts)`);
         }
 
-        await knex(TABLE).where('id', admin.id).update(updates);
+        await dbUpdate(ds, TABLE, { id: admin.id }, failUpdates);
         return { success: false, error: 'Invalid email or password.' };
     }
 
     // Success — reset failed attempts, update audit trail
-    await knex(TABLE).where('id', admin.id).update({
+    await dbUpdate(ds, TABLE, { id: admin.id }, {
         failed_attempts: 0,
         locked_until: null,
-        last_login_at: new Date(),
+        last_login_at: new Date().toISOString(),
         last_login_ip: ip,
     });
 
@@ -249,13 +319,11 @@ export async function verifyAdminToken(token: string): Promise<{ valid: boolean;
         const decoded = jwt.verify(token, secret) as any;
 
         // Confirm admin still exists in DB
-        const knex = await getKnex();
-        if (!knex) return { valid: false, error: 'Database not connected.' };
+        const ds = await getDS();
+        if (!ds) return { valid: false, error: 'Database not connected.' };
 
-        const admin = await knex(TABLE)
-            .select('id', 'email', 'name', 'role')
-            .where('id', decoded.id)
-            .first();
+        const rows = await rawQuery(ds, `SELECT id, email, name, role FROM "${TABLE}" WHERE id = ?`, [decoded.id]);
+        const admin = rows[0] ?? null;
 
         if (!admin) return { valid: false, error: 'Admin account no longer exists.' };
 

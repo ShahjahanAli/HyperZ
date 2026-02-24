@@ -1,6 +1,6 @@
 {
   "name": "hyperz-framework",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "HyperZ — A Modern, Laravel-inspired, Enterprise-grade Framework built on ExpressJS",
   "keywords": [
     "hyperz",
