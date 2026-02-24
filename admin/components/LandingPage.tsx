@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthProvider';
 
 // ══════════════════════════════════════════════════════════════
@@ -12,7 +12,7 @@ import { useAuth } from './AuthProvider';
 const FEATURES = [
     { icon: '🏗️', name: 'MVC Architecture', desc: 'Laravel-inspired project structure' },
     { icon: '🛤️', name: 'Elegant Routing', desc: 'Express routes with middleware chains' },
-    { icon: '🗄️', name: 'Database ORM', desc: 'Knex query builder + migrations' },
+    { icon: '🗄️', name: 'Database ORM', desc: 'TypeORM Active Record + migrations' },
     { icon: '🔐', name: 'Auth & JWT', desc: 'bcrypt hashing, JWT tokens, RBAC' },
     { icon: '✅', name: 'Validation', desc: 'Request validation with Joi/Zod' },
     { icon: '📧', name: 'Mail Provider', desc: 'Nodemailer + multi-driver support' },
@@ -40,7 +40,7 @@ const TECH_STACK = [
     { name: 'TypeScript', color: '#3178c6' },
     { name: 'Express.js', color: '#22c55e' },
     { name: 'Node.js', color: '#68a063' },
-    { name: 'Knex.js', color: '#e97627' },
+    { name: 'TypeORM', color: '#e97627' },
     { name: 'JWT', color: '#d63aff' },
     { name: 'bcrypt', color: '#ef4444' },
     { name: 'Socket.io', color: '#25c2a0' },
@@ -57,6 +57,9 @@ export default function LandingPage() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [checking, setChecking] = useState(false);
+    const [pollCountdown, setPollCountdown] = useState(4);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Determine which step to show
     const step = !status
@@ -69,11 +72,37 @@ export default function LandingPage() {
                     ? 'register'
                     : 'login';
 
+    // Auto-poll while waiting for DB or migration
+    useEffect(() => {
+        const shouldPoll = step === 'db_setup' || step === 'migrate';
+
+        if (shouldPoll) {
+            setPollCountdown(4);
+
+            // Countdown ticker
+            countdownRef.current = setInterval(() => {
+                setPollCountdown(prev => (prev <= 1 ? 4 : prev - 1));
+            }, 1000);
+
+            // Status poller
+            pollRef.current = setInterval(async () => {
+                setPollCountdown(4);
+                await refreshStatus();
+            }, 4000);
+        }
+
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+        };
+    }, [step, refreshStatus]);
+
     // Auto-set mode based on step
     const effectiveMode = step === 'register' ? 'register' : mode;
 
     const handleCheckConnection = async () => {
         setChecking(true);
+        setPollCountdown(4);
         await refreshStatus();
         setChecking(false);
     };
@@ -216,6 +245,9 @@ DB_PASSWORD=secret`}
                             }}>
                                 {checking ? '⏳ Checking…' : '🔄 Check Connection'}
                             </button>
+                            <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                                AUTO-POLLING IN {pollCountdown}s…
+                            </div>
                         </div>
                     )}
 
@@ -279,6 +311,9 @@ DB_PASSWORD=secret`}
                             }}>
                                 {checking ? '⏳ Checking…' : '🔄 Check Again'}
                             </button>
+                            <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                                AUTO-DETECTING MIGRATION… {pollCountdown}s
+                            </div>
                         </div>
                     )}
 
