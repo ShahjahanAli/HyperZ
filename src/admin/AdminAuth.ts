@@ -127,6 +127,7 @@ async function dbUpdate(ds: DataSource, table: string, where: Record<string, any
 // ══════════════════════════════════════════════════════════════
 
 export interface AdminStatus {
+    keysConfigured: boolean;
     dbConnected: boolean;
     tableExists: boolean;
     hasAdmin: boolean;
@@ -135,7 +136,15 @@ export interface AdminStatus {
     connectionInfo?: string;
 }
 
+/** Returns true only when both APP_KEY and JWT_SECRET have been set to non-default values. */
+function checkKeysConfigured(): boolean {
+    const appKey = env('APP_KEY', '');
+    const jwtSecret = env('JWT_SECRET', '');
+    return appKey.length > 0 && jwtSecret.length > 0 && jwtSecret !== 'your-secret-key';
+}
+
 export async function getAdminStatus(): Promise<AdminStatus> {
+    const keysConfigured = checkKeysConfigured();
     const ds = await getDS();
 
     let driver = 'unknown';
@@ -148,13 +157,13 @@ export async function getAdminStatus(): Promise<AdminStatus> {
     }
 
     if (!ds) {
-        return { dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
+        return { keysConfigured, dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
 
     try {
         const exists = await dbTableExists(ds, TABLE);
         if (!exists) {
-            return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
+            return { keysConfigured, dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
         }
 
         // Table confirmed to exist — count admins separately so a query failure
@@ -162,13 +171,13 @@ export async function getAdminStatus(): Promise<AdminStatus> {
         try {
             const rows = await rawQuery(ds, `SELECT COUNT(*) as cnt FROM ${qi(ds, TABLE)}`);
             const adminCount = parseInt(rows[0]?.cnt ?? rows[0]?.['COUNT(*)'] ?? 0, 10);
-            return { dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
+            return { keysConfigured, dbConnected: true, tableExists: true, hasAdmin: adminCount > 0, adminCount, driver, connectionInfo };
         } catch {
             // Table exists but COUNT failed — still advance past the migrate step
-            return { dbConnected: true, tableExists: true, hasAdmin: false, adminCount: 0, driver, connectionInfo };
+            return { keysConfigured, dbConnected: true, tableExists: true, hasAdmin: false, adminCount: 0, driver, connectionInfo };
         }
     } catch {
-        return { dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
+        return { keysConfigured, dbConnected: true, tableExists: false, hasAdmin: false, adminCount: 0, driver, connectionInfo };
     }
 }
 

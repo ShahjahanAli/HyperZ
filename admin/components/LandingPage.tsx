@@ -5,8 +5,12 @@ import { useAuth } from './AuthProvider';
 
 // ══════════════════════════════════════════════════════════════
 // HyperZ Admin — Landing Page
-// Shows features, tech stack, setup guide, and auth forms
-// based on system readiness status.
+// Step flow:
+//   1. keys_missing  → run `npx hyperz key:generate`
+//   2. db_setup      → configure DB in .env & restart server
+//   3. migrate       → run `npx hyperz migrate`
+//   4. register      → create first admin account
+//   5. login         → sign in
 // ══════════════════════════════════════════════════════════════
 
 const FEATURES = [
@@ -57,52 +61,52 @@ export default function LandingPage() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [checking, setChecking] = useState(false);
-    const [pollCountdown, setPollCountdown] = useState(4);
+    const [pollCountdown, setPollCountdown] = useState(5);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Determine which step to show
+    // ── Step derivation ────────────────────────────────────────
+    // Priority: loading → keys_missing → db_setup → migrate → register → login
     const step = !status
         ? 'loading'
-        : !status.dbConnected
-            ? 'db_setup'
-            : !status.tableExists
-                ? 'migrate'
-                : !status.hasAdmin
-                    ? 'register'
-                    : 'login';
+        : !status.keysConfigured
+            ? 'keys_missing'
+            : !status.dbConnected
+                ? 'db_setup'
+                : !status.tableExists
+                    ? 'migrate'
+                    : !status.hasAdmin
+                        ? 'register'
+                        : 'login';
 
-    // Auto-poll while waiting for DB or migration
+    // ── Auto-poll on all setup steps ──────────────────────────
     useEffect(() => {
-        const shouldPoll = step === 'db_setup' || step === 'migrate';
+        const shouldPoll = step === 'keys_missing' || step === 'db_setup' || step === 'migrate';
 
         if (shouldPoll) {
-            setPollCountdown(4);
+            setPollCountdown(5);
 
-            // Countdown ticker
             countdownRef.current = setInterval(() => {
-                setPollCountdown(prev => (prev <= 1 ? 4 : prev - 1));
+                setPollCountdown(prev => (prev <= 1 ? 5 : prev - 1));
             }, 1000);
 
-            // Status poller
             pollRef.current = setInterval(async () => {
-                setPollCountdown(4);
+                setPollCountdown(5);
                 await refreshStatus();
-            }, 4000);
+            }, 5000);
         }
 
         return () => {
-            if (pollRef.current) clearInterval(pollRef.current);
-            if (countdownRef.current) clearInterval(countdownRef.current);
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+            if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
         };
     }, [step, refreshStatus]);
 
-    // Auto-set mode based on step
     const effectiveMode = step === 'register' ? 'register' : mode;
 
-    const handleCheckConnection = async () => {
+    const handleRefresh = async () => {
         setChecking(true);
-        setPollCountdown(4);
+        setPollCountdown(5);
         await refreshStatus();
         setChecking(false);
     };
@@ -111,7 +115,6 @@ export default function LandingPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
             if (effectiveMode === 'register') {
                 const result = await register(form.email, form.password, form.name);
@@ -123,9 +126,20 @@ export default function LandingPage() {
         } catch {
             setError('An unexpected error occurred');
         }
-
         setLoading(false);
     };
+
+    // ── Step progress config ──────────────────────────────────
+    const STEPS = [
+        { id: 'keys_missing', num: '1', label: 'Security Keys',  desc: 'npx hyperz key:generate',          icon: '🔑' },
+        { id: 'db_setup',     num: '2', label: 'Database',        desc: 'Configure .env & restart server',  icon: '🗄️' },
+        { id: 'migrate',      num: '3', label: 'Migrations',      desc: 'npx hyperz migrate',               icon: '🔄' },
+        { id: 'register',     num: '4', label: 'Admin Account',   desc: 'Create first admin account',       icon: '🛡️' },
+        { id: 'login',        num: '5', label: 'Ready',           desc: 'Access the full admin panel',      icon: '🚀' },
+    ] as const;
+
+    const stepOrder = ['loading', 'keys_missing', 'db_setup', 'migrate', 'register', 'login'] as const;
+    const stepIndex = stepOrder.indexOf(step as typeof stepOrder[number]);
 
     return (
         <div style={{
@@ -133,416 +147,490 @@ export default function LandingPage() {
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             padding: '40px 20px', overflowY: 'auto',
         }}>
-            {/* ── Hero ───────────────────────────────────── */}
-            <div style={{ textAlign: 'center', marginBottom: 64, maxWidth: 800, position: 'relative', zIndex: 20 }}>
+            {/* ── Hero ─────────────────────────────────────── */}
+            <div style={{ textAlign: 'center', marginBottom: 48, maxWidth: 800 }}>
                 <div style={{
                     fontSize: 72, fontWeight: 900, lineHeight: 1, marginBottom: 16,
                     fontFamily: 'var(--tactical)',
                     background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary), #22c55e)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    textShadow: '0 0 40px rgba(139, 92, 246, 0.4)',
-                    letterSpacing: '-2px'
+                    letterSpacing: '-2px',
                 }}>
                     HYPERZ
                 </div>
                 <div style={{
                     fontSize: 12, color: 'var(--accent-secondary)', marginBottom: 12, letterSpacing: 6,
-                    textTransform: 'uppercase', fontWeight: 800, fontFamily: 'var(--tactical)'
+                    textTransform: 'uppercase', fontWeight: 800, fontFamily: 'var(--tactical)',
                 }}>
                     TACTICAL ORCHESTRATION INTERFACE
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: '0 auto', fontFamily: 'var(--font)' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: '0 auto' }}>
                     High-fidelity MVC architecture with autonomous AI capabilities.
                     <br />
                     <span style={{ color: 'var(--text)', opacity: 0.8 }}>Enterprise-grade framework for mission-critical API services.</span>
                 </p>
             </div>
 
-            {/* ── Main Grid: Auth Panel + Setup Guide ─── */}
+            {/* ── Main grid ────────────────────────────────── */}
             <div style={{
-                display: 'grid', gridTemplateColumns: '440px 1fr', gap: 40,
+                display: 'grid', gridTemplateColumns: '460px 1fr', gap: 40,
                 width: '100%', maxWidth: 1200, marginBottom: 64, alignItems: 'start',
-                position: 'relative', zIndex: 10
             }}>
-                {/* Auth Panel */}
-                <div className="card" style={{ padding: 40, position: 'sticky', top: 40 }}>
-                    {step === 'loading' && (
-                        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                            <div style={{ fontSize: 32, marginBottom: 12 }} className="loading">⚡</div>
-                            <div style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>SCANNING SYSTEM INTEGRITY…</div>
-                        </div>
-                    )}
 
-                    {step === 'db_setup' && (
-                        <div>
-                            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                                <div style={{ fontSize: 40, marginBottom: 8 }}>🗄️</div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
-                                    SYSTEM INITIALIZATION
-                                </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
-                                    ESTABLISHING CORE PROTOCOLS…
-                                </p>
+                {/* ── Left: Setup / Auth panel ─────────────── */}
+                <div style={{ position: 'sticky', top: 40, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                    {/* Progress tracker */}
+                    {step !== 'loading' && step !== 'login' && (
+                        <div className="card" style={{ padding: '20px 24px' }}>
+                            <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'var(--tactical)', marginBottom: 14 }}>
+                                SETUP PROGRESS
                             </div>
-
-                            {/* Step 1: Generate Keys */}
-                            <div style={{
-                                background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 4, padding: 20, marginBottom: 16,
-                            }}>
-                                <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
-                                    PROTOCOL 01 — CRYPTOGRAPHIC KEYS
-                                </div>
-                                <div style={{
-                                    fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--accent-secondary)',
-                                    background: 'rgba(0,0,0,0.3)', borderRadius: 2, padding: '12px 16px',
-                                    border: '1px solid var(--border)',
-                                }}>
-                                    npx hyperz key:generate
-                                </div>
-                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontFamily: 'var(--mono)' }}>
-                                    GENERATE [APP_KEY] AND [JWT_SECRET] STRINGS
-                                </div>
-                            </div>
-
-                            {/* Step 2: Configure DB */}
-                            <div style={{
-                                background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 10, padding: 16, marginBottom: 12,
-                            }}>
-                                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    Step 2 — Configure Database in .env
-                                </div>
-                                <pre style={{
-                                    fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text)',
-                                    lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0,
-                                }}>
-                                    {
-                                        `DB_DRIVER=mysql
-                                        DB_HOST=127.0.0.1
-                                        DB_PORT=3306
-                                        DB_NAME=your_database
-                                        DB_USER=root
-                                        DB_PASSWORD=secret`
-                                    }
-                                </pre>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-                                    Supported: <strong>mysql</strong>, <strong>postgresql</strong>, <strong>sqlite</strong>
-                                </div>
-                            </div>
-
-                            {/* Restart Warning */}
-                            <div style={{
-                                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                                borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 12, color: 'var(--red)',
-                            }}>
-                                ⚠️ After editing <strong>.env</strong>, you must <strong>restart the HyperZ server</strong> for changes to take effect.
-                            </div>
-
-                            <button onClick={handleCheckConnection} disabled={checking} style={{
-                                width: '100%', padding: '12px 20px', borderRadius: 10,
-                                background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
-                                color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
-                                fontSize: 14, opacity: checking ? 0.6 : 1,
-                            }}>
-                                {checking ? '⏳ Checking…' : '🔄 Check Connection'}
-                            </button>
-                            <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
-                                AUTO-POLLING IN {pollCountdown}s…
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 'migrate' && (
-                        <div>
-                            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                                <div style={{ fontSize: 40, marginBottom: 8 }}>⚔️</div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
-                                    UPLINK ESTABLISHED
-                                </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
-                                    READY TO SYNC DATABASE SCHEMAS
-                                </p>
-                            </div>
-
-                            <div style={{
-                                background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 10, padding: 16, marginBottom: 16,
-                            }}>
-                                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    Step 2 — Run Migrations
-                                </div>
-                                <div style={{
-                                    fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--cyan)',
-                                    background: 'var(--bg)', borderRadius: 6, padding: '10px 14px',
-                                    border: '1px solid var(--border)',
-                                }}>
-                                    npx hyperz migrate
-                                </div>
-                            </div>
-
-                            <div style={{
-                                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
-                                borderRadius: 8, padding: 12, fontSize: 12, color: 'var(--blue)',
-                                marginBottom: 12
-                            }}>
-                                ℹ️ This creates the <code style={{ color: 'var(--accent)' }}>hyperz_admins</code> table and all other pending migrations.
-                            </div>
-
-                            <div style={{
-                                background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                borderRadius: 8, padding: 12, fontSize: 11, color: 'var(--text-muted)'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span>Driver:</span>
-                                    <span style={{ color: 'var(--cyan)', fontWeight: 600 }}>{status?.driver || 'unknown'}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span>Connection:</span>
-                                    <span style={{ color: 'var(--cyan)', fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={status?.connectionInfo}>
-                                        {status?.connectionInfo || 'none'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <button onClick={handleCheckConnection} disabled={checking} style={{
-                                width: '100%', marginTop: 16, padding: '12px 20px', borderRadius: 10,
-                                background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
-                                color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
-                                fontSize: 14, opacity: checking ? 0.6 : 1,
-                            }}>
-                                {checking ? '⏳ Checking…' : '🔄 Check Again'}
-                            </button>
-                            <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
-                                AUTO-DETECTING MIGRATION… {pollCountdown}s
-                            </div>
-                        </div>
-                    )}
-
-                    {(step === 'register' || step === 'login') && (
-                        <div>
-                            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                                <div style={{ fontSize: 40, marginBottom: 8, filter: 'drop-shadow(0 0 10px var(--accent-glow))' }}>
-                                    {effectiveMode === 'register' ? '🛡️' : '🔒'}
-                                </div>
-                                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
-                                    {effectiveMode === 'register' ? 'INITIALIZE ADMIN' : 'AUTHORIZED ACCESS'}
-                                </h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                                    {effectiveMode === 'register'
-                                        ? 'ESTABLISHING PRIMARY OVERLORD ACCOUNT'
-                                        : 'VERIFYING SECURITY CREDENTIALS'}
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleSubmit}>
-                                {effectiveMode === 'register' && (
-                                    <div style={{ marginBottom: 16 }}>
-                                        <label style={{
-                                            display: 'block', fontSize: 10, textTransform: 'uppercase',
-                                            letterSpacing: 2, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8,
-                                            fontFamily: 'var(--tactical)'
-                                        }}>OPERATOR_NAME</label>
-                                        <input
-                                            type="text" required value={form.name}
-                                            onChange={e => setForm({ ...form, name: e.target.value })}
-                                            placeholder="John Doe"
-                                            style={{
-                                                width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                                borderRadius: 8, color: 'var(--text)', padding: '11px 14px',
-                                                fontSize: 14, outline: 'none', fontFamily: 'var(--font)',
-                                            }}
-                                        />
-                                    </div>
-                                )}
-
-                                <div style={{ marginBottom: 16 }}>
-                                    <label style={{
-                                        display: 'block', fontSize: 11, textTransform: 'uppercase',
-                                        letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6,
-                                    }}>Email Address</label>
-                                    <input
-                                        type="email" required value={form.email}
-                                        onChange={e => setForm({ ...form, email: e.target.value })}
-                                        placeholder="admin@example.com"
-                                        style={{
-                                            width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                            borderRadius: 8, color: 'var(--text)', padding: '11px 14px',
-                                            fontSize: 14, outline: 'none', fontFamily: 'var(--font)',
-                                        }}
-                                    />
-                                </div>
-
-                                <div style={{ marginBottom: 20 }}>
-                                    <label style={{
-                                        display: 'block', fontSize: 11, textTransform: 'uppercase',
-                                        letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6,
-                                    }}>Password</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type={showPassword ? 'text' : 'password'} required
-                                            value={form.password}
-                                            onChange={e => setForm({ ...form, password: e.target.value })}
-                                            placeholder={effectiveMode === 'register' ? 'Min 8 chars, uppercase + number' : '••••••••'}
-                                            minLength={effectiveMode === 'register' ? 8 : undefined}
-                                            style={{
-                                                width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                                borderRadius: 8, color: 'var(--text)', padding: '11px 14px',
-                                                fontSize: 14, outline: 'none', fontFamily: 'var(--font)',
-                                                paddingRight: 44,
-                                            }}
-                                        />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                            style={{
-                                                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                                                background: 'none', border: 'none', color: 'var(--text-muted)',
-                                                cursor: 'pointer', fontSize: 16, padding: 4,
-                                            }}>
-                                            {showPassword ? '🙈' : '👁️'}
-                                        </button>
-                                    </div>
-                                    {effectiveMode === 'register' && (
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-                                            Must contain uppercase, lowercase, and a number
+                            <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
+                                {STEPS.map((s, i) => {
+                                    const sIndex = stepOrder.indexOf(s.id as typeof stepOrder[number]);
+                                    const done = sIndex < stepIndex;
+                                    const active = s.id === step;
+                                    return (
+                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                                <div style={{
+                                                    width: 32, height: 32, borderRadius: '50%', display: 'flex',
+                                                    alignItems: 'center', justifyContent: 'center', fontSize: 13,
+                                                    fontWeight: 700, flexShrink: 0,
+                                                    background: done ? 'var(--green)' : active ? 'var(--accent)' : 'var(--bg-input)',
+                                                    border: `2px solid ${done ? 'var(--green)' : active ? 'var(--accent)' : 'var(--border)'}`,
+                                                    color: done || active ? '#fff' : 'var(--text-muted)',
+                                                    boxShadow: active ? '0 0 12px var(--accent-glow)' : 'none',
+                                                    transition: 'all 0.3s',
+                                                }}>
+                                                    {done ? '✓' : s.num}
+                                                </div>
+                                                <div style={{
+                                                    fontSize: 9, fontWeight: 600, letterSpacing: 0.5,
+                                                    color: active ? 'var(--accent)' : done ? 'var(--green)' : 'var(--text-muted)',
+                                                    textTransform: 'uppercase', textAlign: 'center', maxWidth: 52, lineHeight: 1.2,
+                                                    fontFamily: 'var(--tactical)',
+                                                }}>
+                                                    {s.label}
+                                                </div>
+                                            </div>
+                                            {i < STEPS.length - 1 && (
+                                                <div style={{
+                                                    flex: 1, height: 2, marginBottom: 16, marginInline: 4,
+                                                    background: sIndex < stepIndex ? 'var(--green)' : 'var(--border)',
+                                                    transition: 'background 0.3s',
+                                                }} />
+                                            )}
                                         </div>
-                                    )}
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Step panels ──────────────────────── */}
+                    <div className="card" style={{ padding: 36 }}>
+
+                        {/* LOADING */}
+                        {step === 'loading' && (
+                            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                                <div style={{ fontSize: 32, marginBottom: 12 }} className="loading">⚡</div>
+                                <div style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>SCANNING SYSTEM INTEGRITY…</div>
+                            </div>
+                        )}
+
+                        {/* STEP 1 — KEYS MISSING */}
+                        {step === 'keys_missing' && (
+                            <div>
+                                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                                    <div style={{ fontSize: 40, marginBottom: 8 }}>🔑</div>
+                                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                        CRYPTOGRAPHIC KEYS REQUIRED
+                                    </h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
+                                        APP_KEY AND JWT_SECRET NOT CONFIGURED
+                                    </p>
                                 </div>
 
-                                {error && (
-                                    <div style={{
-                                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                                        borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-                                        color: 'var(--red)', fontSize: 13,
-                                    }}>
-                                        ⚠️ {error}
-                                    </div>
-                                )}
+                                <div style={{
+                                    background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)',
+                                    borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: 'var(--red)',
+                                }}>
+                                    ⚠️ <strong>APP_KEY</strong> and/or <strong>JWT_SECRET</strong> are missing or set to default values in your <code>.env</code> file. These keys are required to encrypt data and sign tokens.
+                                </div>
 
-                                <button type="submit" disabled={loading} style={{
-                                    width: '100%', padding: '13px 20px', borderRadius: 10,
+                                {/* Command */}
+                                <div style={{
+                                    background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                    borderRadius: 8, padding: 20, marginBottom: 16,
+                                }}>
+                                    <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                                        PROTOCOL 01 — RUN IN YOUR TERMINAL
+                                    </div>
+                                    <div style={{
+                                        fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--accent-secondary)',
+                                        background: 'rgba(0,0,0,0.35)', borderRadius: 4, padding: '12px 16px',
+                                        border: '1px solid var(--border)', letterSpacing: 0.5,
+                                    }}>
+                                        npx hyperz key:generate
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6 }}>
+                                        This writes <code style={{ color: 'var(--accent)' }}>APP_KEY</code> and <code style={{ color: 'var(--accent)' }}>JWT_SECRET</code> to your <code>.env</code> file automatically.
+                                    </div>
+                                </div>
+
+                                {/* Restart note */}
+                                <div style={{
+                                    background: 'rgba(234,179,8,0.07)', border: '1px solid rgba(234,179,8,0.25)',
+                                    borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: '#eab308',
+                                }}>
+                                    ⟳ After running the command, <strong>restart your HyperZ server</strong> — this page will automatically advance when the keys are detected.
+                                </div>
+
+                                <button onClick={handleRefresh} disabled={checking} style={{
+                                    width: '100%', padding: '12px 20px', borderRadius: 8,
                                     background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
                                     color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
-                                    fontSize: 15, opacity: loading ? 0.6 : 1,
-                                    transition: 'all 0.2s',
+                                    fontSize: 14, opacity: checking ? 0.6 : 1,
                                 }}>
-                                    {loading
-                                        ? '⏳ Please wait…'
-                                        : effectiveMode === 'register' ? '🛡️ Create Admin Account' : '🔐 Sign In'}
+                                    {checking ? '⏳ Checking…' : '🔄 Re-check Keys'}
                                 </button>
-                            </form>
-
-                            {/* Toggle login/register only if admin exists */}
-                            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)' }}>
-                                    <span>Database: {status?.driver || 'unknown'}</span>
-                                    <span>Pool: SQL Connected</span>
+                                <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                                    AUTO-SCANNING IN {pollCountdown}s…
                                 </div>
                             </div>
+                        )}
 
-                            {step === 'login' && (
-                                <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-                                    Protected by bcrypt + JWT · 24h session
+                        {/* STEP 2a — DB NOT CONNECTED */}
+                        {step === 'db_setup' && (
+                            <div>
+                                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                                    <div style={{ fontSize: 40, marginBottom: 8 }}>🗄️</div>
+                                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                        DATABASE CONNECTION
+                                    </h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
+                                        CONFIGURE DATABASE CREDENTIALS IN .ENV
+                                    </p>
                                 </div>
-                            )}
-                            {step === 'register' && (
+
+                                {/* Keys confirmed */}
+                                <div style={{ marginBottom: 16, background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span>✓</span>
+                                    <span>Security keys detected — APP_KEY and JWT_SECRET are configured.</span>
+                                </div>
+
                                 <div style={{
-                                    marginTop: 16, background: 'rgba(34,197,94,0.08)',
-                                    border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8,
-                                    padding: 12, fontSize: 12, color: 'var(--green)',
+                                    background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                    borderRadius: 8, padding: 20, marginBottom: 12,
                                 }}>
-                                    🔒 This is a one-time setup. Registration will be locked after your first admin account is created.
+                                    <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                                        SET IN YOUR .ENV FILE
+                                    </div>
+                                    <pre style={{
+                                        fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text)',
+                                        lineHeight: 1.8, whiteSpace: 'pre', margin: 0,
+                                    }}>{`DB_DRIVER=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=your_database
+DB_USER=root
+DB_PASSWORD=secret`}</pre>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+                                        Supported drivers: <strong>mysql</strong> · <strong>postgresql</strong> · <strong>sqlite</strong>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
+
+                                <div style={{
+                                    background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)',
+                                    borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: 'var(--red)',
+                                }}>
+                                    ⚠️ After editing <strong>.env</strong>, you must <strong>restart the HyperZ server</strong> for the new DB config to take effect.
+                                </div>
+
+                                <button onClick={handleRefresh} disabled={checking} style={{
+                                    width: '100%', padding: '12px 20px', borderRadius: 8,
+                                    background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
+                                    color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
+                                    fontSize: 14, opacity: checking ? 0.6 : 1,
+                                }}>
+                                    {checking ? '⏳ Checking…' : '🔄 Check Connection'}
+                                </button>
+                                <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                                    AUTO-POLLING IN {pollCountdown}s…
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STEP 2b — DB CONNECTED, TABLE MISSING */}
+                        {step === 'migrate' && (
+                            <div>
+                                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                                    <div style={{ fontSize: 40, marginBottom: 8 }}>⚔️</div>
+                                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                        DATABASE CONNECTED
+                                    </h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>
+                                        RUN MIGRATIONS TO CREATE SCHEMA
+                                    </p>
+                                </div>
+
+                                {/* Keys + DB confirmed */}
+                                <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {[
+                                        '✓  Security keys configured',
+                                        `✓  Database connected · ${status?.driver || 'unknown'} · ${status?.connectionInfo || ''}`,
+                                    ].map(msg => (
+                                        <div key={msg} style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: 'var(--green)' }}>
+                                            {msg}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, padding: 20, marginBottom: 12 }}>
+                                    <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                                        RUN IN YOUR TERMINAL
+                                    </div>
+                                    <div style={{
+                                        fontFamily: 'var(--mono)', fontSize: 14, color: 'var(--cyan)',
+                                        background: 'rgba(0,0,0,0.35)', borderRadius: 4, padding: '12px 16px',
+                                        border: '1px solid var(--border)',
+                                    }}>
+                                        npx hyperz migrate
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6 }}>
+                                        Creates the <code style={{ color: 'var(--accent)' }}>hyperz_admins</code> table and all other pending migrations. This page will automatically advance once the table is detected.
+                                    </div>
+                                </div>
+
+                                <button onClick={handleRefresh} disabled={checking} style={{
+                                    width: '100%', padding: '12px 20px', borderRadius: 8,
+                                    background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
+                                    color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
+                                    fontSize: 14, opacity: checking ? 0.6 : 1,
+                                }}>
+                                    {checking ? '⏳ Checking…' : '🔄 Check for Table'}
+                                </button>
+                                <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
+                                    AUTO-DETECTING MIGRATION… {pollCountdown}s
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STEP 3 — REGISTER / LOGIN */}
+                        {(step === 'register' || step === 'login') && (
+                            <div>
+                                <div style={{ textAlign: 'center', marginBottom: 28 }}>
+                                    <div style={{ fontSize: 40, marginBottom: 8, filter: 'drop-shadow(0 0 10px var(--accent-glow))' }}>
+                                        {effectiveMode === 'register' ? '🛡️' : '🔒'}
+                                    </div>
+                                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontFamily: 'var(--tactical)' }}>
+                                        {effectiveMode === 'register' ? 'INITIALIZE ADMIN' : 'AUTHORIZED ACCESS'}
+                                    </h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--mono)' }}>
+                                        {effectiveMode === 'register'
+                                            ? 'ESTABLISHING PRIMARY OVERLORD ACCOUNT'
+                                            : 'VERIFYING SECURITY CREDENTIALS'}
+                                    </p>
+                                </div>
+
+                                <form onSubmit={handleSubmit}>
+                                    {effectiveMode === 'register' && (
+                                        <div style={{ marginBottom: 16 }}>
+                                            <label style={{
+                                                display: 'block', fontSize: 10, textTransform: 'uppercase',
+                                                letterSpacing: 2, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8, fontFamily: 'var(--tactical)',
+                                            }}>OPERATOR_NAME</label>
+                                            <input
+                                                type="text" required value={form.name}
+                                                onChange={e => setForm({ ...form, name: e.target.value })}
+                                                placeholder="John Doe"
+                                                style={{
+                                                    width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                                    borderRadius: 8, color: 'var(--text)', padding: '11px 14px',
+                                                    fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div style={{ marginBottom: 16 }}>
+                                        <label style={{
+                                            display: 'block', fontSize: 11, textTransform: 'uppercase',
+                                            letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6,
+                                        }}>Email Address</label>
+                                        <input
+                                            type="email" required value={form.email}
+                                            onChange={e => setForm({ ...form, email: e.target.value })}
+                                            placeholder="admin@example.com"
+                                            style={{
+                                                width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                                borderRadius: 8, color: 'var(--text)', padding: '11px 14px',
+                                                fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div style={{ marginBottom: 20 }}>
+                                        <label style={{
+                                            display: 'block', fontSize: 11, textTransform: 'uppercase',
+                                            letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6,
+                                        }}>Password</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type={showPassword ? 'text' : 'password'} required
+                                                value={form.password}
+                                                onChange={e => setForm({ ...form, password: e.target.value })}
+                                                placeholder={effectiveMode === 'register' ? 'Min 8 chars, uppercase + number' : '••••••••'}
+                                                minLength={effectiveMode === 'register' ? 8 : undefined}
+                                                style={{
+                                                    width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                                    borderRadius: 8, color: 'var(--text)', padding: '11px 44px 11px 14px',
+                                                    fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                                                }}
+                                            />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
+                                                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                                                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16, padding: 4,
+                                            }}>
+                                                {showPassword ? '🙈' : '👁️'}
+                                            </button>
+                                        </div>
+                                        {effectiveMode === 'register' && (
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                                                Must contain uppercase, lowercase, and a number
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {error && (
+                                        <div style={{
+                                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                                            borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+                                            color: 'var(--red)', fontSize: 13,
+                                        }}>
+                                            ⚠️ {error}
+                                        </div>
+                                    )}
+
+                                    <button type="submit" disabled={loading} style={{
+                                        width: '100%', padding: '13px 20px', borderRadius: 8,
+                                        background: 'linear-gradient(135deg, var(--accent), #6d28d9)',
+                                        color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer',
+                                        fontSize: 15, opacity: loading ? 0.6 : 1, transition: 'all 0.2s',
+                                    }}>
+                                        {loading
+                                            ? '⏳ Please wait…'
+                                            : effectiveMode === 'register' ? '🛡️ Create Admin Account' : '🔐 Sign In'}
+                                    </button>
+                                </form>
+
+                                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' }}>
+                                        <span>Database: {status?.driver || 'unknown'}</span>
+                                        <span>{status?.connectionInfo || ''}</span>
+                                    </div>
+                                </div>
+
+                                {step === 'login' && (
+                                    <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+                                        Protected by bcrypt + JWT · 24h session
+                                    </div>
+                                )}
+                                {step === 'register' && (
+                                    <div style={{
+                                        marginTop: 14, background: 'rgba(34,197,94,0.08)',
+                                        border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8,
+                                        padding: '10px 14px', fontSize: 12, color: 'var(--green)',
+                                    }}>
+                                        🔒 One-time setup. Registration is locked after your first admin is created.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Right Column: Features + Tech + Guide */}
+                {/* ── Right: Feature grid + Tech + Security ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    {/* Quick Start Guide */}
-                    <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 16, padding: 24,
-                    }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            ⚡ Quick Start
+
+                    {/* Setup checklist (mirrors left panel progress for reference) */}
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                            // DEPLOYMENT_SEQUENCE
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                            {[
-                                { step: '1', title: 'Generate Keys', desc: 'npx hyperz key:generate', icon: '🔑', active: step === 'db_setup' },
-                                { step: '2', title: 'Configure Database', desc: 'Set DB credentials in .env & restart', icon: '🗄️', active: step === 'db_setup' },
-                                { step: '3', title: 'Run Migrations', desc: 'npx hyperz migrate', icon: '🔄', active: step === 'migrate' },
-                                { step: '4', title: 'Create Admin', desc: 'Register your first admin account', icon: '🛡️', active: step === 'register' },
-                                { step: '5', title: 'Start Building', desc: 'Access the full admin panel', icon: '🚀', active: step === 'login' },
-                            ].map(s => (
-                                <div key={s.step} style={{
-                                    background: s.active ? 'var(--accent-glow)' : 'var(--bg-input)',
-                                    border: `1px solid ${s.active ? 'var(--accent)' : 'var(--border)'}`,
-                                    borderRadius: 10, padding: 14,
-                                    opacity: s.active ? 1 : 0.6,
-                                    transition: 'all 0.3s',
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                        <span style={{
-                                            width: 22, height: 22, borderRadius: '50%',
-                                            background: s.active ? 'var(--accent)' : 'var(--border)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: 11, fontWeight: 700, color: '#fff',
-                                        }}>{s.step}</span>
-                                        <span style={{ fontWeight: 600, fontSize: 13, color: s.active ? 'var(--accent)' : 'var(--text)' }}>
-                                            {s.title}
-                                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {STEPS.map(s => {
+                                const sIndex = stepOrder.indexOf(s.id as typeof stepOrder[number]);
+                                const done = sIndex < stepIndex;
+                                const active = s.id === step;
+                                return (
+                                    <div key={s.id} style={{
+                                        display: 'flex', alignItems: 'center', gap: 14,
+                                        padding: '10px 14px', borderRadius: 8,
+                                        background: active ? 'var(--accent-glow)' : done ? 'rgba(34,197,94,0.05)' : 'var(--bg-input)',
+                                        border: `1px solid ${active ? 'var(--accent)' : done ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`,
+                                        opacity: done || active ? 1 : 0.5,
+                                        transition: 'all 0.3s',
+                                    }}>
+                                        <div style={{
+                                            width: 28, height: 28, borderRadius: '50%', display: 'flex',
+                                            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                            fontSize: done ? 13 : 14,
+                                            background: done ? 'var(--green)' : active ? 'var(--accent)' : 'var(--border)',
+                                            color: '#fff',
+                                        }}>
+                                            {done ? '✓' : s.icon}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: active ? 'var(--accent)' : done ? 'var(--green)' : 'var(--text)' }}>
+                                                {s.num}. {s.label}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>{s.desc}</div>
+                                        </div>
+                                        {active && (
+                                            <div style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--tactical)', letterSpacing: 1, flexShrink: 0 }}>
+                                                ← CURRENT
+                                            </div>
+                                        )}
                                     </div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 30 }}>
-                                        {s.desc}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Feature Grid */}
-                    <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 16, padding: 24,
-                    }}>
-                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-secondary)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
-                            // SYSTEM_CAPABILITIES [27_MODULES_ONLINE]
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-secondary)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                            // SYSTEM_CAPABILITIES [24_MODULES_ONLINE]
                         </h3>
-                        <div style={{
-                            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8,
-                        }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                             {FEATURES.map(f => (
                                 <div key={f.name} style={{
                                     background: 'var(--bg-input)', borderRadius: 8, padding: '10px 12px',
-                                    border: '1px solid var(--border)', transition: 'border-color 0.2s',
+                                    border: '1px solid var(--border)',
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                                         <span style={{ fontSize: 14 }}>{f.icon}</span>
                                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{f.name}</span>
                                     </div>
-                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 22 }}>
-                                        {f.desc}
-                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 22 }}>{f.desc}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Tech Stack */}
-                    <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 4, padding: 32, backdropFilter: 'blur(10px)'
-                    }}>
-                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 28 }}>
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
                             // CORE_TECHNOLOGY_STACK
                         </h3>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {TECH_STACK.map(t => (
                                 <span key={t.name} style={{
                                     padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                                    background: `${t.color}18`, color: t.color,
-                                    border: `1px solid ${t.color}30`,
+                                    background: `${t.color}18`, color: t.color, border: `1px solid ${t.color}30`,
                                 }}>
                                     {t.name}
                                 </span>
@@ -550,12 +638,9 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    {/* Security Info */}
-                    <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border)',
-                        borderRadius: 4, padding: 32, backdropFilter: 'blur(10px)'
-                    }}>
-                        <h3 style={{ fontSize: 11, fontWeight: 700, color: '#ff4444', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
+                    {/* Security */}
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 28 }}>
+                        <h3 style={{ fontSize: 11, fontWeight: 700, color: '#ff4444', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--tactical)' }}>
                             // SECURITY_PROTOCOLS [ACTIVE]
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
