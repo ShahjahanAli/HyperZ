@@ -26,3 +26,28 @@ HyperZ identifies specific versions for Long-Term Support:
 ## Experimental Features
 
 Features marked with **[EXPERIMENTAL]** or placed in internal `_` namespaces (e.g., `/api/_admin`) do not follow the strict SemVer guarantees and may change in minor releases.
+
+## Module Stability Matrix
+
+| Module | Status | Since |
+|---|---|---|
+| Core (Container, Providers, Router) | **Stable** | v2.0 |
+| Authentication (JWT, RBAC) | **Stable** | v2.0 |
+| Database (TypeORM, Migrations) | **Stable** | v2.0 |
+| Validation (Zod) | **Stable** | v2.0 |
+| Cache, Queue, Mail, Storage | **Stable** | v2.0 |
+| Security Suite (Encrypter, CSRF, Sanitization, HashService) | **Stable** | v2.1 |
+| Token Blacklisting, API Key Auth | **Stable** | v2.1 |
+| Signed URLs, HTTPS Enforcement | **Stable** | v2.1 |
+| Feature Flags | **Stable** | v2.1 |
+| Lifecycle Hooks | **Stable** | v2.1 |
+| Audit Log | **Stable** | v2.1 |
+| Query Builder (DB Facade) | **Stable** | v2.1 |
+| Webhook System | **Stable** | v2.1 |
+| AI Streaming (SSE) | **Stable** | v2.1 |
+| AI Gateway & Agents | Maturing | v2.0 |
+| GraphQL Integration | Maturing | v2.0 |
+| Admin Panel | **[EXPERIMENTAL]** | v2.0 |
+| MCP Server | **[EXPERIMENTAL]** | v2.0 |
+| Multi-Tenancy | **[EXPERIMENTAL]** | v2.0 |
+| Billing | **[EXPERIMENTAL]** | v2.0 |

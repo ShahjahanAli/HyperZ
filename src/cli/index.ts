@@ -770,7 +770,7 @@ export default router;
             console.log(chalk.cyan(`\n✨ Module "${name}" scaffolded successfully!\n`));
             console.log(chalk.gray('  Next steps:'));
             console.log(chalk.gray(`  1. Edit the model: app/models/${name}.ts`));
-            console.log(chalk.gray(`  2. Run migration: npx tsx bin/hyperz.ts migrate`));
+            console.log(chalk.gray(`  2. Run migration: npx hyperz migrate`));
             console.log(chalk.gray(`  3. Routes auto-loaded at: /api/${tableName}`));
         });
 }

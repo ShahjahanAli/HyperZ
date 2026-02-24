@@ -169,7 +169,7 @@ export default function LandingPage() {
                                     background: 'rgba(0,0,0,0.3)', borderRadius: 2, padding: '12px 16px',
                                     border: '1px solid var(--border)',
                                 }}>
-                                    npx tsx bin/hyperz.ts key:generate
+                                    npx hyperz key:generate
                                 </div>
                                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontFamily: 'var(--mono)' }}>
                                     GENERATE [APP_KEY] AND [JWT_SECRET] STRINGS
@@ -243,7 +243,7 @@ DB_PASSWORD=secret`}
                                     background: 'var(--bg)', borderRadius: 6, padding: '10px 14px',
                                     border: '1px solid var(--border)',
                                 }}>
-                                    npx tsx bin/hyperz.ts migrate
+                                    npx hyperz migrate
                                 </div>
                             </div>
 
@@ -432,9 +432,9 @@ DB_PASSWORD=secret`}
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                             {[
-                                { step: '1', title: 'Generate Keys', desc: 'npx tsx bin/hyperz.ts key:generate', icon: '🔑', active: step === 'db_setup' },
+                                { step: '1', title: 'Generate Keys', desc: 'npx hyperz key:generate', icon: '🔑', active: step === 'db_setup' },
                                 { step: '2', title: 'Configure Database', desc: 'Set DB credentials in .env & restart', icon: '🗄️', active: step === 'db_setup' },
-                                { step: '3', title: 'Run Migrations', desc: 'npx tsx bin/hyperz.ts migrate', icon: '🔄', active: step === 'migrate' },
+                                { step: '3', title: 'Run Migrations', desc: 'npx hyperz migrate', icon: '🔄', active: step === 'migrate' },
                                 { step: '4', title: 'Create Admin', desc: 'Register your first admin account', icon: '🛡️', active: step === 'register' },
                                 { step: '5', title: 'Start Building', desc: 'Access the full admin panel', icon: '🚀', active: step === 'login' },
                             ].map(s => (

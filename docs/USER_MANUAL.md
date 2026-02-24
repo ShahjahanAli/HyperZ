@@ -1,6 +1,6 @@
 # ⚡ HyperZ Framework — User Manual
 
-**Version:** 2.0.0  
+**Version:** 2.1.1  
 **Last Updated:** February 2026  
 
 ---
@@ -29,6 +29,13 @@
 20. [CLI Reference](#20-cli-reference)
 21. [Deployment](#21-deployment)
 22. [Troubleshooting](#22-troubleshooting)
+23. [Security Services](#23-security-services)
+24. [Feature Flags](#24-feature-flags)
+25. [Lifecycle Hooks](#25-lifecycle-hooks)
+26. [Audit Log](#26-audit-log)
+27. [Webhook System](#27-webhook-system)
+28. [Query Builder (DB Facade)](#28-query-builder-db-facade)
+29. [AI Streaming (SSE)](#29-ai-streaming-sse)
 
 ---
 
@@ -52,7 +59,7 @@ cd HyperZ
 npm install
 
 # Generate application key
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Copy environment configuration
 cp .env.example .env
@@ -210,6 +217,10 @@ Configuration files live in `config/` and export default objects:
 | `config/ai.ts` | AI provider settings |
 | **`config/docs.ts`** | **OpenAPI / Swagger configuration** |
 | **`config/monitoring.ts`** | **Observability settings** |
+| **`config/security.ts`** | **CSRF, HTTPS, sanitization settings** |
+| **`config/features.ts`** | **Feature flag definitions** |
+| **`config/webhooks.ts`** | **Webhook secret and retry settings** |
+| **`config/ratelimit.ts`** | **Per-user rate limit tiers** |
 
 ---
 
@@ -218,7 +229,7 @@ Configuration files live in `config/` and export default objects:
 ### Step 1: Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller Product --model Product
+npx hyperz make:controller Product --model Product
 ```
 
 This generates `app/controllers/ProductController.ts` with full CRUD logic linked to the `Product` model:
@@ -261,7 +272,7 @@ export class ProductController extends Controller {
 ### Step 2: Create a Model with Migration
 
 ```bash
-npx tsx bin/hyperz.ts make:model Product -m
+npx hyperz make:model Product -m
 ```
 
 Edit the generated migration file to define your schema:
@@ -314,7 +325,7 @@ export default router;
 ### Step 4: Run Migrations
 
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 ### Step 5: Test Your API
@@ -334,34 +345,34 @@ Or open the **API Playground** at `http://localhost:7700/api/playground` and tes
 
 **Create a migration:**
 ```bash
-npx tsx bin/hyperz.ts make:migration create_orders_table
+npx hyperz make:migration create_orders_table
 ```
 
 **Run all pending migrations:**
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 **Rollback the last batch:**
 ```bash
-npx tsx bin/hyperz.ts migrate:rollback
+npx hyperz migrate:rollback
 ```
 
 ### 5.2 Seeders
 
 **Create a seeder:**
 ```bash
-npx tsx bin/hyperz.ts make:seeder ProductSeeder
+npx hyperz make:seeder ProductSeeder
 ```
 
 **Run all seeders:**
 ```bash
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 **Run a specific seeder:**
 ```bash
-npx tsx bin/hyperz.ts db:seed -c ProductSeeder
+npx hyperz db:seed -c ProductSeeder
 ```
 
 ### 5.3 Model Usage
@@ -398,7 +409,7 @@ await Product.restore(product.id);
 
 **Create a factory:**
 ```bash
-npx tsx bin/hyperz.ts make:factory ProductFactory
+npx hyperz make:factory ProductFactory
 ```
 
 **Define factory fields:**
@@ -430,8 +441,8 @@ const products = Factory.createMany('products', 50);
 ### 6.1 Scaffold Persistent Auth
 
 ```bash
-npx tsx bin/hyperz.ts make:auth
-npx tsx bin/hyperz.ts migrate   # Run the generated auth migrations
+npx hyperz make:auth
+npx hyperz migrate   # Run the generated auth migrations
 ```
 
 This creates a production-ready authentication system:
@@ -557,7 +568,7 @@ await cache.flush();
 ### 9.1 Create a Job
 
 ```bash
-npx tsx bin/hyperz.ts make:job SendWelcomeEmail
+npx hyperz make:job SendWelcomeEmail
 ```
 
 This creates `app/jobs/SendWelcomeEmail.ts`:
@@ -726,7 +737,7 @@ const vector = await ai.embed('HyperZ is a modern framework');
 ### 12.3 Create AI Actions
 
 ```bash
-npx tsx bin/hyperz.ts make:ai-action ContentSummarizer
+npx hyperz make:ai-action ContentSummarizer
 ```
 
 This creates `app/ai/ContentSummarizer.ts` with a ready-to-use template.
@@ -1018,7 +1029,7 @@ const res3 = await client.withToken('your-jwt-token').get('/api/profile');
 Start an interactive REPL with preloaded app context:
 
 ```bash
-npx tsx bin/hyperz.ts tinker
+npx hyperz tinker
 ```
 
 Available in the REPL:
@@ -1146,6 +1157,8 @@ The admin panel communicates via `/api/_admin/*` endpoints:
 | `make:job <Name>` | Create a queue job class |
 | `make:factory <Name>` | Create a database factory |
 | `make:ai-action <Name>` | Create an AI action class |
+| `make:test <Name> [-f]` | Create a unit or feature test |
+| `make:module <Name>` | Scaffold full domain module (model+controller+route+migration+test) |
 | `migrate` | Run pending migrations |
 | `migrate:rollback` | Rollback last migration batch |
 | `db:seed` | Run all database seeders |
@@ -1220,8 +1233,8 @@ pm2 save
 
 | Issue | Solution |
 |---|---|
-| `APP_KEY is empty` | Run `npx tsx bin/hyperz.ts key:generate` |
-| `SQLITE_ERROR` | Run `npx tsx bin/hyperz.ts migrate` |
+| `APP_KEY is empty` | Run `npx hyperz key:generate` |
+| `SQLITE_ERROR` | Run `npx hyperz migrate` |
 | Port already in use | Change `APP_PORT` in `.env` |
 | Module not found | Run `npm install` |
 | Redis connection refused | Start Redis or switch to `CACHE_DRIVER=memory` |
@@ -1234,6 +1247,304 @@ pm2 save
 - 📋 [Product Features Specification](FEATURES.md)
 - 🐛 [GitHub Issues](https://github.com/ShahjahanAli/HyperZ/issues)
 - 💬 [Discussions](https://github.com/ShahjahanAli/HyperZ/discussions)
+
+---
+
+## 23. Security Services
+
+HyperZ ships a full security suite configured via `config/security.ts`.
+
+### 23.1 Password Hashing
+
+```typescript
+import { HashService } from '../../src/auth/HashService.js';
+
+const hash = await HashService.make('my-password');
+const valid = await HashService.check('my-password', hash);
+const rehash = await HashService.needsRehash(hash, 14); // check cost factor
+```
+
+### 23.2 Encryption
+
+AES-256-GCM authenticated encryption using `APP_KEY`:
+
+```typescript
+import { Encrypter } from '../../src/support/Encrypter.js';
+
+const encrypted = Encrypter.encrypt('sensitive-data');
+const decrypted = Encrypter.decrypt(encrypted); // "sensitive-data"
+```
+
+### 23.3 Signed URLs
+
+Generate tamper-proof URLs with expiration:
+
+```typescript
+import { SignedUrl } from '../../src/support/SignedUrl.js';
+
+const url = SignedUrl.create('https://example.com/download', { file: 'report.pdf' }, 3600);
+const isValid = SignedUrl.verify(url); // true / false
+```
+
+### 23.4 CSRF Protection
+
+Enabled automatically via `SecurityServiceProvider`. Uses double-submit cookie pattern.
+
+- Cookie: `XSRF-TOKEN` (auto-set on every response)
+- Header: `X-XSRF-TOKEN` (client must send on POST/PUT/PATCH/DELETE)
+- Safe methods (GET/HEAD/OPTIONS) are excluded
+
+### 23.5 Request Sanitization
+
+Enabled automatically. Strips XSS payloads and blocks prototype pollution on `req.body`, `req.query`, and `req.params`.
+
+### 23.6 HTTPS Enforcement
+
+In production (`APP_ENV=production`), HTTP requests are automatically redirected to HTTPS. Respects `X-Forwarded-Proto` behind reverse proxies.
+
+### 23.7 Token Blacklisting
+
+Revoke JWTs before expiry:
+
+```typescript
+import { TokenBlacklist } from '../../src/auth/TokenBlacklist.js';
+
+await TokenBlacklist.revoke('jwt-id-here');
+const revoked = await TokenBlacklist.isRevoked('jwt-id-here');
+```
+
+### 23.8 API Key Authentication
+
+Protect routes with hashed API keys and scopes:
+
+```typescript
+import { apiKeyMiddleware } from '../../src/auth/ApiKeyMiddleware.js';
+
+router.get('/data', apiKeyMiddleware(async (key) => {
+  // Look up key hash in DB, return { valid: true, scopes: ['read'] }
+}, ['read']), controller.index.bind(controller));
+```
+
+### Environment Variables
+
+```env
+APP_KEY=base64:...          # Required for encryption + signed URLs
+WEBHOOK_SECRET=your-secret  # Default webhook signing secret
+WEBHOOK_MAX_RETRIES=3       # Max webhook delivery retry attempts
+```
+
+---
+
+## 24. Feature Flags
+
+### 24.1 Configuration
+
+Define flags in `config/features.ts`:
+
+```typescript
+export default {
+  flags: {
+    'new-dashboard': { driver: 'config', value: true },
+    'beta-ai':       { driver: 'env', envKey: 'FEATURE_BETA_AI' },
+    'premium-only':  { driver: 'custom' },
+  },
+};
+```
+
+### 24.2 Runtime Checks
+
+```typescript
+import { FeatureFlags } from '../../src/support/FeatureFlags.js';
+
+if (await FeatureFlags.enabled('new-dashboard')) {
+  // Feature is on
+}
+
+// Dynamic definition with context
+FeatureFlags.define('premium-only', async (ctx) => ctx?.user?.plan === 'premium');
+await FeatureFlags.enabled('premium-only', { user: req.user });
+```
+
+### 24.3 Route Gating
+
+```typescript
+import { featureMiddleware } from '../../src/support/FeatureFlags.js';
+
+router.get('/v2/dashboard', featureMiddleware('new-dashboard'), controller.v2Dashboard.bind(controller));
+// Returns 404 if flag is disabled
+```
+
+---
+
+## 25. Lifecycle Hooks
+
+Register global hooks that fire outside the normal middleware chain:
+
+```typescript
+import { LifecycleHooks } from '../../src/http/LifecycleHooks.js';
+
+// Before route handler
+LifecycleHooks.onRequest(async (req, res) => {
+  req.startTime = Date.now();
+});
+
+// After response is sent
+LifecycleHooks.onResponse(async (req, res) => {
+  console.log(`${req.method} ${req.url} → ${res.statusCode}`);
+});
+
+// On unhandled error
+LifecycleHooks.onError(async (err, req, res) => {
+  externalErrorTracker.report(err);
+});
+
+// After response stream closes
+LifecycleHooks.onFinish(async (req, res) => {
+  const duration = Date.now() - req.startTime;
+  metrics.record(req.url, duration);
+});
+```
+
+---
+
+## 26. Audit Log
+
+### 26.1 Manual Recording
+
+```typescript
+import { AuditLog } from '../../src/logging/AuditLog.js';
+
+AuditLog.record({
+  action: 'user.login',
+  userId: user.id,
+  ip: req.ip,
+  metadata: { method: 'password' },
+});
+
+// Track model changes
+AuditLog.recordChange({
+  model: 'Post',
+  modelId: post.id,
+  action: 'update',
+  before: { title: 'Old Title' },
+  after: { title: 'New Title' },
+});
+```
+
+### 26.2 Auto-Middleware
+
+The `auditMiddleware()` is registered by `FeaturesServiceProvider` and automatically logs all POST/PUT/PATCH/DELETE requests.
+
+### 26.3 Querying
+
+```typescript
+const entries = await AuditLog.getEntries({
+  action: 'user.login',
+  userId: '42',
+  since: new Date('2026-01-01'),
+  until: new Date(),
+});
+```
+
+---
+
+## 27. Webhook System
+
+### 27.1 Register & Dispatch
+
+```typescript
+import { WebhookManager } from '../../src/webhooks/WebhookManager.js';
+
+// Register an endpoint
+WebhookManager.register({
+  url: 'https://partner.example.com/hooks',
+  events: ['order.created', 'order.shipped'],
+  secret: 'shared-secret',
+});
+
+// Dispatch an event
+await WebhookManager.dispatch('order.created', { orderId: 123, total: 49.99 });
+```
+
+### 27.2 Verify Incoming Webhooks
+
+```typescript
+const isValid = WebhookManager.verifySignature(rawBody, signatureHeader, secret);
+```
+
+### 27.3 Delivery Logs
+
+```typescript
+const logs = WebhookManager.getDeliveryLogs();
+// [{ id, url, event, status, statusCode, attempts, ... }]
+```
+
+---
+
+## 28. Query Builder (DB Facade)
+
+A fluent SQL query builder for raw database access without models:
+
+```typescript
+import { DB } from '../../src/database/QueryBuilder.js';
+
+// Select
+const admins = await DB.table('users').where('role', 'admin').orderBy('name').get();
+
+// Insert
+await DB.table('products').insert({ name: 'Widget', price: 9.99 });
+
+// Update
+await DB.table('products').where('id', 1).update({ price: 12.99 });
+
+// Delete
+await DB.table('products').where('id', 1).delete();
+
+// Count & exists
+const total = await DB.table('orders').count();
+const hasAdmin = await DB.table('users').where('role', 'admin').exists();
+
+// Pagination
+const page = await DB.table('posts').paginate(1, 20);
+
+// Transactions
+await DB.transaction(async () => {
+  await DB.table('accounts').where('id', 1).update({ balance: 90 });
+  await DB.table('accounts').where('id', 2).update({ balance: 110 });
+});
+```
+
+---
+
+## 29. AI Streaming (SSE)
+
+Stream AI responses to clients using Server-Sent Events:
+
+```typescript
+import { StreamResponse, sseMiddleware } from '../../src/ai/StreamResponse.js';
+
+router.post('/ai/chat', sseMiddleware(), async (req, res) => {
+  const stream = new StreamResponse(res);
+  stream.start();
+
+  // Stream from AI provider
+  const iterator = ai.streamChat(req.body.messages);
+  await stream.streamIterator(iterator);
+
+  // Or write tokens manually
+  stream.write('Hello');
+  stream.write(' world');
+  stream.writeEvent('done', JSON.stringify({ tokens: 42 }));
+  stream.end();
+});
+```
+
+**Client-side consumption:**
+```javascript
+const eventSource = new EventSource('/api/ai/chat');
+eventSource.onmessage = (e) => console.log(e.data);
+eventSource.addEventListener('done', (e) => { /* final stats */ });
+```
 
 ---
 

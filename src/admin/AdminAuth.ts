@@ -173,7 +173,7 @@ export async function registerAdmin(input: RegisterInput, callerIsAdmin = false)
     if (!ds) return { success: false, error: 'Database not connected. Configure your database in .env first.' };
 
     const exists = await dbTableExists(ds, TABLE);
-    if (!exists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx tsx bin/hyperz.ts migrate' };
+    if (!exists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx hyperz migrate' };
 
     // Validate input
     if (!input.email || !input.password || !input.name) {

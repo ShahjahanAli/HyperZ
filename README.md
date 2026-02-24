@@ -44,9 +44,10 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 |---|---|
 | 🏗️ **Core** | IoC Service Container, Service Providers, Config Manager, Application Kernel |
 | 🌐 **HTTP** | Laravel-style Router (groups, named routes, resource CRUD), Controller base class |
-| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS Protection** — all built-in |
+| 🛡️ **Middleware** | JWT Auth, CORS, Helmet, Rate Limiting, Request Logging, **XSS/CSRF Protection**, **HTTPS Enforcement** — all built-in |
 | 🗄️ **Database**| **TypeORM** (SQL Engine) **+ Mongoose** (MongoDB) — Unified database support |
 | 📊 **ORM** | Active Record Model (CRUD, soft deletes, timestamps, **Laravel-style proxies: `where`, `first`, `create`**) |
+| 🔍 **Query Builder** | Fluent `DB.table().where().get()` facade for raw SQL beyond Active Record |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
 | 🔧 **CLI** | 16+ Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
@@ -61,6 +62,11 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 | 🏢 **SaaS Core** | **Subdomain Multi-tenancy, Tenant-aware DB Pooling**, Stripe Billing, API Keys |
 | 🕵️ **AI Agents** | **Autonomous Agent Factory** with Skill & Memory management system |
 | 🛡️ **Enterprise** | **Audit Logging**, RBAC Policy Engine, Secrets Mgmt, Advanced IoC Decorators |
+| 🔐 **Security** | **AES-256-GCM Encryption**, CSRF Protection, Request Sanitization, **Signed URLs**, Token Blacklisting, API Key Auth |
+| 🎛️ **Feature Flags** | Config/env/custom driver-based feature toggles with per-user/tenant targeting |
+| 🪝 **Lifecycle Hooks** | Global `onRequest`, `onResponse`, `onError`, `onFinish` hooks beyond middleware |
+| 📡 **Webhooks** | HMAC-SHA256 signed dispatch, automatic retry with backoff, delivery logging |
+| 🌊 **AI Streaming** | Server-Sent Events (SSE) helpers for real-time LLM token streaming |
 | 📊 **Observability** | Real-time Metrics, **Slow Query Detection**, **System Health Checks**, AI Analytics |
 | 🎮 **API Playground** | Built-in Postman-like API testing UI at `/api/playground` |
 | 🧰 **Utilities** | String helpers, Collection class, global env/helpers, **SanitizeHtml** |
@@ -89,7 +95,7 @@ cd HyperZ
 npm install
 
 # Generate application key & JWT secret
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Copy environment config
 cp .env.example .env
@@ -109,7 +115,7 @@ Visit the built-in API Playground at **http://localhost:7700/api/playground** �
 ### 1. Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller Post --model Post
+npx hyperz make:controller Post --model Post
 ```
 
 This generates a fully functional `app/controllers/PostController.ts` linked to the `Post` model:
@@ -152,7 +158,7 @@ export class PostController extends Controller {
 ### 2. Create a Model with Migration
 
 ```bash
-npx tsx bin/hyperz.ts make:model Post -m
+npx hyperz make:model Post -m
 ```
 
 This generates:
@@ -179,7 +185,7 @@ export default router;
 ### 4. Run Migrations
 
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 ### 5. Visit Your API
@@ -199,28 +205,30 @@ HyperZ provides an Artisan-style CLI for rapid development:
 
 ```bash
 # Scaffolding
-npx tsx bin/hyperz.ts make:controller <Name> [--model <M>] # Create a controller (with CRUD if -m provided)
-npx tsx bin/hyperz.ts make:model <Name> [-m]      # Create a model (-m = with migration)
-npx tsx bin/hyperz.ts make:migration <name>       # Create a migration
-npx tsx bin/hyperz.ts make:seeder <Name>          # Create a seeder
-npx tsx bin/hyperz.ts make:middleware <Name>       # Create a middleware
-npx tsx bin/hyperz.ts make:route <name>           # Create a route file
-npx tsx bin/hyperz.ts make:auth                   # Scaffold persistent authentication (BCrypt, TypeORM)
-npx tsx bin/hyperz.ts make:job <Name>             # Create a queue job
-npx tsx bin/hyperz.ts make:factory <Name>         # Create a database factory
-npx tsx bin/hyperz.ts make:ai-action <Name>       # Create an AI action class
+npx hyperz make:controller <Name> [--model <M>] # Create a controller (with CRUD if -m provided)
+npx hyperz make:model <Name> [-m]      # Create a model (-m = with migration)
+npx hyperz make:migration <name>       # Create a migration
+npx hyperz make:seeder <Name>          # Create a seeder
+npx hyperz make:middleware <Name>       # Create a middleware
+npx hyperz make:route <name>           # Create a route file
+npx hyperz make:auth                   # Scaffold persistent authentication (BCrypt, TypeORM)
+npx hyperz make:job <Name>             # Create a queue job
+npx hyperz make:factory <Name>         # Create a database factory
+npx hyperz make:ai-action <Name>       # Create an AI action class
+npx hyperz make:test <Name> [-f]        # Create a unit/feature test
+npx hyperz make:module <Name>           # Scaffold full domain module (model+controller+route+migration+test)
 
 # Database
-npx tsx bin/hyperz.ts migrate                     # Run pending migrations
-npx tsx bin/hyperz.ts migrate:rollback            # Rollback last batch
-npx tsx bin/hyperz.ts db:seed                     # Run all seeders
-npx tsx bin/hyperz.ts db:seed -c UserSeeder       # Run specific seeder
+npx hyperz migrate                     # Run pending migrations
+npx hyperz migrate:rollback            # Rollback last batch
+npx hyperz db:seed                     # Run all seeders
+npx hyperz db:seed -c UserSeeder       # Run specific seeder
 
 # Utilities
-npx tsx bin/hyperz.ts key:generate                # Generate app key + JWT secret
-npx tsx bin/hyperz.ts serve                       # Start dev server
-npx tsx bin/hyperz.ts route:list                  # List route files
-npx tsx bin/hyperz.ts tinker                      # Interactive REPL
+npx hyperz key:generate                # Generate app key + JWT secret
+npx hyperz serve                       # Start dev server
+npx hyperz route:list                  # List route files
+npx hyperz tinker                      # Interactive REPL
 ```
 
 ---
@@ -298,7 +306,7 @@ PINECONE_API_KEY=...
 ### Generate AI Action Scaffolding
 
 ```bash
-npx tsx bin/hyperz.ts make:ai-action SummarizeAction
+npx hyperz make:ai-action SummarizeAction
 ```
 
 This creates `app/ai/SummarizeAction.ts` — a ready-to-use AI action class.
@@ -367,7 +375,7 @@ HyperZ ships with a **built-in Next.js admin panel** (Tailwind refactored) with 
 
 ```bash
 # 1. Generate security keys (APP_KEY + JWT_SECRET)
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # 2. Configure database in .env (mysql, postgresql, or sqlite)
 
@@ -375,7 +383,7 @@ npx tsx bin/hyperz.ts key:generate
 npm run dev
 
 # 4. Run migrations to create admin table
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # 5. Start the admin panel
 cd admin
@@ -495,7 +503,7 @@ Add to your MCP config:
   "mcpServers": {
     "hyperz": {
       "command": "npx",
-      "args": ["tsx", "bin/hyperz-mcp.ts"],
+      "args": ["hyperz-mcp"],
       "cwd": "/path/to/your/hyperz/project"
     }
   }
@@ -541,9 +549,12 @@ HyperZ/
 │   ├── auth.ts                   # Authentication config
 │   ├── cache.ts                  # Cache config
 │   ├── database.ts               # Database config
+│   ├── features.ts               # Feature flags config
 │   ├── mail.ts                   # Mail config
 │   ├── queue.ts                  # Queue config
-│   └── storage.ts                # Storage config
+│   ├── security.ts               # Security config (CSRF, sanitization, hashing, encryption)
+│   ├── storage.ts                # Storage config
+│   └── webhooks.ts               # Webhook config
 │
 ├── database/
 │   ├── factories/                # Database factories
@@ -575,9 +586,11 @@ HyperZ/
 │   ├── queue/                    # Queue manager (Sync + BullMQ)
 │   ├── scheduling/               # Task scheduler
 │   ├── storage/                  # Storage manager (Local + S3)
-│   ├── support/                  # Helpers, Str, Collection
+│   ├── security/                  # Security barrel exports
+│   ├── support/                  # Helpers, Str, Collection, Encrypter, SignedUrl, FeatureFlags
 │   ├── testing/                  # HTTP test client
 │   ├── validation/               # Zod validator
+│   ├── webhooks/                 # Webhook manager (HMAC signing, retry, delivery logs)
 │   └── websocket/                # WebSocket manager (Socket.io)
 │
 ├── storage/                      # App storage
@@ -599,11 +612,13 @@ HyperZ uses a service-provider pattern inspired by Laravel:
 
 ```
 Boot Order:
-  1. AppServiceProvider      → Kernel, global middleware
-  2. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
-  3. EventServiceProvider     → Event dispatcher
-  4. CacheServiceProvider     → Cache manager
-  5. RouteServiceProvider     → Auto-discovers & loads app/routes/*.ts
+  1. AppServiceProvider       → Kernel, global middleware
+  2. SecurityServiceProvider  → HTTPS, sanitization, CSRF, hashing, token blacklist
+  3. FeaturesServiceProvider  → Lifecycle hooks, feature flags, audit log
+  4. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
+  5. EventServiceProvider     → Event dispatcher
+  6. CacheServiceProvider     → Cache manager
+  7. RouteServiceProvider     → Auto-discovers & loads app/routes/*.ts
 ```
 
 ---
@@ -629,6 +644,8 @@ Copy `.env.example` to `.env` and configure:
 | `QUEUE_DRIVER` | Queue backend (`sync`, `redis`) | `sync` |
 | `AI_PROVIDER` | AI provider (`openai`, `anthropic`, `google`) | `openai` |
 | `APP_LOCALE` | Default locale | `en` |
+| `WEBHOOK_SECRET` | Default webhook signing secret | — |
+| `WEBHOOK_MAX_RETRIES` | Max webhook delivery retries | `3` |
 
 See [.env.example](.env.example) for all available options.
 
@@ -672,7 +689,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/hyperz
 ### Scaffold Auth
 
 ```bash
-npx tsx bin/hyperz.ts make:auth
+npx hyperz make:auth
 ```
 
 This creates:
@@ -796,6 +813,17 @@ HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
 - ✅ Native RAG (pgvector/Weaviate)
 - ✅ Tenant-aware DB Pooling
 
+### v2.1.1 (February 2026 — Latest)
+- [x] **Enterprise Security Suite:** AES-256-GCM encryption, CSRF protection, request sanitization, signed URLs, token blacklisting, API key auth middleware
+- [x] **Feature Flags:** Config/env/custom driver-based feature toggles with per-user/tenant gate middleware
+- [x] **Lifecycle Hooks:** Global onRequest/onResponse/onError/onFinish hooks
+- [x] **Audit Logging:** Pluggable-store audit trail with auto-middleware for state-changing requests
+- [x] **Webhook System:** HMAC-SHA256 signed outbound webhooks with retry, backoff, and delivery logging
+- [x] **AI Streaming (SSE):** StreamResponse helper for real-time LLM token streaming
+- [x] **Query Builder:** Fluent `DB.table().where().get()` facade for raw SQL
+- [x] **OpenAPI Enhancement:** Zod-to-JSON-Schema converter for accurate Swagger body/query/param schemas
+- [x] **CLI: `make:test` & `make:module`:** One-command scaffolding for tests and full domain modules
+
 ### v2.2 (Q2 2026)
 - [ ] **HyperZ-UI Starter Kit:** A pre-built SaaS frontend for the HyperZ backend.
 - [ ] **Advanced Agent Memory:** Support for long-term "Graph" memory.
@@ -915,7 +943,7 @@ npm run dev
 - 🎨 API Playground UI enhancements
 - � Additional AI provider drivers
 - 🌍 More language translation files
-- 📊 Swagger/OpenAPI auto-generation
+- 📊 Swagger/OpenAPI auto-generation (with Zod-to-JSON-Schema)
 - 🏗️ Additional database drivers
 
 ---

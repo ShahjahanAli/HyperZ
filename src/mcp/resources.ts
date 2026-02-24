@@ -59,7 +59,7 @@ export function registerResources(server: McpServer): void {
         { description: 'All registered API routes' },
         async () => {
             try {
-                const { stdout } = await execAsync('npx tsx bin/hyperz.ts route:list', {
+                const { stdout } = await execAsync('npx hyperz route:list', {
                     cwd: PROJECT_ROOT,
                     timeout: 15000,
                 });

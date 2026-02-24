@@ -65,6 +65,11 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
 | Helmet | Security headers |
 | Rate Limiting | Request throttling (configurable) |
 | Request Logging | Structured HTTP request logging |
+| HTTPS Redirect | HTTP→HTTPS enforcement in production |
+| Request Sanitization | XSS + prototype-pollution protection |
+| CSRF Protection | Double-submit cookie pattern |
+| Lifecycle Hooks | Global onRequest/onResponse/onError/onFinish |
+| Audit Log | Auto-logs all state-changing requests |
 
 ### 3.4 Request Validation
 - **Zod**-powered schema validation
@@ -138,6 +143,19 @@ HyperZ is a modern, Laravel-inspired, enterprise-grade API framework built on Ex
   - AuthController (login, register, me)
   - Auth routes
   - Users, Roles, Permissions migration files
+
+### 5.5 Security Services *(NEW)*
+
+| Service | Description |
+|---|---|
+| **HashService** | bcrypt password hashing facade (`make`, `check`, `needsRehash`) |
+| **Encrypter** | AES-256-GCM authenticated encryption via `APP_KEY` |
+| **SignedUrl** | HMAC-SHA256 tamper-proof URL generation & verification |
+| **TokenBlacklist** | JWT revocation with pluggable store (memory/redis) |
+| **ApiKeyMiddleware** | API key authentication with SHA-256 hashed storage + scope checking |
+| **CSRF Protection** | Double-submit cookie pattern, timing-safe comparison |
+| **Request Sanitization** | XSS stripping + prototype-pollution blocking on body/query/params |
+| **HTTPS Enforcement** | HTTP→HTTPS redirect in production, respects X-Forwarded-Proto |
 
 ---
 
@@ -337,6 +355,8 @@ HyperZ v2 introduces a dedicated AI orchestration layer that is deeply integrate
 | `make:job <Name>` | Create a queue job |
 | `make:factory <Name>` | Create a database factory |
 | `make:ai-action <Name>` | Create an AI action class |
+| `make:test <Name> [-f]` | Create a unit or feature test |
+| `make:module <Name>` | Scaffold domain module (model+controller+route+migration+test) |
 | `migrate` | Run pending migrations |
 | `migrate:rollback` | Rollback last migration batch |
 | `db:seed` | Run all seeders |
@@ -519,6 +539,11 @@ Pre-built workflows in `.agent/workflows/`:
 - Auto-generates parameters, request bodies, and responses by HTTP method
 - JWT + API key security schemes configured in `config/docs.ts`
 
+### 24.3 Zod-to-OpenAPI Schema Conversion *(NEW)*
+- `zodToOpenAPI(schema)` converts any Zod schema to a JSON-compatible OpenAPI schema object
+- Supports: strings, numbers, booleans, arrays, objects, enums, optionals, nullables, defaults, unions, literals
+- Integrates with `SwaggerGenerator` — Zod validation schemas auto-appear in Swagger UI request bodies
+
 ### 24.2 Dark-Themed Swagger UI
 - Self-contained Swagger UI served at `/api/docs`
 - Dark theme matching HyperZ admin panel aesthetic
@@ -592,4 +617,143 @@ Pre-built workflows in `.agent/workflows/`:
 - `GET /graphql` — GraphiQL IDE
 - `POST /graphql` — Query execution
 - `GET /graphql/schema` — Schema info for admin panel
+
+---
+
+## 28. Feature Flags *(NEW)*
+
+### 28.1 Flag Definition
+- Define in `config/features.ts` or dynamically via `FeatureFlags.define(name, resolver)`
+- Drivers: **config** (static boolean), **env** (environment variable), **custom** (async function)
+- Driver-aware resolution with per-request context support
+
+### 28.2 Runtime Usage
+```typescript
+await FeatureFlags.enabled('new-dashboard');                // boolean
+await FeatureFlags.enabled('beta-ai', { user: req.user });  // with context
+````
+
+### 28.3 Route Gating
+- `featureMiddleware('flag-name')` — returns 404 when flag is disabled
+- Apply to individual routes or route groups
+
+---
+
+## 29. Lifecycle Hooks *(NEW)*
+
+### 29.1 Hook Points
+| Hook | Fires |
+|---|---|
+| `onRequest(fn)` | Before route handler (every request) |
+| `onResponse(fn)` | After `res.send()` / `res.json()` |
+| `onError(fn)` | On unhandled error |
+| `onFinish(fn)` | After response stream close (`res.on('finish')`) |
+
+### 29.2 Use Cases
+- Telemetry & request timing
+- Audit trail injection
+- Request transformation (headers, body)
+- Cleanup / resource release
+
+### 29.3 Ordering
+- Hooks fire in registration order
+- Multiple hooks per type supported
+- Async hooks are awaited before proceeding
+
+---
+
+## 30. Audit Log *(NEW)*
+
+### 30.1 Recording
+```typescript
+AuditLog.record({ action: 'user.login', userId: '1', ip: '127.0.0.1', metadata: {} });
+AuditLog.recordChange({ model: 'Post', modelId: '42', action: 'update', before, after });
+```
+
+### 30.2 Auto-Middleware
+- `auditMiddleware()` automatically logs all **POST / PUT / PATCH / DELETE** requests
+- Captures: method, URL, user ID, IP, request body
+
+### 30.3 Pluggable Store
+- Default in-memory store; swap to database/external via `AuditLog.setStore(store)`
+- Query entries: `AuditLog.getEntries({ action?, userId?, since?, until? })`
+
+---
+
+## 31. Webhook System *(NEW)*
+
+### 31.1 Registration & Dispatch
+```typescript
+WebhookManager.register({ url: 'https://example.com/hook', events: ['user.created'], secret: 's3cr3t' });
+await WebhookManager.dispatch('user.created', { id: 1, name: 'Test' });
+```
+
+### 31.2 Security
+- HMAC-SHA256 payload signing (`X-Webhook-Signature` header)
+- `verifySignature(payload, signature, secret)` for incoming webhook validation
+- Timestamp included in signature header for replay protection
+
+### 31.3 Reliability
+- Automatic retry with exponential backoff (configurable max retries)
+- Delivery logs with status, response code, and attempt tracking
+- Config in `config/webhooks.ts`: `WEBHOOK_SECRET`, `WEBHOOK_MAX_RETRIES`
+
+---
+
+## 32. Query Builder (DB Facade) *(NEW)*
+
+### 32.1 Fluent Interface
+```typescript
+const users = await DB.table('users').where('role', 'admin').orderBy('name').get();
+const count = await DB.table('posts').where('published', true).count();
+```
+
+### 32.2 Supported Methods
+| Method | Description |
+|---|---|
+| `select(...columns)` | Select specific columns |
+| `where(col, op?, val)` | WHERE clause |
+| `orWhere(col, op?, val)` | OR WHERE clause |
+| `whereIn(col, values)` | WHERE IN |
+| `whereNull(col)` | WHERE IS NULL |
+| `orderBy(col, dir?)` | ORDER BY |
+| `limit(n)` / `offset(n)` | Pagination |
+| `groupBy(...cols)` | GROUP BY |
+| `insert(data)` | INSERT |
+| `update(data)` | UPDATE |
+| `delete()` | DELETE |
+| `count()` | Count rows |
+| `exists()` | Boolean existence check |
+| `paginate(page, perPage)` | Paginated results |
+
+### 32.3 Transactions
+```typescript
+await DB.transaction(async () => {
+  await DB.table('accounts').where('id', 1).update({ balance: 90 });
+  await DB.table('accounts').where('id', 2).update({ balance: 110 });
+});
+```
+
+---
+
+## 33. AI Streaming (SSE) *(NEW)*
+
+### 33.1 StreamResponse
+```typescript
+const stream = new StreamResponse(res);
+stream.start();             // sets SSE headers
+stream.write('token');      // send data event
+stream.writeEvent('done', JSON.stringify({ tokens: 42 })); // named event
+stream.end();               // close stream
+```
+
+### 33.2 Async Iterator Support
+```typescript
+await stream.streamIterator(ai.streamChat(messages));
+// automatically writes each chunk and ends the stream
+```
+
+### 33.3 SSE Middleware
+- `sseMiddleware()` — automatically sets `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`
+- Apply to any route that streams AI responses
 

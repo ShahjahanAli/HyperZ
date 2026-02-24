@@ -11,6 +11,7 @@ import pluralize from 'pluralize';
 import { Logger } from '../logging/Logger.js';
 import { getAdminStatus, registerAdmin, loginAdmin, verifyAdminToken } from './AdminAuth.js';
 import { registerSwaggerUI } from '../docs/SwaggerUI.js';
+import { registerScalarUI } from '../docs/ScalarUI.js';
 import { registerGraphQL } from '../graphql/GraphQLServer.js';
 import { metricsMiddleware, getPrometheusMetrics } from '../monitoring/MetricsCollector.js';
 import docsConfig from '../../config/docs.js';
@@ -186,6 +187,15 @@ export async function createAdminRouter(app?: any): Promise<Router> {
 
     // ── API Documentation (Swagger) ──
     registerSwaggerUI(router, { ...docsConfig, path: '/docs' });
+
+    // ── API Documentation (Scalar) ──
+    const scalarConf = (docsConfig as Record<string, unknown>).scalar as Record<string, unknown> | undefined;
+    registerScalarUI(router, {
+        ...docsConfig,
+        ...scalarConf,
+        path: '/reference',
+        title: docsConfig.title?.replace('Documentation', 'Reference') || 'HyperZ API Reference',
+    });
 
     // ── GraphQL Explorer ──
     registerGraphQL(router, { ...graphqlConfig, path: '/graphql' });

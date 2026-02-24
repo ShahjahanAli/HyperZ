@@ -10,7 +10,7 @@
 # 2. Use `.js` extensions in ALL import paths (ESM output)
 # 3. Use `type` keyword for type-only imports
 # 4. Application code goes in app/ — never edit src/ (framework core)
-# 5. Use the CLI (`npx tsx bin/hyperz.ts make:<type> <Name>`) to scaffold files
+# 5. Use the CLI (`npx hyperz make:<type> <Name>`) to scaffold files
 # 6. Route files in app/routes/ are auto-loaded — no manual registration
 # 7. Read env vars via env('KEY', 'default') helper, not process.env
 # 8. Bind controller methods in routes: controller.method.bind(controller)

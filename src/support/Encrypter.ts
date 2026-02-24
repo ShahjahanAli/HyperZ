@@ -37,7 +37,7 @@ export class Encrypter {
         const appKey = env('APP_KEY', '');
         if (!appKey || appKey.length < 16) {
             throw new Error(
-                'APP_KEY is not set or too short. Run: npx tsx bin/hyperz.ts key:generate'
+                'APP_KEY is not set or too short. Run: npx hyperz key:generate'
             );
         }
         return createHash('sha256').update(appKey).digest();

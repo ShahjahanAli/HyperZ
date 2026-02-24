@@ -11,4 +11,10 @@ export default {
     debug: envBool('APP_DEBUG', true),
     key: env('APP_KEY', ''),
     url: env('APP_URL', 'http://localhost:3000'),
+
+    /** HTTP adapter: 'express' | 'fastify' | 'hono' */
+    adapter: env('HTTP_ADAPTER', 'express') as 'express' | 'fastify' | 'hono',
+
+    /** ORM driver: 'typeorm' | 'drizzle' */
+    orm: env('ORM_DRIVER', 'typeorm') as 'typeorm' | 'drizzle',
 };
