@@ -35,7 +35,7 @@ This is **HyperZ**, a Laravel-inspired API framework built on Express.js 5 and T
 ## CLI Commands
 Prefer CLI scaffolding over manual file creation:
 ```
-npx hyperz make:controller <Name>Controller
+npx hyperz make:controller <Name>Controller [--model <M>]
 npx hyperz make:model <Name> -m
 npx hyperz make:migration <name>
 npx hyperz make:seeder <Name>Seeder
@@ -46,7 +46,14 @@ npx hyperz make:factory <Name>Factory
 npx hyperz make:ai-action <Name>Action
 npx hyperz make:test <Name> [-f]
 npx hyperz make:module <Name>
+npx hyperz make:auth
 npx hyperz migrate
+npx hyperz migrate:rollback
+npx hyperz db:seed
+npx hyperz key:generate
+npx hyperz serve
+npx hyperz route:list
+npx hyperz tinker
 ```
 
 ## Key Patterns

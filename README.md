@@ -50,7 +50,7 @@ It bridges the gap between building "AI Wrappers" and "Enterprise AI Products." 
 | 🔍 **Query Builder** | Fluent `DB.table().where().get()` facade for raw SQL beyond Active Record |
 | 🔐 **Auth & RBAC** | JWT authentication, bcrypt hashing, Gates, Policies, Role & Permission middleware |
 | ✅ **Validation** | Zod-powered request validation (body, query, params) with type safety |
-| 🔧 **CLI** | 16+ Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
+| 🔧 **CLI** | 19 Artisan-style commands for scaffolding, migrations, seeding, AI actions, and more |
 | 📡 **Events** | Pub/Sub event dispatcher with async listeners |
 | 📬 **Mail** | Nodemailer integration with SMTP transport |
 | 💾 **Cache** | Memory + **Redis** drivers with `remember()` helper |
@@ -230,6 +230,8 @@ npx hyperz serve                       # Start dev server
 npx hyperz route:list                  # List route files
 npx hyperz tinker                      # Interactive REPL
 ```
+
+> 19 commands total. Run `npx hyperz --help` to see all available commands.
 
 ---
 
@@ -549,9 +551,12 @@ HyperZ/
 │   ├── auth.ts                   # Authentication config
 │   ├── cache.ts                  # Cache config
 │   ├── database.ts               # Database config
+│   ├── docs.ts                   # Swagger/OpenAPI docs config
 │   ├── features.ts               # Feature flags config
+│   ├── graphql.ts                # GraphQL config
 │   ├── mail.ts                   # Mail config
 │   ├── queue.ts                  # Queue config
+│   ├── ratelimit.ts              # Rate limiting tiers config
 │   ├── security.ts               # Security config (CSRF, sanitization, hashing, encryption)
 │   ├── storage.ts                # Storage config
 │   └── webhooks.ts               # Webhook config
@@ -612,7 +617,7 @@ HyperZ uses a service-provider pattern inspired by Laravel:
 
 ```
 Boot Order:
-  1. AppServiceProvider       → Kernel, global middleware
+  1. AppServiceProvider       → Kernel, global middleware, DI bindings
   2. SecurityServiceProvider  → HTTPS, sanitization, CSRF, hashing, token blacklist
   3. FeaturesServiceProvider  → Lifecycle hooks, feature flags, audit log
   4. DatabaseServiceProvider  → TypeORM (DataSource) + MongoDB (Mongoose) connections
@@ -841,8 +846,7 @@ HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
 |---|---|
 | [Express 5.x](https://expressjs.com/) | HTTP framework |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [TypeORM](https://typeorm.io/) | Model Management & Relations |
-| [Knex.js](https://knexjs.org/) | SQL query builder |
+| [TypeORM](https://typeorm.io/) | ORM — Active Record, migrations, relations |
 | [Mongoose](https://mongoosejs.com/) | MongoDB ODM |
 | [Zod](https://zod.dev/) | Schema validation |
 | [Pino](https://getpino.io/) | Logging |
@@ -855,6 +859,7 @@ HyperZ is evolving rapidly. Here is our plan for the upcoming versions:
 | [Nodemailer](https://nodemailer.com/) | Email sending |
 | [node-cron](https://github.com/node-cron/node-cron) | Task scheduling |
 | [Helmet](https://helmetjs.github.io/) | Security headers |
+| [graphql-yoga](https://the-guild.dev/graphql/yoga-server) | GraphQL server |
 | [tsx](https://github.com/privatenumber/tsx) | TypeScript execution & hot-reload |
 
 ---
@@ -963,15 +968,23 @@ npm run dev
 - [x] Vitest test helpers & HTTP test client
 - [x] i18n / Localization support
 - [x] API Playground — built-in Postman-like API testing UI
-
-### 🔮 Future
-
-- [x] Auto-generated API docs (Swagger/OpenAPI)
-- [x] Rate limiting per user/API key
+- [x] Auto-generated API docs (Swagger/OpenAPI at `/api/docs`)
+- [x] Rate limiting per user/API key (multi-tier)
 - [x] Real-time dashboard & monitoring
-- [x] GraphQL integration layer
+- [x] GraphQL integration (graphql-yoga)
 - [x] Docker & deployment templates
 - [x] Admin panel UI (Next.js)
+- [x] MCP Server (19 tools, 6 resources, 4 prompts)
+- [x] Multi-tenancy (experimental)
+- [x] Billing integration (experimental)
+
+### 🔮 Planned
+
+- [ ] **HyperZ-UI Starter Kit:** A pre-built SaaS frontend for the HyperZ backend.
+- [ ] **Advanced Agent Memory:** Support for long-term "Graph" memory.
+- [ ] **One-Click Deploy:** Integrated adapters for Vercel, Railway, and AWS Lambda.
+- [ ] **Fine-tuning Pipeline:** Built-in tools for fine-tuning models on tenant data.
+- [ ] **AI-Driven Rate Limiting:** Dynamic throttling based on token costs and system load.
 
 ---
 

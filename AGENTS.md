@@ -186,7 +186,7 @@ HyperZ/
 ## CLI Commands (Use for Scaffolding)
 
 ```bash
-npx hyperz make:controller <Name>        # Create controller
+npx hyperz make:controller <Name> [--model <M>]  # Create controller (with CRUD if --model provided)
 npx hyperz make:model <Name> [-m]         # Create model (with migration)
 npx hyperz make:migration <name>          # Create migration
 npx hyperz make:seeder <Name>             # Create seeder
@@ -202,6 +202,7 @@ npx hyperz migrate                        # Run migrations
 npx hyperz migrate:rollback               # Rollback migrations
 npx hyperz db:seed                        # Run seeders
 npx hyperz key:generate                   # Generate APP_KEY + JWT_SECRET
+npx hyperz serve                          # Start dev server
 npx hyperz route:list                     # List routes
 npx hyperz tinker                         # Interactive REPL
 ```
