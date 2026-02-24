@@ -10,7 +10,7 @@ description: "Build HTTP controllers in HyperZ — extend the Controller base cl
 Use the CLI to scaffold a controller:
 
 ```bash
-npx tsx bin/hyperz.ts make:controller ProductController
+npx hyperz make:controller ProductController
 ```
 
 Or create one manually in `app/controllers/`:

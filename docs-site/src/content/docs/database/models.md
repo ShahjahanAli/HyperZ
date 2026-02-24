@@ -10,7 +10,7 @@ description: "Define data models in HyperZ — Active Record pattern with fillab
 Use the CLI to scaffold a model (optionally with a migration):
 
 ```bash
-npx tsx bin/hyperz.ts make:model Product -m
+npx hyperz make:model Product -m
 ```
 
 Or create one manually in `app/models/`:

@@ -20,10 +20,10 @@ cd my-api
 npm install
 
 # Generate encryption keys
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Run migrations
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # Start the dev server
 npm run dev
@@ -59,7 +59,7 @@ Key variables to configure:
 curl http://localhost:7700/health
 
 # List all routes
-npx tsx bin/hyperz.ts route:list
+npx hyperz route:list
 
 # Open API playground
 open http://localhost:7700/api/playground

@@ -16,7 +16,7 @@ Thank you for your interest in contributing to HyperZ! We are building the world
 
 1. `npm install`
 2. `cp .env.example .env` (and configure)
-3. `npx tsx bin/hyperz.ts key:generate`
+3. `npx hyperz key:generate`
 4. `npm run dev`
 
 ## Running Tests
@@ -33,7 +33,7 @@ The test suite covers: service container, router, validator, cache, events, mode
 - Use TypeScript strict mode for all new code
 - Follow the framework's existing patterns (Service Providers, DI, etc.)
 - Use `.js` extensions in import paths (ES Module output)
-- Write tests for new features (use `npx tsx bin/hyperz.ts make:test <Name>` to scaffold)
+- Write tests for new features (use `npx hyperz make:test <Name>` to scaffold)
 - Update documentation in `docs/` for any new features
 
 ## Contribution Areas

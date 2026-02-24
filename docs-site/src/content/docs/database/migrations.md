@@ -10,7 +10,7 @@ description: "Manage database schema changes in HyperZ with TypeORM migrations â
 Use the CLI to scaffold a timestamped migration:
 
 ```bash
-npx tsx bin/hyperz.ts make:migration create_products_table
+npx hyperz make:migration create_products_table
 ```
 
 This creates a file in `database/migrations/` with a timestamp prefix:
@@ -46,10 +46,10 @@ export class CreateProductsTable1708012800000 implements MigrationInterface {
 
 ```bash
 # Run all pending migrations
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # Rollback the last batch of migrations
-npx tsx bin/hyperz.ts migrate:rollback
+npx hyperz migrate:rollback
 ```
 
 ## Modifying Tables
@@ -78,4 +78,4 @@ export class AddCategoryToProducts1708099200000 implements MigrationInterface {
 - Always implement both `up()` and `down()` for reversibility
 - Use descriptive migration names (`create_products_table`, `add_category_to_products`)
 - Never modify an already-executed migration â€” create a new one instead
-- Run migrations after creating them: `npx tsx bin/hyperz.ts migrate`
+- Run migrations after creating them: `npx hyperz migrate`

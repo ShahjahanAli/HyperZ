@@ -12,7 +12,7 @@ description: How to work with migrations, seeders, and factories
 
 1. Scaffold:
 ```bash
-npx tsx bin/hyperz.ts make:migration create_<table_name>_table
+npx hyperz make:migration create_<table_name>_table
 ```
 
 2. Edit the migration file in `database/migrations/` — define columns in the `up()` function:
@@ -32,38 +32,38 @@ export async function down(knex: Knex): Promise<void> {
 
 3. Run:
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 4. Rollback if needed:
 ```bash
-npx tsx bin/hyperz.ts migrate:rollback
+npx hyperz migrate:rollback
 ```
 
 ### Create a Seeder
 
 1. Scaffold:
 ```bash
-npx tsx bin/hyperz.ts make:seeder <Name>Seeder
+npx hyperz make:seeder <Name>Seeder
 ```
 
 2. Edit the seeder file in `database/seeders/` to insert data.
 
 3. Run all seeders:
 ```bash
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 4. Run a specific seeder:
 ```bash
-npx tsx bin/hyperz.ts db:seed -c <Name>Seeder
+npx hyperz db:seed -c <Name>Seeder
 ```
 
 ### Create a Factory
 
 1. Scaffold:
 ```bash
-npx tsx bin/hyperz.ts make:factory <Name>Factory
+npx hyperz make:factory <Name>Factory
 ```
 
 2. Define factory fields using `Factory.define()`.

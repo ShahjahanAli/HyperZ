@@ -35,18 +35,18 @@ This is **HyperZ**, a Laravel-inspired API framework built on Express.js 5 and T
 ## CLI Commands
 Prefer CLI scaffolding over manual file creation:
 ```
-npx tsx bin/hyperz.ts make:controller <Name>Controller
-npx tsx bin/hyperz.ts make:model <Name> -m
-npx tsx bin/hyperz.ts make:migration <name>
-npx tsx bin/hyperz.ts make:seeder <Name>Seeder
-npx tsx bin/hyperz.ts make:middleware <Name>Middleware
-npx tsx bin/hyperz.ts make:route <name>
-npx tsx bin/hyperz.ts make:job <Name>
-npx tsx bin/hyperz.ts make:factory <Name>Factory
-npx tsx bin/hyperz.ts make:ai-action <Name>Action
-npx tsx bin/hyperz.ts make:test <Name> [-f]
-npx tsx bin/hyperz.ts make:module <Name>
-npx tsx bin/hyperz.ts migrate
+npx hyperz make:controller <Name>Controller
+npx hyperz make:model <Name> -m
+npx hyperz make:migration <name>
+npx hyperz make:seeder <Name>Seeder
+npx hyperz make:middleware <Name>Middleware
+npx hyperz make:route <name>
+npx hyperz make:job <Name>
+npx hyperz make:factory <Name>Factory
+npx hyperz make:ai-action <Name>Action
+npx hyperz make:test <Name> [-f]
+npx hyperz make:module <Name>
+npx hyperz migrate
 ```
 
 ## Key Patterns

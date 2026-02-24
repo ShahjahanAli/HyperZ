@@ -23,7 +23,7 @@ const decrypted = Encrypter.decrypt(encrypted);
 The `APP_KEY` is set in your `.env` file. Generate one with:
 
 ```bash
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 ```
 
 ## HashService (bcrypt)

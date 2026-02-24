@@ -46,13 +46,13 @@ Run these commands before deploying:
 
 ```bash
 # Generate encryption keys (if not already done)
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Run database migrations
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # Seed initial data (if needed)
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 ## Docker Compose (Production)

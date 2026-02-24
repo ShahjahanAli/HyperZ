@@ -28,7 +28,7 @@ HyperZ is a **Laravel-inspired, batteries-included** framework for Node.js. Here
 
 ```typescript
 // One command to scaffold a full CRUD module
-// npx tsx bin/hyperz.ts make:module Product
+// npx hyperz make:module Product
 
 // Creates: Model, Controller, Routes, Migration, Test
 // With: validation, auth middleware, pagination — all wired up

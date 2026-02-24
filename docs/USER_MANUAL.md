@@ -59,7 +59,7 @@ cd HyperZ
 npm install
 
 # Generate application key
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Copy environment configuration
 cp .env.example .env
@@ -229,7 +229,7 @@ Configuration files live in `config/` and export default objects:
 ### Step 1: Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller Product --model Product
+npx hyperz make:controller Product --model Product
 ```
 
 This generates `app/controllers/ProductController.ts` with full CRUD logic linked to the `Product` model:
@@ -272,7 +272,7 @@ export class ProductController extends Controller {
 ### Step 2: Create a Model with Migration
 
 ```bash
-npx tsx bin/hyperz.ts make:model Product -m
+npx hyperz make:model Product -m
 ```
 
 Edit the generated migration file to define your schema:
@@ -325,7 +325,7 @@ export default router;
 ### Step 4: Run Migrations
 
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 ### Step 5: Test Your API
@@ -345,34 +345,34 @@ Or open the **API Playground** at `http://localhost:7700/api/playground` and tes
 
 **Create a migration:**
 ```bash
-npx tsx bin/hyperz.ts make:migration create_orders_table
+npx hyperz make:migration create_orders_table
 ```
 
 **Run all pending migrations:**
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 **Rollback the last batch:**
 ```bash
-npx tsx bin/hyperz.ts migrate:rollback
+npx hyperz migrate:rollback
 ```
 
 ### 5.2 Seeders
 
 **Create a seeder:**
 ```bash
-npx tsx bin/hyperz.ts make:seeder ProductSeeder
+npx hyperz make:seeder ProductSeeder
 ```
 
 **Run all seeders:**
 ```bash
-npx tsx bin/hyperz.ts db:seed
+npx hyperz db:seed
 ```
 
 **Run a specific seeder:**
 ```bash
-npx tsx bin/hyperz.ts db:seed -c ProductSeeder
+npx hyperz db:seed -c ProductSeeder
 ```
 
 ### 5.3 Model Usage
@@ -409,7 +409,7 @@ await Product.restore(product.id);
 
 **Create a factory:**
 ```bash
-npx tsx bin/hyperz.ts make:factory ProductFactory
+npx hyperz make:factory ProductFactory
 ```
 
 **Define factory fields:**
@@ -441,8 +441,8 @@ const products = Factory.createMany('products', 50);
 ### 6.1 Scaffold Persistent Auth
 
 ```bash
-npx tsx bin/hyperz.ts make:auth
-npx tsx bin/hyperz.ts migrate   # Run the generated auth migrations
+npx hyperz make:auth
+npx hyperz migrate   # Run the generated auth migrations
 ```
 
 This creates a production-ready authentication system:
@@ -568,7 +568,7 @@ await cache.flush();
 ### 9.1 Create a Job
 
 ```bash
-npx tsx bin/hyperz.ts make:job SendWelcomeEmail
+npx hyperz make:job SendWelcomeEmail
 ```
 
 This creates `app/jobs/SendWelcomeEmail.ts`:
@@ -737,7 +737,7 @@ const vector = await ai.embed('HyperZ is a modern framework');
 ### 12.3 Create AI Actions
 
 ```bash
-npx tsx bin/hyperz.ts make:ai-action ContentSummarizer
+npx hyperz make:ai-action ContentSummarizer
 ```
 
 This creates `app/ai/ContentSummarizer.ts` with a ready-to-use template.
@@ -1029,7 +1029,7 @@ const res3 = await client.withToken('your-jwt-token').get('/api/profile');
 Start an interactive REPL with preloaded app context:
 
 ```bash
-npx tsx bin/hyperz.ts tinker
+npx hyperz tinker
 ```
 
 Available in the REPL:
@@ -1233,8 +1233,8 @@ pm2 save
 
 | Issue | Solution |
 |---|---|
-| `APP_KEY is empty` | Run `npx tsx bin/hyperz.ts key:generate` |
-| `SQLITE_ERROR` | Run `npx tsx bin/hyperz.ts migrate` |
+| `APP_KEY is empty` | Run `npx hyperz key:generate` |
+| `SQLITE_ERROR` | Run `npx hyperz migrate` |
 | Port already in use | Change `APP_PORT` in `.env` |
 | Module not found | Run `npm install` |
 | Redis connection refused | Start Redis or switch to `CACHE_DRIVER=memory` |

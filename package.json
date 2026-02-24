@@ -15,12 +15,15 @@
   "type": "module",
   "main": "dist/app.js",
   "bin": {
-    "hyperz": "./dist/bin/hyperz.js"
+    "hyperz": "./bin/hyperz.mjs",
+    "hz": "./bin/hyperz.mjs",
+    "hyperz-mcp": "./bin/hyperz-mcp.mjs"
   },
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "postinstall": "node bin/postinstall.mjs",
     "hyperz": "tsx bin/hyperz.ts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -15,7 +15,7 @@ npm install
 
 2. Generate application key (first time only):
 ```bash
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 ```
 
 3. Copy environment config (first time only):

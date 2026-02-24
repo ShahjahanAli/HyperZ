@@ -18,7 +18,7 @@ const PROJECT_ROOT = process.cwd();
 async function runCLI(command: string): Promise<string> {
     try {
         const { stdout, stderr } = await execAsync(
-            `npx tsx bin/hyperz.ts ${command}`,
+            `npx hyperz ${command}`,
             { cwd: PROJECT_ROOT, timeout: 30000 }
         );
         return stdout || stderr || 'Command completed successfully.';

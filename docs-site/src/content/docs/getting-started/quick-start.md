@@ -8,7 +8,7 @@ description: Build your first API with HyperZ in 5 minutes
 The fastest way to create a full CRUD API is using the `make:module` command:
 
 ```bash
-npx tsx bin/hyperz.ts make:module Product
+npx hyperz make:module Product
 ```
 
 This generates:
@@ -20,7 +20,7 @@ This generates:
 ## Run Migration
 
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 ## Your API is Ready

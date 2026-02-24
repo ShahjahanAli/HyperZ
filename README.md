@@ -95,7 +95,7 @@ cd HyperZ
 npm install
 
 # Generate application key & JWT secret
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # Copy environment config
 cp .env.example .env
@@ -115,7 +115,7 @@ Visit the built-in API Playground at **http://localhost:7700/api/playground** ðŸ
 ### 1. Create a Persistent Controller
 
 ```bash
-npx tsx bin/hyperz.ts make:controller Post --model Post
+npx hyperz make:controller Post --model Post
 ```
 
 This generates a fully functional `app/controllers/PostController.ts` linked to the `Post` model:
@@ -158,7 +158,7 @@ export class PostController extends Controller {
 ### 2. Create a Model with Migration
 
 ```bash
-npx tsx bin/hyperz.ts make:model Post -m
+npx hyperz make:model Post -m
 ```
 
 This generates:
@@ -185,7 +185,7 @@ export default router;
 ### 4. Run Migrations
 
 ```bash
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 ```
 
 ### 5. Visit Your API
@@ -205,30 +205,30 @@ HyperZ provides an Artisan-style CLI for rapid development:
 
 ```bash
 # Scaffolding
-npx tsx bin/hyperz.ts make:controller <Name> [--model <M>] # Create a controller (with CRUD if -m provided)
-npx tsx bin/hyperz.ts make:model <Name> [-m]      # Create a model (-m = with migration)
-npx tsx bin/hyperz.ts make:migration <name>       # Create a migration
-npx tsx bin/hyperz.ts make:seeder <Name>          # Create a seeder
-npx tsx bin/hyperz.ts make:middleware <Name>       # Create a middleware
-npx tsx bin/hyperz.ts make:route <name>           # Create a route file
-npx tsx bin/hyperz.ts make:auth                   # Scaffold persistent authentication (BCrypt, TypeORM)
-npx tsx bin/hyperz.ts make:job <Name>             # Create a queue job
-npx tsx bin/hyperz.ts make:factory <Name>         # Create a database factory
-npx tsx bin/hyperz.ts make:ai-action <Name>       # Create an AI action class
-npx tsx bin/hyperz.ts make:test <Name> [-f]        # Create a unit/feature test
-npx tsx bin/hyperz.ts make:module <Name>           # Scaffold full domain module (model+controller+route+migration+test)
+npx hyperz make:controller <Name> [--model <M>] # Create a controller (with CRUD if -m provided)
+npx hyperz make:model <Name> [-m]      # Create a model (-m = with migration)
+npx hyperz make:migration <name>       # Create a migration
+npx hyperz make:seeder <Name>          # Create a seeder
+npx hyperz make:middleware <Name>       # Create a middleware
+npx hyperz make:route <name>           # Create a route file
+npx hyperz make:auth                   # Scaffold persistent authentication (BCrypt, TypeORM)
+npx hyperz make:job <Name>             # Create a queue job
+npx hyperz make:factory <Name>         # Create a database factory
+npx hyperz make:ai-action <Name>       # Create an AI action class
+npx hyperz make:test <Name> [-f]        # Create a unit/feature test
+npx hyperz make:module <Name>           # Scaffold full domain module (model+controller+route+migration+test)
 
 # Database
-npx tsx bin/hyperz.ts migrate                     # Run pending migrations
-npx tsx bin/hyperz.ts migrate:rollback            # Rollback last batch
-npx tsx bin/hyperz.ts db:seed                     # Run all seeders
-npx tsx bin/hyperz.ts db:seed -c UserSeeder       # Run specific seeder
+npx hyperz migrate                     # Run pending migrations
+npx hyperz migrate:rollback            # Rollback last batch
+npx hyperz db:seed                     # Run all seeders
+npx hyperz db:seed -c UserSeeder       # Run specific seeder
 
 # Utilities
-npx tsx bin/hyperz.ts key:generate                # Generate app key + JWT secret
-npx tsx bin/hyperz.ts serve                       # Start dev server
-npx tsx bin/hyperz.ts route:list                  # List route files
-npx tsx bin/hyperz.ts tinker                      # Interactive REPL
+npx hyperz key:generate                # Generate app key + JWT secret
+npx hyperz serve                       # Start dev server
+npx hyperz route:list                  # List route files
+npx hyperz tinker                      # Interactive REPL
 ```
 
 ---
@@ -306,7 +306,7 @@ PINECONE_API_KEY=...
 ### Generate AI Action Scaffolding
 
 ```bash
-npx tsx bin/hyperz.ts make:ai-action SummarizeAction
+npx hyperz make:ai-action SummarizeAction
 ```
 
 This creates `app/ai/SummarizeAction.ts` â€” a ready-to-use AI action class.
@@ -375,7 +375,7 @@ HyperZ ships with a **built-in Next.js admin panel** (Tailwind refactored) with 
 
 ```bash
 # 1. Generate security keys (APP_KEY + JWT_SECRET)
-npx tsx bin/hyperz.ts key:generate
+npx hyperz key:generate
 
 # 2. Configure database in .env (mysql, postgresql, or sqlite)
 
@@ -383,7 +383,7 @@ npx tsx bin/hyperz.ts key:generate
 npm run dev
 
 # 4. Run migrations to create admin table
-npx tsx bin/hyperz.ts migrate
+npx hyperz migrate
 
 # 5. Start the admin panel
 cd admin
@@ -503,7 +503,7 @@ Add to your MCP config:
   "mcpServers": {
     "hyperz": {
       "command": "npx",
-      "args": ["tsx", "bin/hyperz-mcp.ts"],
+      "args": ["hyperz-mcp"],
       "cwd": "/path/to/your/hyperz/project"
     }
   }
@@ -689,7 +689,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/hyperz
 ### Scaffold Auth
 
 ```bash
-npx tsx bin/hyperz.ts make:auth
+npx hyperz make:auth
 ```
 
 This creates:

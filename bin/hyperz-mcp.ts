@@ -3,15 +3,15 @@
  * HyperZ MCP Server — CLI Entry Point
  *
  * Usage:
- *   npx tsx bin/hyperz-mcp.ts          # Start with stdio transport (for Claude Desktop, Cursor, etc.)
- *   npx tsx bin/hyperz-mcp.ts --http   # Start with Streamable HTTP transport (for web agents)
+ *   npx hyperz-mcp          # Start with stdio transport (for Claude Desktop, Cursor, etc.)
+ *   npx hyperz-mcp --http   # Start with Streamable HTTP transport (for web agents)
  *
  * Configuration for Claude Desktop (claude_desktop_config.json):
  *   {
  *     "mcpServers": {
  *       "hyperz": {
  *         "command": "npx",
- *         "args": ["tsx", "bin/hyperz-mcp.ts"],
+ *         "args": ["hyperz-mcp"],
  *         "cwd": "/path/to/your/hyperz/project"
  *       }
  *     }

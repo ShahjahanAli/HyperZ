@@ -19,7 +19,7 @@ REDIS_URL=redis://localhost:6379
 Use the CLI to scaffold a job:
 
 ```bash
-npx tsx bin/hyperz.ts make:job SendWelcomeEmail
+npx hyperz make:job SendWelcomeEmail
 ```
 
 Define the job in `app/jobs/`:

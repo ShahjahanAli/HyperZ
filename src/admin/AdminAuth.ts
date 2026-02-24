@@ -105,7 +105,7 @@ export async function registerAdmin(input: RegisterInput, callerIsAdmin = false)
     if (!knex) return { success: false, error: 'Database not connected. Configure your database in .env first.' };
 
     const tableExists = await knex.schema.hasTable(TABLE);
-    if (!tableExists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx tsx bin/hyperz.ts migrate' };
+    if (!tableExists) return { success: false, error: 'Admin table does not exist. Run migrations first: npx hyperz migrate' };
 
     // Validate input
     if (!input.email || !input.password || !input.name) {
