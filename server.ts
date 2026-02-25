@@ -24,6 +24,26 @@ async function main(): Promise<void> {
     // Register health endpoint
     app.express.get('/health', HealthController.check);
 
+    // Register plugin health endpoint
+    app.express.get('/health/plugins', async (_req, res) => {
+        try {
+            const results = await app.plugins.healthCheck();
+            const entries: Record<string, boolean> = {};
+            let allHealthy = true;
+            for (const [name, healthy] of results) {
+                entries[name] = healthy;
+                if (!healthy) allHealthy = false;
+            }
+            res.status(allHealthy ? 200 : 503).json({
+                status: allHealthy ? 'ok' : 'degraded',
+                plugins: entries,
+                count: results.size,
+            });
+        } catch {
+            res.status(500).json({ status: 'error', message: 'Health check failed' });
+        }
+    });
+
     // Register global rate limiter
     app.express.use(createGlobalRateLimiter(rateLimitConfig));
 

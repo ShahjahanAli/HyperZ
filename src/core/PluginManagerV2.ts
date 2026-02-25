@@ -10,6 +10,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Logger } from '../logging/Logger.js';
+import { routeRegistry } from '../http/RouteRegistry.js';
 import type { Application } from './Application.js';
 import type {
     HyperZPlugin,
@@ -17,7 +18,22 @@ import type {
     PluginEvent,
     PluginEventType,
     PluginDependency,
+    PublishableResource,
 } from './PluginContract.js';
+
+export interface PluginMetrics {
+    /** Time taken to register the plugin (ms) */
+    registerTime: number;
+
+    /** Time taken to boot the plugin (ms) */
+    bootTime: number;
+
+    /** Number of errors encountered */
+    errorCount: number;
+
+    /** Total discovery time (set once after discover()) */
+    discoveryTime?: number;
+}
 
 export class PluginManager {
     private app: Application;
@@ -25,8 +41,84 @@ export class PluginManager {
     private eventLog: PluginEvent[] = [];
     private listeners: Map<PluginEventType, Array<(event: PluginEvent) => void>> = new Map();
 
+    /** Additional migration paths registered by plugins */
+    private migrationPaths: string[] = [];
+
+    /** Additional seeder paths registered by plugins */
+    private seederPaths: string[] = [];
+
+    /** Additional entity/model paths registered by plugins */
+    private entityPaths: string[] = [];
+
+    /** Plugin root directory paths (name → absolute path) */
+    private pluginRoots: Map<string, string> = new Map();
+
+    /** All publishable resources from plugins */
+    private publishableResources: PublishableResource[] = [];
+
+    /** Plugin performance metrics */
+    private metrics: Map<string, PluginMetrics> = new Map();
+
+    /** Total discovery time (ms) */
+    private totalDiscoveryTime = 0;
+
+    /** Total boot time (ms) */
+    private totalBootTime = 0;
+
     constructor(app: Application) {
         this.app = app;
+    }
+
+    // ── Metrics Accessors ────────────────────────────────────
+
+    /** Get metrics for a specific plugin */
+    getMetrics(name: string): PluginMetrics | undefined {
+        return this.metrics.get(name);
+    }
+
+    /** Get metrics for all plugins */
+    getAllMetrics(): Map<string, PluginMetrics> {
+        return new Map(this.metrics);
+    }
+
+    /** Get total discovery time (ms) */
+    getDiscoveryTime(): number {
+        return this.totalDiscoveryTime;
+    }
+
+    /** Get total boot time (ms) */
+    getBootTime(): number {
+        return this.totalBootTime;
+    }
+
+    // ── Resource Path Accessors ──────────────────────────────
+
+    /** Get all additional migration paths registered by plugins */
+    getMigrationPaths(): string[] {
+        return [...this.migrationPaths];
+    }
+
+    /** Get all additional seeder paths registered by plugins */
+    getSeederPaths(): string[] {
+        return [...this.seederPaths];
+    }
+
+    /** Get all additional entity/model paths registered by plugins */
+    getEntityPaths(): string[] {
+        return [...this.entityPaths];
+    }
+
+    /** Get all publishable resources from all plugins */
+    getPublishableResources(tag?: string): PublishableResource[] {
+        if (tag) {
+            return this.publishableResources.filter(r => r.tag === tag);
+        }
+        return [...this.publishableResources];
+    }
+
+    /** Get the root directory path of a registered plugin */
+    getPluginRoot(name: string): string | undefined {
+        return this.pluginRoots.get(name);
     }
 
     // ── Registration ─────────────────────────────────────────
@@ -61,6 +153,7 @@ export class PluginManager {
         source: PluginRegistryEntry['source']
     ): Promise<void> {
         const name = plugin.meta.name;
+        const startTime = performance.now();
 
         // Prevent duplicate registration
         if (this.registry.has(name)) {
@@ -140,6 +233,24 @@ export class PluginManager {
             }
         }
 
+        // Register named route middleware
+        if (plugin.routeMiddleware) {
+            const existing = this.app.container.make<Record<string, unknown>>('middleware.route') ?? {};
+            for (const [middlewareName, handler] of Object.entries(plugin.routeMiddleware)) {
+                if (existing[middlewareName]) {
+                    Logger.warn(`[Plugin] "${name}" route middleware "${middlewareName}" conflicts with existing — skipping`);
+                } else {
+                    existing[middlewareName] = handler;
+                }
+            }
+            this.app.container.instance('middleware.route', existing);
+        }
+
+        // Register publishable resources
+        if (plugin.publishable) {
+            this.publishableResources.push(...plugin.publishable);
+        }
+
         this.registry.set(name, {
             plugin,
             status: 'registered',
@@ -148,7 +259,12 @@ export class PluginManager {
         });
 
         this.emit('plugin:registered', name);
-        Logger.info(`  🔌 Plugin registered: ${name} v${plugin.meta.version}`);
+
+        // Record registration metrics
+        const registerTime = performance.now() - startTime;
+        this.metrics.set(name, { registerTime, bootTime: 0, errorCount: 0 });
+
+        Logger.info(`  🔌 Plugin registered: ${name} v${plugin.meta.version} (${registerTime.toFixed(1)}ms)`);
     }
 
     // ── Boot ─────────────────────────────────────────────────
@@ -158,6 +274,8 @@ export class PluginManager {
      * Must be called after app.boot().
      */
     async bootAll(): Promise<void> {
+        const bootStart = performance.now();
+
         // Resolve boot order based on dependencies
         const ordered = this.resolveDependencyOrder();
 
@@ -165,9 +283,14 @@ export class PluginManager {
             const entry = this.registry.get(name);
             if (!entry || entry.status !== 'registered') continue;
 
+            const pluginBootStart = performance.now();
+
             try {
                 // Check dependencies are satisfied
                 this.checkDependencies(entry.plugin);
+
+                // Register resource paths (migrations, seeders, models)
+                this.registerResourcePaths(name, entry.plugin);
 
                 // Boot hook
                 if (entry.plugin.hooks?.boot) {
@@ -179,20 +302,105 @@ export class PluginManager {
                     await entry.plugin.hooks.routes(this.app);
                 }
 
-                // Commands hook
-                if (entry.plugin.hooks?.commands) {
-                    await entry.plugin.hooks.commands(this.app);
+                // Schedule hook
+                if (entry.plugin.hooks?.schedule) {
+                    const scheduler = this.app.container.make('scheduler');
+                    if (scheduler) {
+                        await entry.plugin.hooks.schedule(scheduler, this.app);
+                    }
+                }
+
+                // Record boot time
+                const bootTime = performance.now() - pluginBootStart;
+                const existing = this.metrics.get(name);
+                if (existing) {
+                    existing.bootTime = bootTime;
                 }
 
                 entry.status = 'booted';
                 this.emit('plugin:booted', name);
-                Logger.info(`  🔌 Plugin booted: ${name}`);
+                Logger.info(`  🔌 Plugin booted: ${name} (${bootTime.toFixed(1)}ms)`);
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
                 entry.status = 'failed';
                 entry.error = `Boot failed: ${message}`;
+
+                // Record error in metrics
+                const existing = this.metrics.get(name);
+                if (existing) {
+                    existing.errorCount++;
+                }
+
                 this.emit('plugin:failed', name, { error: message });
                 Logger.error(`[Plugin] "${name}" boot failed: ${message}`);
+            }
+        }
+
+        // Record total boot time
+        this.totalBootTime = performance.now() - bootStart;
+
+        // Check for route collisions after all plugins have registered routes
+        const collisions = routeRegistry.getCollisions();
+        if (collisions.length > 0) {
+            Logger.warn(`[Plugin] ⚠ ${collisions.length} route collision(s) detected:`);
+            for (const collision of collisions) {
+                const sources = collision.routes.map(r => r.source).join(', ');
+                Logger.warn(`  → ${collision.method} ${collision.path} — sources: ${sources}`);
+            }
+        }
+
+        if (this.registry.size > 0) {
+            Logger.info(`  🔌 Plugin boot complete (${this.totalBootTime.toFixed(1)}ms total)`);
+        }
+    }
+
+    /**
+     * Register CLI commands from all plugins.
+     * Called by the CLI entry point with the Commander program instance.
+     */
+    async registerCommands(program: unknown): Promise<void> {
+        for (const [name, entry] of this.registry) {
+            if (entry.status === 'failed' || entry.status === 'disabled') continue;
+            if (entry.plugin.hooks?.commands) {
+                try {
+                    await entry.plugin.hooks.commands(program, this.app);
+                    Logger.debug(`[Plugin] "${name}" commands registered`);
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    Logger.error(`[Plugin] "${name}" command registration failed: ${message}`);
+                }
+            }
+        }
+    }
+
+    /**
+     * Register resource paths (migrations, seeders, models) from a plugin.
+     */
+    private registerResourcePaths(name: string, plugin: HyperZPlugin): void {
+        const pluginRoot = this.pluginRoots.get(name);
+        if (!pluginRoot || !plugin.resources) return;
+
+        if (plugin.resources.migrations) {
+            const migrationPath = path.resolve(pluginRoot, plugin.resources.migrations);
+            if (fs.existsSync(migrationPath)) {
+                this.migrationPaths.push(path.join(migrationPath, '**/*.{ts,js}'));
+                Logger.debug(`[Plugin] "${name}" migrations registered: ${migrationPath}`);
+            }
+        }
+
+        if (plugin.resources.seeders) {
+            const seederPath = path.resolve(pluginRoot, plugin.resources.seeders);
+            if (fs.existsSync(seederPath)) {
+                this.seederPaths.push(seederPath);
+                Logger.debug(`[Plugin] "${name}" seeders registered: ${seederPath}`);
+            }
+        }
+
+        if (plugin.resources.models) {
+            const modelPath = path.resolve(pluginRoot, plugin.resources.models);
+            if (fs.existsSync(modelPath)) {
+                this.entityPaths.push(path.join(modelPath, '**/*.{ts,js}'));
+                Logger.debug(`[Plugin] "${name}" models registered: ${modelPath}`);
             }
         }
     }
@@ -204,8 +412,14 @@ export class PluginManager {
      * and from the local plugins/ directory.
      */
     async discover(): Promise<void> {
+        const start = performance.now();
         await this.discoverFromNodeModules();
         await this.discoverFromLocalPlugins();
+        this.totalDiscoveryTime = performance.now() - start;
+
+        if (this.registry.size > 0) {
+            Logger.info(`  🔌 Plugin discovery: ${this.registry.size} found (${this.totalDiscoveryTime.toFixed(1)}ms)`);
+        }
     }
 
     private async discoverFromNodeModules(): Promise<void> {
@@ -249,6 +463,7 @@ export class PluginManager {
                 const plugin: HyperZPlugin = mod.default ?? mod;
 
                 if (plugin.meta?.name) {
+                    this.pluginRoots.set(plugin.meta.name, pkgDir);
                     await this.registerPlugin(plugin, 'auto-discover');
                     return;
                 }
@@ -268,6 +483,7 @@ export class PluginManager {
                         },
                         provider: ProviderClass,
                     };
+                    this.pluginRoots.set(pkgName, pkgDir);
                     await this.registerPlugin(legacyPlugin, 'auto-discover');
                 }
             }
@@ -296,7 +512,18 @@ export class PluginManager {
                 continue;
             }
 
-            await this.registerFromPath(entryPath);
+            // Track local plugin root before loading
+            try {
+                const mod = await import(`file://${entryPath.replace(/\\/g, '/')}`);
+                const plugin: HyperZPlugin = mod.default ?? mod;
+                if (plugin.meta?.name) {
+                    this.pluginRoots.set(plugin.meta.name, pluginDir);
+                }
+                await this.registerPlugin(plugin, 'local');
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                Logger.error(`[Plugin] Failed to load local plugin "${entry.name}"`, { error: message });
+            }
         }
     }
 

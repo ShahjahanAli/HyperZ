@@ -16,6 +16,26 @@ const getDriverType = (driver: string): any => {
 
 let AppDataSource: DataSource | null = null;
 
+/** Additional migration paths registered by plugins */
+const additionalMigrationPaths: string[] = [];
+
+/** Additional entity paths registered by plugins */
+const additionalEntityPaths: string[] = [];
+
+/**
+ * Register additional migration paths (called by PluginManager).
+ */
+export function registerMigrationPaths(paths: string[]): void {
+    additionalMigrationPaths.push(...paths);
+}
+
+/**
+ * Register additional entity/model paths (called by PluginManager).
+ */
+export function registerEntityPaths(paths: string[]): void {
+    additionalEntityPaths.push(...paths);
+}
+
 export const initializeDataSource = async () => {
     if (AppDataSource) {
         if (!AppDataSource.isInitialized) await AppDataSource.initialize();
@@ -37,8 +57,14 @@ export const initializeDataSource = async () => {
         database: connConfig?.connection?.database || connConfig?.connection?.filename,
         synchronize: (databaseConfig as any).typeorm?.synchronize || false,
         logging: (databaseConfig as any).typeorm?.logging || false,
-        entities: [path.join(ROOT, 'app/models/**/*.{ts,js}')],
-        migrations: [path.join(ROOT, 'database/migrations/**/*.{ts,js}')],
+        entities: [
+            path.join(ROOT, 'app/models/**/*.{ts,js}'),
+            ...additionalEntityPaths,
+        ],
+        migrations: [
+            path.join(ROOT, 'database/migrations/**/*.{ts,js}'),
+            ...additionalMigrationPaths,
+        ],
         subscribers: [],
     });
 

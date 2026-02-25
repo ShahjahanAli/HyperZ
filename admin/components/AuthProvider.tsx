@@ -12,6 +12,7 @@ interface Admin {
 }
 
 interface AdminStatus {
+    keysConfigured: boolean;
     dbConnected: boolean;
     tableExists: boolean;
     hasAdmin: boolean;
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setStatus(await res.json());
             }
         } catch {
-            setStatus({ dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0 });
+            setStatus({ keysConfigured: false, dbConnected: false, tableExists: false, hasAdmin: false, adminCount: 0 });
         }
     }, []);
 

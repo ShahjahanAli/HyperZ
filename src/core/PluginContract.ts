@@ -51,6 +51,41 @@ export interface PluginConfigSchema {
     validate?: (config: Record<string, unknown>) => void | Promise<void>;
 }
 
+// ── Plugin Resource Paths ────────────────────────────────────
+
+export interface PluginResources {
+    /** Path to plugin's migrations directory (relative to plugin root) */
+    migrations?: string;
+
+    /** Path to plugin's seeders directory (relative to plugin root) */
+    seeders?: string;
+
+    /** Path to publishable config files (relative to plugin root) */
+    config?: string;
+
+    /** Path to translation files (relative to plugin root) */
+    lang?: string;
+
+    /** Path to publishable view/asset files (relative to plugin root) */
+    views?: string;
+
+    /** Path to plugin's model/entity files (relative to plugin root) */
+    models?: string;
+}
+
+// ── Plugin Publishable Resources ─────────────────────────────
+
+export interface PublishableResource {
+    /** Source path (within the plugin) */
+    source: string;
+
+    /** Destination path (within the application) */
+    destination: string;
+
+    /** Tag for selective publishing (e.g., 'config', 'migrations', 'lang') */
+    tag: string;
+}
+
 // ── Plugin Lifecycle Hooks ───────────────────────────────────
 
 export interface PluginHooks {
@@ -67,7 +102,10 @@ export interface PluginHooks {
     routes?: (app: Application) => void | Promise<void>;
 
     /** Called to register CLI commands from the plugin */
-    commands?: (app: Application) => void | Promise<void>;
+    commands?: (program: unknown, app: Application) => void | Promise<void>;
+
+    /** Register scheduled tasks from the plugin */
+    schedule?: (scheduler: unknown, app: Application) => void | Promise<void>;
 
     /** Health check — should return true if the plugin is healthy */
     healthCheck?: (app: Application) => boolean | Promise<boolean>;
@@ -106,6 +144,15 @@ export interface HyperZPlugin {
 
     /** Middleware to register globally */
     middleware?: Array<(...args: unknown[]) => unknown>;
+
+    /** Named route middleware to register (e.g., { 'oauth': oauthMiddleware }) */
+    routeMiddleware?: Record<string, (...args: unknown[]) => unknown>;
+
+    /** Plugin resource paths (migrations, seeders, config, lang, views, models) */
+    resources?: PluginResources;
+
+    /** Publishable resources with source → destination mappings */
+    publishable?: PublishableResource[];
 
     /** Tags for categorization / filtering */
     tags?: string[];

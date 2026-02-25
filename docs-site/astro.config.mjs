@@ -12,9 +12,9 @@ export default defineConfig({
                 dark: './src/assets/logo-dark.svg',
                 replacesTitle: false,
             },
-            social: [
-                { icon: 'github', label: 'GitHub', href: 'https://github.com/hyperz-framework/hyperz' },
-            ],
+            social: {
+                github: 'https://github.com/hyperz-framework/hyperz',
+            },
             customCss: ['./src/styles/custom.css'],
             defaultLocale: 'en',
             editLink: {
